@@ -230,10 +230,23 @@ async function modelFetch(path: string, token: string, init: RequestInit = {}): 
   const headers = new Headers(init.headers)
   if (token.trim()) headers.set('Authorization', `Bearer ${token.trim()}`)
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...init,
-    headers,
-  })
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), 30_000)
+  let response: Response
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      ...init,
+      headers,
+      signal: init.signal ?? controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('模型配置请求超时（30 秒），请检查网络或稍后再试', { cause: error })
+    }
+    throw error
+  } finally {
+    window.clearTimeout(timeoutId)
+  }
 
   if (!response.ok) {
     const detail = await readModelError(response)

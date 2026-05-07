@@ -193,10 +193,23 @@ async function platformFetch(path: string, init: RequestInit = {}): Promise<Resp
   const token = getSavedCloudToken()
   if (token.trim()) headers.set('Authorization', `Bearer ${token.trim()}`)
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...init,
-    headers,
-  })
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), 30_000)
+  let response: Response
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      ...init,
+      headers,
+      signal: init.signal ?? controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('后台平台请求超时（30 秒），请检查网络或稍后再试', { cause: error })
+    }
+    throw error
+  } finally {
+    window.clearTimeout(timeoutId)
+  }
 
   if (!response.ok) {
     const detail = await readPlatformError(response)

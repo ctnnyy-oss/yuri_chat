@@ -24,16 +24,25 @@ export function isCloudSyncConfigured(): boolean {
 
 export function getSavedCloudToken(): string {
   if (typeof window === 'undefined') return ''
-  return window.localStorage.getItem(storageConfig.cloudTokenStorageKey) ?? ''
+  try {
+    return window.localStorage.getItem(storageConfig.cloudTokenStorageKey) ?? ''
+  } catch {
+    // iOS Safari 严格模式 / 无痕窗口 / quota 满都会抛
+    return ''
+  }
 }
 
 export function saveCloudToken(token: string): void {
   if (typeof window === 'undefined') return
   const cleanedToken = token.trim()
-  if (cleanedToken) {
-    window.localStorage.setItem(storageConfig.cloudTokenStorageKey, cleanedToken)
-  } else {
-    window.localStorage.removeItem(storageConfig.cloudTokenStorageKey)
+  try {
+    if (cleanedToken) {
+      window.localStorage.setItem(storageConfig.cloudTokenStorageKey, cleanedToken)
+    } else {
+      window.localStorage.removeItem(storageConfig.cloudTokenStorageKey)
+    }
+  } catch {
+    // localStorage 不可用时静默——token 仅本会话有效，不影响功能
   }
 }
 
@@ -86,10 +95,23 @@ async function cloudFetch(path: string, token: string, init: RequestInit = {}): 
   const headers = new Headers(init.headers)
   if (token.trim()) headers.set('Authorization', `Bearer ${token.trim()}`)
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...init,
-    headers,
-  })
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), 30_000)
+  let response: Response
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      ...init,
+      headers,
+      signal: init.signal ?? controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('云端请求超时（30 秒），请检查网络或稍后再试', { cause: error })
+    }
+    throw error
+  } finally {
+    window.clearTimeout(timeoutId)
+  }
 
   if (!response.ok) {
     const detail = await readCloudError(response)

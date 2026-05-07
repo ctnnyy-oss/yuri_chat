@@ -5,6 +5,8 @@ export async function requestAssistantReply(bundle: PromptBundle, settings: AppS
   let response: Response
   const apiBaseUrl = getApiBaseUrl()
 
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), 90_000)
   try {
     response = await fetch(`${apiBaseUrl}/api/chat`, {
       method: 'POST',
@@ -13,10 +15,16 @@ export async function requestAssistantReply(bundle: PromptBundle, settings: AppS
         ...getChatAuthHeaders(),
       },
       body: JSON.stringify({ bundle, settings }),
+      signal: controller.signal,
     })
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('聊天请求超时（90 秒）：模型响应太慢，请稍后再试或换一组模型配置。', { cause: error })
+    }
     if (isStaticPreviewHost()) return { reply: createBrowserDemoReply(bundle) }
     throw error
+  } finally {
+    window.clearTimeout(timeoutId)
   }
 
   if (!response.ok) {
