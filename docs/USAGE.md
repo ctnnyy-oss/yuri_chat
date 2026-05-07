@@ -16,15 +16,11 @@ http://127.0.0.1:5173/
 
 ## 当前默认模型
 
-本机已经通过 `.env.local` 接入 OpenAI Compatible 中转：
+本机通过 `.env.local` 接入 OpenAI-compatible 中转。具体的 `AI_BASE_URL`、`AI_MODEL`、`AI_API_KEY` 配置见 `.env.local.example` 和 `docs/PROJECT_HANDOFF.md` 第 4 节。
 
-```text
-http://127.0.0.1:18788/v1
-deepseek/deepseek-v4-pro-free
-```
+密钥只放在本机 `.env.local`，不会提交到版本库。如果中转对中文不稳定，可设置 `AI_ESCAPE_UNICODE_CONTENT=true` 兼容层。
 
-密钥只放在本机 `.env.local`，不会提交到版本库。
-当前中转对中文直传不够稳定，代理已经开启 `AI_ESCAPE_UNICODE_CONTENT=true` 兼容层，网页里正常打中文即可。
+也可以在网页"模型 / 数据"页用模型保险箱保存多组模型配置；此时密钥加密保存在服务器 SQLite 里，前端不接触原文。
 
 ## 怎么体验
 
