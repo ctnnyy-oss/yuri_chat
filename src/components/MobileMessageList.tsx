@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { BellOff, Check, Edit3, Plus, Search, Users, X } from 'lucide-react'
 import type { AppSettings, CharacterCard, ConversationState } from '../domain/types'
+import { canDeleteCharacter } from './chat/data'
 
 interface MobileMessageListProps {
   characters: CharacterCard[]
@@ -9,19 +10,16 @@ interface MobileMessageListProps {
   settings: AppSettings
   onOpenChat: (characterId: string) => void
   onOpenGroupChat?: (group: { name: string; text: string; memberIds?: string[] }) => void
+  onDeleteCharacter?: (characterId: string) => boolean
   onUpdateSettings: (settings: AppSettings) => void
   onShellAction?: (message: string) => void
 }
 
+const LONG_PRESS_MS = 560
 const threadTimes = ['今天', '星期六', '星期一', '04/11', '04/03', '03/26', '03/22']
 
 function MobileStatusBar() {
-  return (
-    <div className="mobile-status-bar" aria-hidden="true">
-      <b>7:03</b>
-      <span className="mobile-signal">5G 5G ▰▰▰ 37</span>
-    </div>
-  )
+  return null
 }
 
 function isGroupCharacter(character: CharacterCard) {
@@ -93,10 +91,14 @@ export function MobileMessageList({
   settings,
   onOpenChat,
   onOpenGroupChat,
+  onDeleteCharacter,
   onUpdateSettings,
   onShellAction,
 }: MobileMessageListProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const longPressTimerRef = useRef<number | null>(null)
+  const longPressTriggeredRef = useRef(false)
+  const longPressStartPointRef = useRef({ x: 0, y: 0 })
   const [query, setQuery] = useState('')
   const [groupSheetOpen, setGroupSheetOpen] = useState(false)
   const [groupQuery, setGroupQuery] = useState('')
@@ -117,6 +119,7 @@ export function MobileMessageList({
     () =>
       groupCharacters
         .map((character) => ({
+          character,
           name: character.name,
           avatar: character.avatar,
           accent: character.accent,
@@ -220,6 +223,59 @@ export function MobileMessageList({
     setGroupSheetOpen(false)
   }
 
+  function clearLongPressTimer() {
+    if (longPressTimerRef.current === null) return
+    window.clearTimeout(longPressTimerRef.current)
+    longPressTimerRef.current = null
+  }
+
+  function startLongPress(event: ReactPointerEvent, callback: () => void) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    longPressTriggeredRef.current = false
+    clearLongPressTimer()
+    longPressStartPointRef.current = { x: event.clientX, y: event.clientY }
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null
+      longPressTriggeredRef.current = true
+      callback()
+    }, LONG_PRESS_MS)
+  }
+
+  function moveLongPress(event: ReactPointerEvent) {
+    if (longPressTimerRef.current === null) return
+    const dx = Math.abs(event.clientX - longPressStartPointRef.current.x)
+    const dy = Math.abs(event.clientY - longPressStartPointRef.current.y)
+    if (dx > 12 || dy > 12) clearLongPressTimer()
+  }
+
+  function finishLongPress() {
+    clearLongPressTimer()
+  }
+
+  function shouldIgnoreClickAfterLongPress() {
+    if (!longPressTriggeredRef.current) return false
+    longPressTriggeredRef.current = false
+    return true
+  }
+
+  function openThreadAfterPress(characterId: string) {
+    if (shouldIgnoreClickAfterLongPress()) return
+    onOpenChat(characterId)
+  }
+
+  function requestDeleteThread(character: CharacterCard) {
+    if (!onDeleteCharacter) return
+    if (!canDeleteCharacter(character)) {
+      onShellAction?.('内置角色不能从列表删除；自定义角色或群聊可以长按删除')
+      return
+    }
+    const label = isGroupCharacter(character) ? '群聊' : '角色'
+    if (!window.confirm(`删除${label}「${character.name}」和对应聊天记录吗？`)) return
+    if (onDeleteCharacter(character.id)) {
+      onShellAction?.(`${label}和对应聊天记录已删除`)
+    }
+  }
+
   return (
     <section className="mobile-message-list" aria-label="手机消息列表">
       <MobileStatusBar />
@@ -238,11 +294,10 @@ export function MobileMessageList({
               {settings.userAvatarImage ? <img alt="" src={settings.userAvatarImage} /> : nickname.slice(0, 1)}
             </span>
           </button>
-          <button className="mobile-profile-name-button" onClick={renameProfile} type="button">
+          <button aria-label="修改昵称" className="mobile-profile-name-button" onClick={renameProfile} type="button">
             <strong>{nickname}</strong>
-            <small>
-              改昵称
-              <Edit3 size={13} />
+            <small aria-hidden="true">
+              <Edit3 size={15} />
             </small>
           </button>
           <input
@@ -271,7 +326,15 @@ export function MobileMessageList({
           <button
             className={`mobile-message-thread ${thread.characterId === activeCharacterId ? 'active' : ''}`}
             key={thread.characterId}
-            onClick={() => onOpenChat(thread.characterId)}
+            onClick={() => openThreadAfterPress(thread.characterId)}
+            onContextMenu={(event) => {
+              event.preventDefault()
+            }}
+            onPointerCancel={finishLongPress}
+            onPointerDown={(event) => startLongPress(event, () => requestDeleteThread(thread.character))}
+            onPointerLeave={finishLongPress}
+            onPointerMove={moveLongPress}
+            onPointerUp={finishLongPress}
             type="button"
           >
             <span
@@ -300,7 +363,15 @@ export function MobileMessageList({
             <button
               className={`mobile-message-thread ${isActive ? 'active' : ''}`}
               key={character.id}
-              onClick={() => onOpenChat(character.id)}
+              onClick={() => openThreadAfterPress(character.id)}
+              onContextMenu={(event) => {
+                event.preventDefault()
+              }}
+              onPointerCancel={finishLongPress}
+              onPointerDown={(event) => startLongPress(event, () => requestDeleteThread(character))}
+              onPointerLeave={finishLongPress}
+              onPointerMove={moveLongPress}
+              onPointerUp={finishLongPress}
               type="button"
             >
               <span
@@ -342,7 +413,7 @@ export function MobileMessageList({
               <Users size={20} />
               <input
                 onChange={(event) => setGroupName(event.target.value)}
-                placeholder="群名可不填"
+                placeholder="群名（可不填）"
                 value={groupName}
               />
             </label>

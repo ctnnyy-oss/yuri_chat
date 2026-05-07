@@ -389,7 +389,7 @@ export function CharacterRail({
             <input
               aria-label="群聊名称"
               onChange={(event) => setGroupName(event.target.value)}
-              placeholder="群名可不填"
+              placeholder="群名（可不填）"
               value={groupName}
             />
             <div className="rail-group-members">

@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { MessageCircle, Plus, Save, Search, Trash2, UserRound, X } from 'lucide-react'
 import type { CharacterCard } from '../domain/types'
 import type { AppView } from './CharacterRail'
@@ -34,13 +34,10 @@ type RoleDraft = {
 
 type MobileEditorMode = 'closed' | 'create' | 'view'
 
+const LONG_PRESS_MS = 560
+
 function MobileStatusBar() {
-  return (
-    <div className="mobile-status-bar" aria-hidden="true">
-      <b>7:03</b>
-      <span className="mobile-signal">5G 5G ▰▰▰ 37</span>
-    </div>
-  )
+  return null
 }
 
 function isCustomRole(character: CharacterCard) {
@@ -91,6 +88,9 @@ export function QqFeaturePanel({
   onOpenChat,
   onShellAction,
 }: QqFeaturePanelProps) {
+  const roleLongPressTimerRef = useRef<number | null>(null)
+  const roleLongPressTriggeredRef = useRef(false)
+  const roleLongPressStartPointRef = useRef({ x: 0, y: 0 })
   const managedRoles = useMemo(
     () => characters.filter((character) => !isGroupCharacter(character)).map(toManagedRole),
     [characters],
@@ -152,6 +152,60 @@ export function QqFeaturePanel({
     if (nextRole) selectRole(nextRole)
     if (onDeleteCharacter(selectedRole.id)) {
       setMobileEditorMode('closed')
+      onShellAction?.('角色和对应聊天记录已删除')
+    }
+  }
+
+  function clearRoleLongPressTimer() {
+    if (roleLongPressTimerRef.current === null) return
+    window.clearTimeout(roleLongPressTimerRef.current)
+    roleLongPressTimerRef.current = null
+  }
+
+  function startRoleLongPress(event: ReactPointerEvent, callback: () => void) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    roleLongPressTriggeredRef.current = false
+    clearRoleLongPressTimer()
+    roleLongPressStartPointRef.current = { x: event.clientX, y: event.clientY }
+    roleLongPressTimerRef.current = window.setTimeout(() => {
+      roleLongPressTimerRef.current = null
+      roleLongPressTriggeredRef.current = true
+      callback()
+    }, LONG_PRESS_MS)
+  }
+
+  function moveRoleLongPress(event: ReactPointerEvent) {
+    if (roleLongPressTimerRef.current === null) return
+    const dx = Math.abs(event.clientX - roleLongPressStartPointRef.current.x)
+    const dy = Math.abs(event.clientY - roleLongPressStartPointRef.current.y)
+    if (dx > 12 || dy > 12) clearRoleLongPressTimer()
+  }
+
+  function finishRoleLongPress() {
+    clearRoleLongPressTimer()
+  }
+
+  function shouldIgnoreRoleClickAfterLongPress() {
+    if (!roleLongPressTriggeredRef.current) return false
+    roleLongPressTriggeredRef.current = false
+    return true
+  }
+
+  function openRoleAfterPress(role: ManagedRole) {
+    if (shouldIgnoreRoleClickAfterLongPress()) return
+    selectRole(role, true)
+  }
+
+  function requestDeleteRoleFromList(role: ManagedRole) {
+    if (role.source !== '自定义') {
+      onShellAction?.('内置角色不能删除；长按自定义角色可以删除')
+      return
+    }
+    if (!window.confirm(`删除角色「${role.name}」和对应聊天记录吗？`)) return
+    const nextRole = managedRoles.find((item) => item.id !== role.id)
+    if (onDeleteCharacter(role.id)) {
+      if (nextRole) selectRole(nextRole)
+      if (selectedRoleId === role.id) setMobileEditorMode('closed')
       onShellAction?.('角色和对应聊天记录已删除')
     }
   }
@@ -313,7 +367,19 @@ export function QqFeaturePanel({
         </label>
         <div className="mobile-contact-list role-mobile-list">
           {visibleRoles.map((role) => (
-            <button key={role.id} onClick={() => selectRole(role, true)} type="button">
+            <button
+              key={role.id}
+              onClick={() => openRoleAfterPress(role)}
+              onContextMenu={(event) => {
+                event.preventDefault()
+              }}
+              onPointerCancel={finishRoleLongPress}
+              onPointerDown={(event) => startRoleLongPress(event, () => requestDeleteRoleFromList(role))}
+              onPointerLeave={finishRoleLongPress}
+              onPointerMove={moveRoleLongPress}
+              onPointerUp={finishRoleLongPress}
+              type="button"
+            >
               <span className="avatar" style={{ '--avatar-accent': role.accent } as CSSProperties}>{role.avatar}</span>
               <span>
                 <strong>{role.name}</strong>

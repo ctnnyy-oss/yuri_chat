@@ -1,12 +1,7 @@
-// 手机状态栏与圆点装饰：纯静态展示
+// 浏览器和系统已经展示真实状态栏；网页内不再模拟时间、信号和电量。
 
 export function MobileStatusBar() {
-  return (
-    <div className="mobile-status-bar" aria-hidden="true">
-      <b>7:03</b>
-      <span className="mobile-signal">5G 5G ▰▰▰ 37</span>
-    </div>
-  )
+  return null
 }
 
 export function GridDots() {

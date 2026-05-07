@@ -250,6 +250,7 @@ function App() {
           onShellAction={showShellTip}
           onOpenChat={handleOpenMobileChat}
           onOpenGroupChat={handleOpenGroupChat}
+          onDeleteCharacter={handleDeleteCharacter}
           onUpdateSettings={handleUpdateSettings}
           settings={state.settings}
         />
