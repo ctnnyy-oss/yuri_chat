@@ -80,7 +80,7 @@
 
 ### 12. 研究摘记
 
-- 新增 `docs/MEMORY_AGENT_UPGRADE_RESEARCH.md`。
+- 新增 `项目文档/MEMORY_SYSTEM_HISTORY.md`（合并自当时的 MEMORY_AGENT_UPGRADE_RESEARCH.md）。
 - 记录本轮参考的 LangGraph Memory、MemGPT、Generative Agents、OpenAI Tools/Agents SDK、MCP tools/resources/prompts。
 - 结论：记忆系统要分层、可审查、可回滚；Agent 系统要工具契约清楚、调用可见、有护栏、有运行轨迹。
 

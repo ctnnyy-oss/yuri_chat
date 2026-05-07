@@ -16,7 +16,7 @@ http://127.0.0.1:5173/
 
 ## 当前默认模型
 
-本机通过 `.env.local` 接入 OpenAI-compatible 中转。具体的 `AI_BASE_URL`、`AI_MODEL`、`AI_API_KEY` 配置见 `.env.local.example` 和 `docs/PROJECT_HANDOFF.md` 第 4 节。
+本机通过 `.env.local` 接入 OpenAI-compatible 中转。具体的 `AI_BASE_URL`、`AI_MODEL`、`AI_API_KEY` 配置见 `.env.local.example` 和 `项目文档/PROJECT_HANDOFF.md` 第 4 节。
 
 密钥只放在本机 `.env.local`，不会提交到版本库。如果中转对中文不稳定，可设置 `AI_ESCAPE_UNICODE_CONTENT=true` 兼容层。
 

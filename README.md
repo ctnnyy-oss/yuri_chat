@@ -84,12 +84,12 @@ npm run build
 
 ## 文档
 
-- `docs/PROJECT_HANDOFF.md`：当前接手项目时最重要的交接文档（含部署、密钥、入口、版本回溯）。
-- `docs/ARCHITECTURE.md`：项目结构、分层、模块边界。
-- `docs/REFACTOR_PROGRESS.md`：架构重构进度记录（多阶段累积）。
-- `docs/SAFETY_AND_MEMORY_GUARDS.md`：公网授权、模型保险箱 secret、自动记忆候选优先的守护说明。
-- `docs/MEMORY_SYSTEM_HISTORY.md`：记忆系统设计原则、17 维代理指标、研究资料和演进时间线。
-- `docs/USAGE.md`：给妹妹看的功能使用说明。
+- `项目文档/PROJECT_HANDOFF.md`：当前接手项目时最重要的交接文档（含部署、密钥、入口、版本回溯）。
+- `项目文档/ARCHITECTURE.md`：项目结构、分层、模块边界。
+- `项目文档/REFACTOR_PROGRESS.md`：架构重构进度记录（多阶段累积）。
+- `项目文档/SAFETY_AND_MEMORY_GUARDS.md`：公网授权、模型保险箱 secret、自动记忆候选优先的守护说明。
+- `项目文档/MEMORY_SYSTEM_HISTORY.md`：记忆系统设计原则、17 维代理指标、研究资料和演进时间线。
+- `项目文档/USAGE.md`：给妹妹看的功能使用说明。
 
 ## 开发提醒
 
