@@ -2567,6 +2567,11 @@
     resize: vertical;
   }
 
+  .mobile-role-fields .persona-import-meter {
+    border-radius: 13px;
+    padding: 12px;
+  }
+
   .mobile-role-fields input:disabled,
   .mobile-role-fields textarea:disabled,
   .role-editor-fields input:disabled,

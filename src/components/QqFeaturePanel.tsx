@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { MessageCircle, Plus, Save, Search, Trash2, UserRound, X } from 'lucide-react'
 import type { CharacterCard } from '../domain/types'
+import { analyzePersonaImport } from '../services/personaImport'
 import type { AppView } from './CharacterRail'
 import { MobileConfirmDialog } from './MobileConfirmDialog'
 
@@ -57,7 +58,7 @@ function toManagedRole(character: CharacterCard): ManagedRole {
     accent: character.accent,
     relation: character.relationship,
     mood: character.mood,
-    persona: character.systemPrompt,
+    persona: character.personaSource ?? character.systemPrompt,
     source: isCustomRole(character) ? '自定义' : '内置',
   }
 }
@@ -108,6 +109,16 @@ export function QqFeaturePanel({
   const visibleRoles = useMemo(
     () => managedRoles.filter((role) => roleMatchesQuery(role, normalizedQuery)),
     [managedRoles, normalizedQuery],
+  )
+  const personaAnalysis = useMemo(
+    () =>
+      analyzePersonaImport({
+        name: roleDraft.name,
+        relation: roleDraft.relation,
+        mood: roleDraft.mood,
+        persona: roleDraft.persona,
+      }),
+    [roleDraft],
   )
 
   function selectRole(role: ManagedRole, openEditor = false) {
@@ -230,6 +241,21 @@ export function QqFeaturePanel({
         ? '内置角色'
         : '编辑角色'
   const editorEditable = mobileEditorMode === 'create' || canEditSelectedRole
+  const personaQuality = (
+    <div className="persona-import-meter" aria-label="人设导入质量">
+      <div>
+        <strong>人设导入质量</strong>
+        <span>{personaAnalysis.score}%</span>
+      </div>
+      <p>系统会把自然语言整理成身份、关系、经历、说话方式、情绪模式、边界和互动规则，再和长期记忆一起使用。</p>
+      {personaAnalysis.strengths.length > 0 && (
+        <small>已覆盖：{personaAnalysis.strengths.join(' / ')}</small>
+      )}
+      {personaAnalysis.missing.length > 0 && (
+        <small>可补：{personaAnalysis.missing.slice(0, 2).join('；')}</small>
+      )}
+    </div>
+  )
 
   return (
     <main className="workspace qq-feature-workspace">
@@ -307,14 +333,15 @@ export function QqFeaturePanel({
                 />
               </label>
               <label>
-                人设
+                人设导入
                 <textarea
                   disabled={!editorEditable}
                   value={roleDraft.persona}
                   onChange={(event) => updateDraft('persona', event.target.value)}
-                  placeholder="在这里写角色设定，或粘贴导入文本。"
+                  placeholder="可以直接粘贴自然语言。越包含经历、说话方式、情绪模式、边界和相处规则，越像真人。"
                 />
               </label>
+              {personaQuality}
             </div>
             <div className="role-template-list role-action-list">
               {mobileEditorMode === 'create' ? (
@@ -450,14 +477,15 @@ export function QqFeaturePanel({
                   />
                 </label>
                 <label>
-                  人设
+                  人设导入
                   <textarea
                     disabled={!editorEditable}
                     onChange={(event) => updateDraft('persona', event.target.value)}
-                    placeholder="粘贴或填写角色设定"
+                    placeholder="粘贴角色资料、聊天样例、经历、说话方式、边界"
                     value={roleDraft.persona}
                   />
                 </label>
+                {personaQuality}
               </div>
               <footer>
                 {mobileEditorMode === 'create' && (

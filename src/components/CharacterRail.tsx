@@ -555,9 +555,9 @@ export function CharacterRail({
 
         <footer className="conversation-pane-foot">
           <span className="avatar" style={{ '--avatar-accent': activeCharacter?.accent ?? '#d85b8a' } as CSSProperties}>
-            {activeCharacter?.avatar ?? '宁'}
+            {activeCharacter?.avatar ?? '朝'}
           </span>
-          <span>{activeCharacter?.name ?? '宁安'}</span>
+          <span>{activeCharacter?.name ?? '沈朝歌'}</span>
         </footer>
       </section>
     </aside>

@@ -15,6 +15,7 @@ import {
   nowIso,
   upsertConversation,
 } from '../services/memoryEngine'
+import { buildCharacterSystemPrompt, buildPersonaProfile } from '../services/personaImport'
 import { applyTrashRetention, normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { deliverDueReminders } from './agentActions'
 import { buildViewUrl, readViewFromLocation } from './navigation'
@@ -200,6 +201,7 @@ export function useYuriNestApp() {
     const relation = input.relation.trim() || '角色'
     const mood = input.mood.trim() || '等待补全'
     const persona = input.persona.trim() || '还没有导入人设。'
+    const personaInput = { name, relation, mood, persona }
     const characterId = createId('character')
     const character: CharacterCard = {
       id: characterId,
@@ -211,7 +213,9 @@ export function useYuriNestApp() {
       relationship: relation,
       mood,
       tags: ['自定义角色', relation, name],
-      systemPrompt: persona,
+      systemPrompt: buildCharacterSystemPrompt(personaInput),
+      personaSource: persona,
+      personaProfile: buildPersonaProfile(personaInput),
       greeting: `${name}已经加入百合小窝。`,
     }
     setState((currentState) => ({
@@ -256,7 +260,8 @@ export function useYuriNestApp() {
     const name = input.name.trim() || target.name
     const relation = input.relation.trim() || target.relationship || '角色'
     const mood = input.mood.trim() || target.mood || '等待补全'
-    const persona = input.persona.trim() || target.systemPrompt || '还没有导入人设。'
+    const persona = input.persona.trim() || target.personaSource || target.systemPrompt || '还没有导入人设。'
+    const personaInput = { name, relation, mood, persona }
 
     setState((currentState) => ({
       ...currentState,
@@ -270,7 +275,9 @@ export function useYuriNestApp() {
               avatar: name.slice(0, 1),
               relationship: relation,
               mood,
-              systemPrompt: persona,
+              systemPrompt: buildCharacterSystemPrompt(personaInput),
+              personaSource: persona,
+              personaProfile: buildPersonaProfile(personaInput),
               greeting: `${name}已经加入百合小窝。`,
               tags: ['自定义角色', relation, name],
             }

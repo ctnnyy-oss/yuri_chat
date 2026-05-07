@@ -21,6 +21,23 @@ export interface CharacterCard {
   tags: string[]
   systemPrompt: string
   greeting: string
+  personaSource?: string
+  personaProfile?: CharacterPersonaProfile
+}
+
+export interface CharacterPersonaProfile {
+  sourceText: string
+  identity: string
+  relationship: string
+  temperament: string
+  speechStyle: string
+  emotionalPattern: string
+  memoriesAndExperiences: string
+  goals: string
+  boundaries: string
+  interactionRules: string
+  missingDimensions: string[]
+  updatedAt: string
 }
 
 export interface ConversationState {

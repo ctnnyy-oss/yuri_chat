@@ -4,13 +4,18 @@ import { normalizeMemories } from '../services/memoryEngine'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { agentRooms, createSeedState } from './seed'
 
-const currentStateVersion = 25
+const currentStateVersion = 26
 
 export function migrateAppState(state: AppState): AppState {
   const defaults = createSeedState()
   const sourceVersion = Number(state.version ?? 0)
   const sourceSettings = state.settings ?? defaults.settings
   const baseMemories = normalizeMemories(state.memories ?? defaults.memories)
+  const memories = replaceSeedMemories(
+    sourceVersion < 10 ? mergeMissingSeedMemories(baseMemories, defaults.memories) : baseMemories,
+    defaults.memories,
+    sourceVersion < 26,
+  )
   const shouldResetCharacterShell = sourceVersion < 19
   const characters = shouldResetCharacterShell
     ? defaults.characters
@@ -26,7 +31,8 @@ export function migrateAppState(state: AppState): AppState {
       mergeCoreConversations(state.conversations ?? defaults.conversations, defaults.conversations, characterIds),
       characters,
     ),
-    memories: sourceVersion < 10 ? mergeMissingSeedMemories(baseMemories, defaults.memories) : baseMemories,
+    memories,
+    worldNodes: mergeSeedWorldNodes(state.worldNodes ?? defaults.worldNodes, defaults.worldNodes, sourceVersion < 26),
     trash: {
       memories: normalizeMemories(state.trash?.memories ?? defaults.trash.memories).map((memory, index) => ({
         ...memory,
@@ -39,7 +45,7 @@ export function migrateAppState(state: AppState): AppState {
       Array.isArray(state.memoryTombstones) ? state.memoryTombstones : defaults.memoryTombstones,
     ),
     memoryEmbeddings: refreshLocalMemoryEmbeddingCache(
-      baseMemories,
+      memories,
       Array.isArray(state.memoryEmbeddings) ? state.memoryEmbeddings : defaults.memoryEmbeddings,
     ),
     memoryUsageLogs: Array.isArray(state.memoryUsageLogs) ? state.memoryUsageLogs : defaults.memoryUsageLogs,
@@ -47,7 +53,7 @@ export function migrateAppState(state: AppState): AppState {
     agentReminders: Array.isArray(state.agentReminders) ? state.agentReminders : defaults.agentReminders,
     agentTasks: Array.isArray(state.agentTasks) ? state.agentTasks : defaults.agentTasks,
     agentMoments: Array.isArray(state.agentMoments) ? state.agentMoments : defaults.agentMoments,
-    agentRooms: mergeSeedAgentRooms(Array.isArray(state.agentRooms) ? state.agentRooms : defaults.agentRooms),
+    agentRooms: mergeSeedAgentRooms(Array.isArray(state.agentRooms) ? state.agentRooms : defaults.agentRooms, sourceVersion < 26),
     settings: {
       ...defaults.settings,
       ...sourceSettings,
@@ -95,10 +101,21 @@ function sanitizeCharacterShell(characters: CharacterCard[], defaultCharacters: 
   return [...defaultCharacters, ...customCharacters]
 }
 
-function mergeSeedAgentRooms(rooms: AppState['agentRooms']): AppState['agentRooms'] {
-  const existingIds = new Set(rooms.map((room) => room.id))
+function mergeSeedAgentRooms(rooms: AppState['agentRooms'], replaceExistingSeeds = false): AppState['agentRooms'] {
+  const seedRoomsById = new Map(agentRooms.map((room) => [room.id, room]))
+  const mergedRooms = rooms.map((room) => {
+    const seedRoom = seedRoomsById.get(room.id)
+    return replaceExistingSeeds && seedRoom
+      ? {
+          ...seedRoom,
+          messages: room.messages,
+          updatedAt: room.updatedAt,
+        }
+      : room
+  })
+  const existingIds = new Set(mergedRooms.map((room) => room.id))
   const missingRooms = agentRooms.filter((room) => !existingIds.has(room.id))
-  return [...rooms, ...missingRooms]
+  return [...mergedRooms, ...missingRooms]
 }
 
 function mergeCoreConversations(
@@ -139,6 +156,41 @@ function mergeMissingSeedMemories(memories: LongTermMemory[], seedMemories: Long
   const existingIds = new Set(memories.map((memory) => memory.id))
   const missingSeeds = normalizeMemories(seedMemories).filter((memory) => !existingIds.has(memory.id))
   return [...missingSeeds, ...memories]
+}
+
+function replaceSeedMemories(
+  memories: LongTermMemory[],
+  seedMemories: LongTermMemory[],
+  replaceExistingSeeds = false,
+): LongTermMemory[] {
+  const seedMemoriesById = new Map(normalizeMemories(seedMemories).map((memory) => [memory.id, memory]))
+  const replacedMemories = memories.map((memory) => {
+    const seedMemory = seedMemoriesById.get(memory.id)
+    if (!replaceExistingSeeds || !seedMemory || memory.userEdited || memory.origin !== 'seed') return memory
+    return {
+      ...seedMemory,
+      accessCount: memory.accessCount,
+      createdAt: memory.createdAt,
+      revisions: memory.revisions,
+    }
+  })
+  return mergeMissingSeedMemories(replacedMemories, seedMemories)
+}
+
+function mergeSeedWorldNodes(
+  nodes: AppState['worldNodes'],
+  seedNodes: AppState['worldNodes'],
+  replaceExistingSeeds = false,
+): AppState['worldNodes'] {
+  const seedNodesById = new Map(seedNodes.map((node) => [node.id, node]))
+  const replacedNodes = nodes.map((node) => {
+    const seedNode = seedNodesById.get(node.id)
+    if (!replaceExistingSeeds || !seedNode) return node
+    return seedNode
+  })
+  const existingIds = new Set(replacedNodes.map((node) => node.id))
+  const missingSeeds = seedNodes.filter((node) => !existingIds.has(node.id))
+  return [...replacedNodes, ...missingSeeds]
 }
 
 function normalizeMemoryTombstones(tombstones: MemoryTombstone[]): MemoryTombstone[] {

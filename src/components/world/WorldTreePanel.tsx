@@ -28,7 +28,7 @@ export function WorldTreePanel({
   return (
     <>
       <WorkspaceTitle
-        description="三对核心 CP、世界观规则和触发词先放在这里，后续可以慢慢补全。"
+        description="三对核心 CP、四时代世界观规则和触发词先放在这里，后续可以慢慢补全。"
         icon={<Database size={20} />}
         title="百合小窝"
       />
