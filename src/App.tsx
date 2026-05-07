@@ -22,6 +22,8 @@ import { MobileNav } from './components/MobileNav'
 import { QqFeaturePanel } from './components/QqFeaturePanel'
 import { AgentTaskPanel } from './components/agent/AgentTaskPanel'
 
+type GroupChatDraft = { name: string; text: string; memberIds?: string[] }
+
 function App() {
   const [mobileMessageListOpen, setMobileMessageListOpen] = useState(true)
   const [shellTip, setShellTip] = useState('')
@@ -98,26 +100,53 @@ function App() {
     }
   }
 
+  function isMobileViewport() {
+    return typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches
+  }
+
+  function pushMobileChatDetailHistory() {
+    if (!isMobileViewport()) return
+    if (window.history.state?.yuriMobileChatDetail) return
+    window.history.pushState({ ...(window.history.state ?? {}), yuriMobileChatDetail: true }, '', window.location.href)
+  }
+
+  function closeMobileChatDetail() {
+    if (typeof window !== 'undefined' && window.history.state?.yuriMobileChatDetail) {
+      window.history.back()
+      return
+    }
+    setMobileMessageListOpen(true)
+  }
+
   function handleOpenMobileChat(characterId: string) {
     handleSelectCharacter(characterId)
     navigateView('chat')
     setMobileMessageListOpen(false)
+    window.requestAnimationFrame(pushMobileChatDetailHistory)
   }
 
-  function handleOpenGroupChat(group: { name: string; text: string }) {
-    const existingGroup = state.characters.find((item) => item.name === group.name && item.relationship === '群聊')
+  function handleOpenGroupChat(group: GroupChatDraft) {
+    const selectedMembers = state.characters.filter((item) => group.memberIds?.includes(item.id))
+    const memberNames = selectedMembers.map((item) => item.name)
+    const groupName =
+      group.name.trim() || (memberNames.length > 0 ? `${memberNames.slice(0, 3).join('、')}的小群` : '新群聊')
+    const groupText =
+      group.text.trim() ||
+      (memberNames.length > 0 ? `${memberNames.join('、')}已经加入群聊` : '本地创建的多人聊天')
+    const existingGroup = state.characters.find((item) => item.name === groupName && item.relationship === '群聊')
     const groupId =
       existingGroup?.id ??
       handleCreateCharacter({
-        name: group.name,
+        name: groupName,
         relation: '群聊',
-        mood: group.text,
-        persona: `这是一个多人聊天群：${group.name}。成员可以从角色列表里继续添加，当前先作为本地群聊会话使用。`,
+        mood: groupText,
+        persona: `这是一个本地群聊：${groupName}。成员：${memberNames.length > 0 ? memberNames.join('、') : '暂未指定'}。聊天时保持每个角色的性格边界，不要把多人关系写串。`,
       })
     handleSelectCharacter(groupId)
     navigateView('chat')
     setMobileMessageListOpen(false)
-    showShellTip(`已拉起群聊：${group.name}`)
+    window.requestAnimationFrame(pushMobileChatDetailHistory)
+    showShellTip(`已拉起群聊：${groupName}`)
   }
 
   function showShellTip(message: string) {
@@ -130,6 +159,24 @@ function App() {
     const timer = window.setTimeout(() => setShellTip(''), 2200)
     return () => window.clearTimeout(timer)
   }, [shellTip])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleMobileHistory = (event: PopStateEvent) => {
+      if (!isMobileViewport()) return
+      const hashView = window.location.hash.replace(/^#\/?/, '')
+      const isChatRoute = hashView === '' || hashView === 'chat'
+      if (isChatRoute) {
+        setMobileMessageListOpen(!event.state?.yuriMobileChatDetail)
+        return
+      }
+      setMobileMessageListOpen(true)
+    }
+
+    window.addEventListener('popstate', handleMobileHistory)
+    return () => window.removeEventListener('popstate', handleMobileHistory)
+  }, [])
 
   const showMobileBottomNav = activeView !== 'chat' || mobileMessageListOpen
   const shellClassName = `app-shell ${activeView === 'chat' ? 'chat-mode' : 'feature-mode'}`
@@ -203,6 +250,8 @@ function App() {
           onShellAction={showShellTip}
           onOpenChat={handleOpenMobileChat}
           onOpenGroupChat={handleOpenGroupChat}
+          onUpdateSettings={handleUpdateSettings}
+          settings={state.settings}
         />
       )}
 
@@ -218,7 +267,7 @@ function App() {
           memoryUsageLogs={state.memoryUsageLogs}
           messages={conversation.messages}
           systemAlert={chatAlert}
-          onBackToList={() => setMobileMessageListOpen(true)}
+          onBackToList={closeMobileChatDetail}
           onDraftChange={setDraft}
           onMemoryFeedback={handleMemoryFeedbackFromChat}
           onSelectCharacter={handleSelectCharacter}

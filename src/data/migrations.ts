@@ -4,7 +4,7 @@ import { normalizeMemories } from '../services/memoryEngine'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { agentRooms, createSeedState } from './seed'
 
-const currentStateVersion = 23
+const currentStateVersion = 24
 
 export function migrateAppState(state: AppState): AppState {
   const defaults = createSeedState()

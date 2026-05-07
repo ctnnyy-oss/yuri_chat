@@ -724,3 +724,113 @@
       linear-gradient(135deg, #1f9df0, #1688e8);
   }
 }
+
+.rail-group-creator {
+  display: grid;
+  gap: 10px;
+  margin: 0 12px 12px;
+  border: 1px solid rgba(233, 111, 174, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 12px;
+  box-shadow: 0 14px 30px rgba(126, 76, 104, 0.12);
+}
+
+.rail-group-creator header,
+.rail-group-creator footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rail-group-creator header span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+}
+
+.rail-group-creator header strong {
+  font-size: 14px;
+}
+
+.rail-group-creator input {
+  min-height: 36px;
+  border: 1px solid rgba(86, 50, 68, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 247, 251, 0.72);
+  color: var(--ink);
+  padding: 0 11px;
+  font: inherit;
+  outline: 0;
+}
+
+.rail-group-members {
+  display: grid;
+  gap: 6px;
+  max-height: 238px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.rail-group-members button {
+  min-width: 0;
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 9px;
+  border-radius: 12px;
+  padding: 7px 8px;
+  color: var(--ink);
+  text-align: left;
+}
+
+.rail-group-members button.selected {
+  background: rgba(236, 120, 178, 0.12);
+}
+
+.rail-group-members .avatar {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  font-size: 13px;
+}
+
+.rail-group-members strong,
+.rail-group-members small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-group-members strong {
+  font-size: 13px;
+}
+
+.rail-group-members small,
+.rail-group-creator footer small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.rail-group-members b {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 50, 68, 0.16);
+  border-radius: 50%;
+  color: var(--pink-600);
+}
+
+.rail-group-creator footer button {
+  min-height: 30px;
+  border-radius: 999px;
+  background: var(--pink-500);
+  color: #fff;
+  padding: 0 14px;
+  font-weight: 800;
+}

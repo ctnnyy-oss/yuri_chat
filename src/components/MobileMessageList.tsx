@@ -1,21 +1,19 @@
-import type { CSSProperties } from 'react'
-import { BellOff, ChevronRight, Plus, Search } from 'lucide-react'
-import type { CharacterCard, ConversationState } from '../domain/types'
+import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import { BellOff, Check, Edit3, Plus, Search, Users, X } from 'lucide-react'
+import type { AppSettings, CharacterCard, ConversationState } from '../domain/types'
 
 interface MobileMessageListProps {
   characters: CharacterCard[]
   conversations: ConversationState[]
   activeCharacterId: string
+  settings: AppSettings
   onOpenChat: (characterId: string) => void
-  onOpenGroupChat?: (group: { name: string; text: string }) => void
+  onOpenGroupChat?: (group: { name: string; text: string; memberIds?: string[] }) => void
+  onUpdateSettings: (settings: AppSettings) => void
   onShellAction?: (message: string) => void
 }
 
-const threadTimes = ['下午5:42', '星期六', '星期三', '04/11', '04/03', '03/26', '03/22']
-const groupThreads = [
-  { name: '三对CP茶会', avatar: '群', text: '六位角色都在这里，当前可拉起本地群聊', time: '下午5:49', badge: '6' },
-  { name: '百合创作小屋', avatar: '百', text: '只保留项目需要的群聊入口', time: '星期六', badge: '' },
-]
+const threadTimes = ['今天', '星期六', '星期一', '04/11', '04/03', '03/26', '03/22']
 
 function MobileStatusBar() {
   return (
@@ -52,101 +50,234 @@ function formatUnreadBadge(count: number) {
   return count > 99 ? '99+' : String(count)
 }
 
+function matchesQuery(values: string[], query: string) {
+  if (!query) return true
+  return values.join(' ').toLowerCase().includes(query)
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result ?? ''))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+async function resizeAvatarImage(file: File) {
+  const rawDataUrl = await readFileAsDataUrl(file)
+  const image = new window.Image()
+  image.src = rawDataUrl
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve()
+    image.onerror = () => reject(new Error('avatar image failed to load'))
+  })
+
+  const maxSize = 320
+  const scale = Math.min(1, maxSize / Math.max(image.width, image.height))
+  const width = Math.max(1, Math.round(image.width * scale))
+  const height = Math.max(1, Math.round(image.height * scale))
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext('2d')
+  if (!context) return rawDataUrl
+  context.drawImage(image, 0, 0, width, height)
+  return canvas.toDataURL('image/jpeg', 0.82)
+}
+
 export function MobileMessageList({
   characters,
   conversations,
   activeCharacterId,
+  settings,
   onOpenChat,
   onOpenGroupChat,
+  onUpdateSettings,
+  onShellAction,
 }: MobileMessageListProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [query, setQuery] = useState('')
+  const [groupSheetOpen, setGroupSheetOpen] = useState(false)
+  const [groupQuery, setGroupQuery] = useState('')
+  const [groupName, setGroupName] = useState('')
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(() => new Set())
   const activeCharacter = characters.find((character) => character.id === activeCharacterId) ?? characters[0]
-  const roleCharacters = characters.filter((character) => !isGroupCharacter(character))
-  const groupCharacters = characters.filter(isGroupCharacter)
-  const conversationByCharacterId = new Map(conversations.map((conversation) => [conversation.characterId, conversation]))
-  const defaultGroupNames = new Set(groupThreads.map((thread) => thread.name))
-  const visibleGroups = [
-    ...groupThreads.map((thread) => {
-      const existing = groupCharacters.find((character) => character.name === thread.name)
-      const conversation = conversationByCharacterId.get(existing?.id ?? '')
-      return {
-        ...thread,
-        avatar: existing?.avatar ?? thread.avatar,
-        text: existing ? getLastConversationText(conversation, existing.mood) : thread.text,
-        time: existing ? formatThreadTime(conversation?.updatedAt, thread.time) : thread.time,
-        characterId: existing?.id ?? '',
-        updatedAt: conversation?.updatedAt ?? '',
+  const normalizedQuery = query.trim().toLowerCase()
+  const normalizedGroupQuery = groupQuery.trim().toLowerCase()
+  const nickname = settings.userNickname?.trim() || '妹妹'
+  const roleCharacters = useMemo(() => characters.filter((character) => !isGroupCharacter(character)), [characters])
+  const groupCharacters = useMemo(() => characters.filter(isGroupCharacter), [characters])
+  const conversationByCharacterId = useMemo(
+    () => new Map(conversations.map((conversation) => [conversation.characterId, conversation])),
+    [conversations],
+  )
+
+  const visibleGroups = useMemo(
+    () =>
+      groupCharacters
+        .map((character) => ({
+          name: character.name,
+          avatar: character.avatar,
+          accent: character.accent,
+          text: getLastConversationText(conversationByCharacterId.get(character.id), character.mood || character.title),
+          time: formatThreadTime(conversationByCharacterId.get(character.id)?.updatedAt),
+          badge: formatUnreadBadge(getUnreadCount(conversationByCharacterId.get(character.id))),
+          characterId: character.id,
+          updatedAt: conversationByCharacterId.get(character.id)?.updatedAt ?? '',
+        }))
+        .filter((thread) => matchesQuery([thread.name, thread.text], normalizedQuery))
+        .sort((left, right) => {
+          const leftTime = left.updatedAt ? new Date(left.updatedAt).getTime() : 0
+          const rightTime = right.updatedAt ? new Date(right.updatedAt).getTime() : 0
+          return rightTime - leftTime
+        }),
+    [conversationByCharacterId, groupCharacters, normalizedQuery],
+  )
+
+  const visibleRoleCharacters = useMemo(
+    () =>
+      [...roleCharacters]
+        .filter((character) =>
+          matchesQuery(
+            [character.name, character.title, character.subtitle, character.relationship, character.mood],
+            normalizedQuery,
+          ),
+        )
+        .sort((left, right) => {
+          const leftTime = new Date(conversationByCharacterId.get(left.id)?.updatedAt ?? '').getTime() || 0
+          const rightTime = new Date(conversationByCharacterId.get(right.id)?.updatedAt ?? '').getTime() || 0
+          return rightTime - leftTime
+        }),
+    [conversationByCharacterId, normalizedQuery, roleCharacters],
+  )
+
+  const groupCandidateCharacters = useMemo(
+    () =>
+      roleCharacters.filter((character) =>
+        matchesQuery(
+          [character.name, character.title, character.subtitle, character.relationship, character.mood],
+          normalizedGroupQuery,
+        ),
+      ),
+    [normalizedGroupQuery, roleCharacters],
+  )
+
+  function renameProfile() {
+    const nextName = window.prompt('改一个昵称', nickname)?.trim()
+    if (!nextName) return
+    onUpdateSettings({ ...settings, userNickname: nextName })
+    onShellAction?.('昵称已更新')
+  }
+
+  async function updateAvatar(file?: File) {
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      onShellAction?.('请选择图片作为头像')
+      return
+    }
+    try {
+      const dataUrl = await resizeAvatarImage(file)
+      onUpdateSettings({ ...settings, userAvatarImage: dataUrl })
+      onShellAction?.('头像已更新')
+    } catch {
+      onShellAction?.('头像读取失败，换一张图片试试')
+    }
+  }
+
+  function toggleMember(characterId: string) {
+    setSelectedMemberIds((current) => {
+      const next = new Set(current)
+      if (next.has(characterId)) {
+        next.delete(characterId)
+      } else {
+        next.add(characterId)
       }
-    }),
-    ...groupCharacters
-      .filter((character) => !defaultGroupNames.has(character.name))
-      .map((character) => ({
-        name: character.name,
-        avatar: character.avatar,
-        text: getLastConversationText(conversationByCharacterId.get(character.id), character.mood || character.title),
-        time: formatThreadTime(conversationByCharacterId.get(character.id)?.updatedAt),
-        badge: '',
-        characterId: character.id,
-        updatedAt: conversationByCharacterId.get(character.id)?.updatedAt ?? '',
-      })),
-  ].sort((left, right) => {
-    const leftTime = left.updatedAt ? new Date(left.updatedAt).getTime() : 0
-    const rightTime = right.updatedAt ? new Date(right.updatedAt).getTime() : 0
-    return rightTime - leftTime
-  })
-  const visibleRoleCharacters = [...roleCharacters].sort((left, right) => {
-    const leftTime = new Date(conversationByCharacterId.get(left.id)?.updatedAt ?? '').getTime() || 0
-    const rightTime = new Date(conversationByCharacterId.get(right.id)?.updatedAt ?? '').getTime() || 0
-    return rightTime - leftTime
-  })
+      return next
+    })
+  }
+
+  function openGroupCreator() {
+    setGroupQuery('')
+    setGroupName('')
+    setSelectedMemberIds(new Set())
+    setGroupSheetOpen(true)
+  }
+
+  function createGroupFromSelection() {
+    const memberIds = [...selectedMemberIds]
+    if (memberIds.length === 0) {
+      onShellAction?.('先从好友列表里选至少一位角色')
+      return
+    }
+    const memberNames = roleCharacters.filter((character) => selectedMemberIds.has(character.id)).map((item) => item.name)
+    const name = groupName.trim() || `${memberNames.slice(0, 3).join('、')}的小群`
+    onOpenGroupChat?.({
+      name,
+      text: `${memberNames.join('、')}已经加入群聊`,
+      memberIds,
+    })
+    setGroupSheetOpen(false)
+  }
 
   return (
     <section className="mobile-message-list" aria-label="手机消息列表">
       <MobileStatusBar />
-      <header
-        className="mobile-message-header"
-        onClick={(event) => {
-          if ((event.target as HTMLElement).closest('.mobile-message-plus')) {
-            onOpenGroupChat?.({ name: '新群聊', text: '本地创建的多人聊天，可以先把角色拉进来试聊' })
-          }
-        }}
-      >
-        <button className="mobile-message-profile" type="button">
-          <span
-            className="avatar mobile-self-avatar"
-            style={{ '--avatar-accent': activeCharacter?.accent ?? 'var(--pink-300)' } as CSSProperties}
+      <header className="mobile-message-header">
+        <div className="mobile-message-profile">
+          <button
+            aria-label="替换头像"
+            className="mobile-profile-avatar-button"
+            onClick={() => fileInputRef.current?.click()}
+            type="button"
           >
-            {activeCharacter?.avatar ?? '萌'}
-          </span>
-          <span>
-            <strong>萌！</strong>
-            <small>📖 学习中 <ChevronRight size={13} /></small>
-          </span>
-        </button>
-        <button aria-label="新建" className="mobile-message-plus" type="button">
+            <span
+              className="avatar mobile-self-avatar"
+              style={{ '--avatar-accent': activeCharacter?.accent ?? 'var(--pink-300)' } as CSSProperties}
+            >
+              {settings.userAvatarImage ? <img alt="" src={settings.userAvatarImage} /> : nickname.slice(0, 1)}
+            </span>
+          </button>
+          <button className="mobile-profile-name-button" onClick={renameProfile} type="button">
+            <strong>{nickname}</strong>
+            <small>
+              改昵称
+              <Edit3 size={13} />
+            </small>
+          </button>
+          <input
+            accept="image/*"
+            className="visually-hidden-file"
+            onChange={(event) => {
+              void updateAvatar(event.target.files?.[0])
+              event.target.value = ''
+            }}
+            ref={fileInputRef}
+            type="file"
+          />
+        </div>
+        <button aria-label="新建群聊" className="mobile-message-plus" onClick={openGroupCreator} type="button">
           <Plus size={42} strokeWidth={1.8} />
         </button>
       </header>
 
       <label className="mobile-message-search">
         <Search size={28} />
-        <input aria-label="搜索" placeholder="搜索" />
+        <input aria-label="搜索聊天" onChange={(event) => setQuery(event.target.value)} placeholder="搜索" value={query} />
       </label>
 
       <div className="mobile-message-thread-list">
         {visibleGroups.map((thread, index) => (
           <button
             className={`mobile-message-thread ${thread.characterId === activeCharacterId ? 'active' : ''}`}
-            key={thread.name}
-            onClick={() => {
-              if (thread.characterId) {
-                onOpenChat(thread.characterId)
-                return
-              }
-              onOpenGroupChat?.({ name: thread.name, text: thread.text })
-            }}
+            key={thread.characterId}
+            onClick={() => onOpenChat(thread.characterId)}
             type="button"
           >
-            <span className="avatar mobile-thread-avatar system-avatar">
+            <span
+              className="avatar mobile-thread-avatar system-avatar"
+              style={{ '--avatar-accent': thread.accent } as CSSProperties}
+            >
               {thread.avatar}
               {thread.badge && <b>{thread.badge}</b>}
             </span>
@@ -190,7 +321,66 @@ export function MobileMessageList({
             </button>
           )
         })}
+        {visibleGroups.length === 0 && visibleRoleCharacters.length === 0 && (
+          <div className="mobile-empty-hint">没有找到对应聊天</div>
+        )}
       </div>
+
+      {groupSheetOpen && (
+        <div className="mobile-group-sheet-backdrop" role="presentation">
+          <section className="mobile-group-sheet" aria-label="新建群聊">
+            <header>
+              <button aria-label="关闭" onClick={() => setGroupSheetOpen(false)} type="button">
+                <X size={24} />
+              </button>
+              <strong>新建群聊</strong>
+              <button aria-label="创建群聊" onClick={createGroupFromSelection} type="button">
+                <Check size={24} />
+              </button>
+            </header>
+            <label className="mobile-group-name">
+              <Users size={20} />
+              <input
+                onChange={(event) => setGroupName(event.target.value)}
+                placeholder="群名可不填"
+                value={groupName}
+              />
+            </label>
+            <label className="mobile-feature-search mobile-group-search">
+              <Search size={24} />
+              <input
+                aria-label="搜索群成员"
+                onChange={(event) => setGroupQuery(event.target.value)}
+                placeholder="搜索好友"
+                value={groupQuery}
+              />
+            </label>
+            <div className="mobile-group-member-list">
+              {groupCandidateCharacters.map((character) => {
+                const checked = selectedMemberIds.has(character.id)
+                return (
+                  <button
+                    className={checked ? 'selected' : ''}
+                    key={character.id}
+                    onClick={() => toggleMember(character.id)}
+                    type="button"
+                  >
+                    <span className="avatar" style={{ '--avatar-accent': character.accent } as CSSProperties}>
+                      {character.avatar}
+                    </span>
+                    <span>
+                      <strong>{character.name}</strong>
+                      <small>{character.mood || character.title}</small>
+                    </span>
+                    <b>{checked && <Check size={18} />}</b>
+                  </button>
+                )
+              })}
+            </div>
+            <footer>{selectedMemberIds.size > 0 ? `已选 ${selectedMemberIds.size} 位` : '从好友列表里选择成员'}</footer>
+          </section>
+        </div>
+      )}
     </section>
   )
 }

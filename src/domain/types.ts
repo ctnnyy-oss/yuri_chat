@@ -352,6 +352,8 @@ export interface ModelProfileInput {
 export interface AppSettings {
   model: string
   modelProfileId: string
+  userNickname: string
+  userAvatarImage: string
   temperature: number
   maxContextMessages: number
   maxOutputTokens: number

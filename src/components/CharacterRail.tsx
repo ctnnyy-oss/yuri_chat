@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import {
   BellOff,
   Brain,
+  Check,
   ChevronRight,
   ListTodo,
   MessageCircle,
@@ -11,6 +12,8 @@ import {
   Settings,
   SlidersHorizontal,
   UserRound,
+  Users,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import { brand } from '../config/brand'
@@ -25,7 +28,7 @@ interface CharacterRailProps {
   activeView: AppView
   onViewChange: (view: AppView) => void
   onSelect: (characterId: string) => void
-  onOpenGroupChat?: (group: { name: string; text: string }) => void
+  onOpenGroupChat?: (group: { name: string; text: string; memberIds?: string[] }) => void
   onShellAction?: (message: string) => void
 }
 
@@ -134,8 +137,11 @@ export function CharacterRail({
   const activeCharacter = characters.find((character) => character.id === activeCharacterId) ?? characters[0]
   const roleCharacters = useMemo(() => characters.filter((character) => !isGroupCharacter(character)), [characters])
   const groupCharacters = useMemo(() => characters.filter(isGroupCharacter), [characters])
-  const visibleChannelRows = useMemo(() => channelRows.filter((row) => row.id !== 'group:yuri-room'), [])
+  const visibleChannelRows = useMemo(() => channelRows.filter(() => false), [])
   const featureRows = useMemo(() => getFeatureRows(activeView), [activeView])
+  const [groupCreatorOpen, setGroupCreatorOpen] = useState(false)
+  const [groupName, setGroupName] = useState('')
+  const [groupMemberIds, setGroupMemberIds] = useState<Set<string>>(() => new Set())
   const conversationByCharacterId = useMemo(() => {
     return new Map(conversations.map((conversation) => [conversation.characterId, conversation]))
   }, [conversations])
@@ -267,6 +273,39 @@ export function CharacterRail({
     setPinTimer(null)
   }
 
+  function toggleGroupMember(characterId: string) {
+    setGroupMemberIds((current) => {
+      const next = new Set(current)
+      if (next.has(characterId)) {
+        next.delete(characterId)
+      } else {
+        next.add(characterId)
+      }
+      return next
+    })
+  }
+
+  function closeGroupCreator() {
+    setGroupCreatorOpen(false)
+    setGroupName('')
+    setGroupMemberIds(new Set())
+  }
+
+  function createGroupFromMembers() {
+    const memberIds = [...groupMemberIds]
+    if (memberIds.length === 0) {
+      onShellAction?.('先选择至少一位角色再建群')
+      return
+    }
+    const memberNames = roleCharacters.filter((character) => groupMemberIds.has(character.id)).map((character) => character.name)
+    onOpenGroupChat?.({
+      name: groupName.trim() || `${memberNames.slice(0, 3).join('、')}的小群`,
+      text: `${memberNames.join('、')}已经加入群聊`,
+      memberIds,
+    })
+    closeGroupCreator()
+  }
+
   return (
     <aside className="left-panel">
       <div className="qq-icon-rail">
@@ -320,11 +359,11 @@ export function CharacterRail({
             className="conversation-add-button"
             onClick={() => {
               if (activeView === 'role') {
-                onShellAction?.('这里后续会弹出：添加角色 / 导入人设')
+                onShellAction?.('请使用右侧「新增角色」创建角色')
                 return
               }
               if (activeView === 'chat') {
-                onOpenGroupChat?.({ name: '新群聊', text: '本地创建的多人聊天，可以先把角色拉进来试聊' })
+                setGroupCreatorOpen(true)
                 return
               }
               onShellAction?.('当前入口已放入设置中心规划')
@@ -335,6 +374,52 @@ export function CharacterRail({
             <Plus size={20} />
           </button>
         </div>
+
+        {activeView === 'chat' && groupCreatorOpen && (
+          <div className="rail-group-creator" role="dialog" aria-label="新建群聊">
+            <header>
+              <span>
+                <Users size={18} />
+                <strong>新建群聊</strong>
+              </span>
+              <button aria-label="关闭建群面板" onClick={closeGroupCreator} type="button">
+                <X size={17} />
+              </button>
+            </header>
+            <input
+              aria-label="群聊名称"
+              onChange={(event) => setGroupName(event.target.value)}
+              placeholder="群名可不填"
+              value={groupName}
+            />
+            <div className="rail-group-members">
+              {roleCharacters.map((character) => {
+                const selected = groupMemberIds.has(character.id)
+                return (
+                  <button
+                    className={selected ? 'selected' : ''}
+                    key={character.id}
+                    onClick={() => toggleGroupMember(character.id)}
+                    type="button"
+                  >
+                    <span className="avatar" style={{ '--avatar-accent': character.accent } as CSSProperties}>
+                      {character.avatar}
+                    </span>
+                    <span>
+                      <strong>{character.name}</strong>
+                      <small>{character.mood}</small>
+                    </span>
+                    <b>{selected && <Check size={15} />}</b>
+                  </button>
+                )
+              })}
+            </div>
+            <footer>
+              <small>{groupMemberIds.size > 0 ? `已选 ${groupMemberIds.size} 位` : '从好友里选择成员'}</small>
+              <button onClick={createGroupFromMembers} type="button">创建</button>
+            </footer>
+          </div>
+        )}
 
         {activeView === 'chat' && (
           <div className="character-list conversation-list">

@@ -384,7 +384,7 @@ export function createSeedState(): AppState {
   }))
 
   return {
-    version: 23,
+    version: 24,
     activeCharacterId: characters[0].id,
     characters,
     conversations,
@@ -405,6 +405,8 @@ export function createSeedState(): AppState {
     settings: {
       model: '',
       modelProfileId: '',
+      userNickname: '妹妹',
+      userAvatarImage: '',
       temperature: 0.8,
       maxContextMessages: 18,
       maxOutputTokens: 4096,
