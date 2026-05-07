@@ -4,7 +4,7 @@ import { normalizeMemories } from '../services/memoryEngine'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { agentRooms, createSeedState } from './seed'
 
-const currentStateVersion = 24
+const currentStateVersion = 25
 
 export function migrateAppState(state: AppState): AppState {
   const defaults = createSeedState()
@@ -33,6 +33,7 @@ export function migrateAppState(state: AppState): AppState {
         deletedAt: state.trash?.memories?.[index]?.deletedAt ?? memory.updatedAt,
       })),
       worldNodes: state.trash?.worldNodes ?? defaults.trash.worldNodes,
+      conversations: normalizeTrashedConversations(state.trash?.conversations ?? defaults.trash.conversations, characters),
     },
     memoryTombstones: normalizeMemoryTombstones(
       Array.isArray(state.memoryTombstones) ? state.memoryTombstones : defaults.memoryTombstones,
@@ -64,6 +65,24 @@ export function migrateAppState(state: AppState): AppState {
     ? defaults.settings.memoryConfidenceFloor
     : Math.min(Math.max(memoryConfidenceFloor, 0.5), 0.95)
   return migrated
+}
+
+function normalizeTrashedConversations(
+  conversations: AppState['trash']['conversations'],
+  characters: CharacterCard[],
+): AppState['trash']['conversations'] {
+  const characterById = new Map(characters.map((character) => [character.id, character]))
+  return conversations
+    .filter((conversation) => conversation?.id && conversation.characterId)
+    .map((conversation) => {
+      const character = conversation.character ?? characterById.get(conversation.characterId)
+      return {
+        ...conversation,
+        characterName: conversation.characterName || character?.name || '已删除角色',
+        character,
+        deletedAt: conversation.deletedAt || conversation.updatedAt || new Date(0).toISOString(),
+      }
+    })
 }
 
 function sanitizeCharacterShell(characters: CharacterCard[], defaultCharacters: CharacterCard[]): CharacterCard[] {

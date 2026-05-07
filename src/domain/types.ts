@@ -168,9 +168,16 @@ export interface TrashedWorldNode extends WorldNode {
   deletedAt: string
 }
 
+export interface TrashedConversation extends ConversationState {
+  deletedAt: string
+  characterName: string
+  character?: CharacterCard
+}
+
 export interface AppTrash {
   memories: TrashedMemory[]
   worldNodes: TrashedWorldNode[]
+  conversations: TrashedConversation[]
 }
 
 export interface MemoryTombstone {

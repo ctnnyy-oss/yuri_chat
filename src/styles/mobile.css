@@ -2606,3 +2606,201 @@
     color: #c73d5a;
   }
 }
+
+/* Mobile chat deletion and composer polish. */
+@media (max-width: 760px) {
+  .mobile-profile-name-button {
+    display: block;
+  }
+
+  .chat-workspace {
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    min-height: 100dvh;
+  }
+
+  .message-list {
+    min-height: 0;
+  }
+
+  .composer {
+    grid-template-rows: auto auto !important;
+    align-content: end;
+    min-height: auto !important;
+    padding: 10px 16px calc(14px + env(safe-area-inset-bottom)) !important;
+    gap: 10px;
+  }
+
+  .composer.with-tool-panel {
+    grid-template-rows: auto auto auto !important;
+    min-height: auto !important;
+  }
+
+  .composer-entry {
+    order: 1;
+  }
+
+  .composer-toolbar {
+    order: 2;
+    min-height: 44px;
+  }
+
+  .chat-tool-panel {
+    order: 3;
+    min-height: 188px !important;
+    max-height: 238px;
+    overflow-y: auto;
+    margin: 0 -16px calc(-14px - env(safe-area-inset-bottom)) !important;
+    padding: 14px 20px calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .chat-file-input {
+    position: fixed;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .app-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 22px;
+    background: rgba(42, 28, 36, 0.34);
+    backdrop-filter: blur(5px);
+  }
+
+  .app-confirm-dialog {
+    width: min(100%, 342px);
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    border: 1px solid rgba(236, 131, 187, 0.22);
+    border-radius: 22px;
+    background: #fffafd;
+    padding: 22px 20px 16px;
+    box-shadow: 0 22px 54px rgba(117, 43, 78, 0.24);
+    color: #201720;
+    text-align: center;
+  }
+
+  .app-confirm-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #fff0f7;
+    color: #ec78b2;
+  }
+
+  .app-confirm-dialog.danger .app-confirm-icon {
+    background: #fff0f3;
+    color: #d84d74;
+  }
+
+  .app-confirm-dialog strong {
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .app-confirm-dialog p {
+    margin: 0;
+    color: #7a6874;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .app-confirm-dialog div {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .app-confirm-dialog button {
+    min-height: 44px;
+    border-radius: 14px;
+    font-weight: 800;
+  }
+
+  .app-confirm-cancel {
+    background: #f6eef3;
+    color: #7b6b75;
+  }
+
+  .app-confirm-submit {
+    background: #ec83bb;
+    color: #fff;
+  }
+
+  .app-confirm-dialog.danger .app-confirm-submit {
+    background: #e45f8f;
+  }
+}
+
+@media (min-width: 761px) {
+  .app-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    background: rgba(42, 28, 36, 0.28);
+  }
+
+  .app-confirm-dialog {
+    width: min(360px, calc(100vw - 48px));
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    border-radius: 18px;
+    background: #fffafd;
+    padding: 22px 20px 16px;
+    box-shadow: 0 22px 54px rgba(117, 43, 78, 0.2);
+    text-align: center;
+  }
+
+  .app-confirm-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #fff0f7;
+    color: #ec78b2;
+  }
+
+  .app-confirm-dialog p {
+    margin: 0;
+    color: #7a6874;
+    line-height: 1.55;
+  }
+
+  .app-confirm-dialog div {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .app-confirm-dialog button {
+    min-height: 42px;
+    border-radius: 12px;
+    font-weight: 800;
+  }
+
+  .app-confirm-cancel {
+    background: #f6eef3;
+    color: #7b6b75;
+  }
+
+  .app-confirm-submit {
+    background: #ec83bb;
+    color: #fff;
+  }
+}

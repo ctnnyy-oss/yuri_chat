@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { BellOff, Check, Edit3, Plus, Search, Users, X } from 'lucide-react'
+import { BellOff, Check, Plus, Search, Users, X } from 'lucide-react'
 import type { AppSettings, CharacterCard, ConversationState } from '../domain/types'
-import { canDeleteCharacter } from './chat/data'
+import { MobileConfirmDialog } from './MobileConfirmDialog'
 
 interface MobileMessageListProps {
   characters: CharacterCard[]
@@ -10,13 +10,19 @@ interface MobileMessageListProps {
   settings: AppSettings
   onOpenChat: (characterId: string) => void
   onOpenGroupChat?: (group: { name: string; text: string; memberIds?: string[] }) => void
-  onDeleteCharacter?: (characterId: string) => boolean
+  onDeleteConversation?: (characterId: string) => void
+  onDeleteGroupChat?: (characterId: string) => boolean
   onUpdateSettings: (settings: AppSettings) => void
   onShellAction?: (message: string) => void
 }
 
 const LONG_PRESS_MS = 560
 const threadTimes = ['今天', '星期六', '星期一', '04/11', '04/03', '03/26', '03/22']
+
+type PendingThreadAction = {
+  character: CharacterCard
+  kind: 'conversation' | 'group'
+}
 
 function MobileStatusBar() {
   return null
@@ -51,6 +57,11 @@ function formatUnreadBadge(count: number) {
 function matchesQuery(values: string[], query: string) {
   if (!query) return true
   return values.join(' ').toLowerCase().includes(query)
+}
+
+function hasVisibleConversation(conversation?: ConversationState) {
+  if (!conversation) return false
+  return conversation.messages.length > 0 || Boolean(conversation.summary) || (conversation.unreadCount ?? 0) > 0
 }
 
 function readFileAsDataUrl(file: File) {
@@ -91,7 +102,8 @@ export function MobileMessageList({
   settings,
   onOpenChat,
   onOpenGroupChat,
-  onDeleteCharacter,
+  onDeleteConversation,
+  onDeleteGroupChat,
   onUpdateSettings,
   onShellAction,
 }: MobileMessageListProps) {
@@ -104,6 +116,7 @@ export function MobileMessageList({
   const [groupQuery, setGroupQuery] = useState('')
   const [groupName, setGroupName] = useState('')
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(() => new Set())
+  const [pendingThreadAction, setPendingThreadAction] = useState<PendingThreadAction | null>(null)
   const activeCharacter = characters.find((character) => character.id === activeCharacterId) ?? characters[0]
   const normalizedQuery = query.trim().toLowerCase()
   const normalizedGroupQuery = groupQuery.trim().toLowerCase()
@@ -142,6 +155,7 @@ export function MobileMessageList({
     () =>
       [...roleCharacters]
         .filter((character) =>
+          hasVisibleConversation(conversationByCharacterId.get(character.id)) &&
           matchesQuery(
             [character.name, character.title, character.subtitle, character.relationship, character.mood],
             normalizedQuery,
@@ -263,17 +277,28 @@ export function MobileMessageList({
     onOpenChat(characterId)
   }
 
-  function requestDeleteThread(character: CharacterCard) {
-    if (!onDeleteCharacter) return
-    if (!canDeleteCharacter(character)) {
-      onShellAction?.('内置角色不能从列表删除；自定义角色或群聊可以长按删除')
+  function requestThreadAction(character: CharacterCard) {
+    if (isGroupCharacter(character)) {
+      if (!onDeleteGroupChat) return
+      setPendingThreadAction({ character, kind: 'group' })
       return
     }
-    const label = isGroupCharacter(character) ? '群聊' : '角色'
-    if (!window.confirm(`删除${label}「${character.name}」和对应聊天记录吗？`)) return
-    if (onDeleteCharacter(character.id)) {
-      onShellAction?.(`${label}和对应聊天记录已删除`)
+    if (!onDeleteConversation) return
+    setPendingThreadAction({ character, kind: 'conversation' })
+  }
+
+  function confirmThreadAction() {
+    if (!pendingThreadAction) return
+    const { character, kind } = pendingThreadAction
+    if (kind === 'group') {
+      if (onDeleteGroupChat?.(character.id)) {
+        onShellAction?.('群聊和对应聊天记录已放入回收花园')
+      }
+    } else {
+      onDeleteConversation?.(character.id)
+      onShellAction?.('会话已放入回收花园，角色还在角色页')
     }
+    setPendingThreadAction(null)
   }
 
   return (
@@ -296,9 +321,6 @@ export function MobileMessageList({
           </button>
           <button aria-label="修改昵称" className="mobile-profile-name-button" onClick={renameProfile} type="button">
             <strong>{nickname}</strong>
-            <small aria-hidden="true">
-              <Edit3 size={15} />
-            </small>
           </button>
           <input
             accept="image/*"
@@ -331,7 +353,7 @@ export function MobileMessageList({
               event.preventDefault()
             }}
             onPointerCancel={finishLongPress}
-            onPointerDown={(event) => startLongPress(event, () => requestDeleteThread(thread.character))}
+            onPointerDown={(event) => startLongPress(event, () => requestThreadAction(thread.character))}
             onPointerLeave={finishLongPress}
             onPointerMove={moveLongPress}
             onPointerUp={finishLongPress}
@@ -368,7 +390,7 @@ export function MobileMessageList({
                 event.preventDefault()
               }}
               onPointerCancel={finishLongPress}
-              onPointerDown={(event) => startLongPress(event, () => requestDeleteThread(character))}
+              onPointerDown={(event) => startLongPress(event, () => requestThreadAction(character))}
               onPointerLeave={finishLongPress}
               onPointerMove={moveLongPress}
               onPointerUp={finishLongPress}
@@ -451,6 +473,20 @@ export function MobileMessageList({
             <footer>{selectedMemberIds.size > 0 ? `已选 ${selectedMemberIds.size} 位` : '从好友列表里选择成员'}</footer>
           </section>
         </div>
+      )}
+      {pendingThreadAction && (
+        <MobileConfirmDialog
+          danger
+          title={pendingThreadAction.kind === 'group' ? '删除群聊' : '删除聊天'}
+          message={
+            pendingThreadAction.kind === 'group'
+              ? `会把群聊「${pendingThreadAction.character.name}」和对应聊天记录放入回收花园，后悔了可以从回收站恢复。`
+              : `会把和「${pendingThreadAction.character.name}」的聊天列表与记录放入回收花园，角色仍保留在角色页，以后可以重新发起聊天。`
+          }
+          confirmLabel={pendingThreadAction.kind === 'group' ? '删除群聊' : '删除聊天'}
+          onCancel={() => setPendingThreadAction(null)}
+          onConfirm={confirmThreadAction}
+        />
       )}
     </section>
   )

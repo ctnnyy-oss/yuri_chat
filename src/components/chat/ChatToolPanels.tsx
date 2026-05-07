@@ -7,10 +7,37 @@ interface ChatToolPanelsProps {
   panel: 'emoji' | 'sticker' | 'more'
   draft: string
   onDraftChange: (next: string) => void
+  onOpenCamera?: () => void
+  onOpenFile?: () => void
+  onOpenGallery?: () => void
   onShellAction?: (message: string) => void
 }
 
-export function ChatToolPanels({ panel, draft, onDraftChange, onShellAction }: ChatToolPanelsProps) {
+export function ChatToolPanels({
+  panel,
+  draft,
+  onDraftChange,
+  onOpenCamera,
+  onOpenFile,
+  onOpenGallery,
+  onShellAction,
+}: ChatToolPanelsProps) {
+  function handleMoreTool(label: string) {
+    if (label === '相册') {
+      onOpenGallery?.()
+      return
+    }
+    if (label === '拍摄') {
+      onOpenCamera?.()
+      return
+    }
+    if (label === '文件') {
+      onOpenFile?.()
+      return
+    }
+    onShellAction?.(`${label}入口已保留，后续接入真实功能`)
+  }
+
   return (
     <section className="chat-tool-panel" aria-label="聊天工具面板">
       {panel === 'emoji' && (
@@ -72,7 +99,7 @@ export function ChatToolPanels({ panel, draft, onDraftChange, onShellAction }: C
             return (
               <button
                 key={tool.label}
-                onClick={() => onShellAction?.(`${tool.label}入口已保留，后续接入真实功能`)}
+                onClick={() => handleMoreTool(tool.label)}
                 type="button"
               >
                 <Icon size={24} />

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type CSSProperties, type PointerEvent as Rea
 import { MessageCircle, Plus, Save, Search, Trash2, UserRound, X } from 'lucide-react'
 import type { CharacterCard } from '../domain/types'
 import type { AppView } from './CharacterRail'
+import { MobileConfirmDialog } from './MobileConfirmDialog'
 
 interface QqFeaturePanelProps {
   activeView: AppView
@@ -100,6 +101,7 @@ export function QqFeaturePanel({
   const [roleDraft, setRoleDraft] = useState<RoleDraft>(() => toRoleDraft(initialSelectedRole))
   const [query, setQuery] = useState('')
   const [mobileEditorMode, setMobileEditorMode] = useState<MobileEditorMode>('closed')
+  const [pendingDeleteRole, setPendingDeleteRole] = useState<ManagedRole | null>(null)
   const selectedRole = managedRoles.find((role) => role.id === selectedRoleId) ?? managedRoles[0]
   const canEditSelectedRole = selectedRole?.source === '自定义'
   const normalizedQuery = query.trim().toLowerCase()
@@ -147,13 +149,7 @@ export function QqFeaturePanel({
       onShellAction?.('内置三对 CP 先保留，只能查看不能删除')
       return
     }
-    if (!window.confirm(`删除「${selectedRole.name}」和对应聊天记录吗？`)) return
-    const nextRole = managedRoles.find((role) => role.id !== selectedRole.id)
-    if (nextRole) selectRole(nextRole)
-    if (onDeleteCharacter(selectedRole.id)) {
-      setMobileEditorMode('closed')
-      onShellAction?.('角色和对应聊天记录已删除')
-    }
+    setPendingDeleteRole(selectedRole)
   }
 
   function clearRoleLongPressTimer() {
@@ -201,13 +197,19 @@ export function QqFeaturePanel({
       onShellAction?.('内置角色不能删除；长按自定义角色可以删除')
       return
     }
-    if (!window.confirm(`删除角色「${role.name}」和对应聊天记录吗？`)) return
+    setPendingDeleteRole(role)
+  }
+
+  function confirmDeleteRole() {
+    if (!pendingDeleteRole) return
+    const role = pendingDeleteRole
     const nextRole = managedRoles.find((item) => item.id !== role.id)
     if (onDeleteCharacter(role.id)) {
       if (nextRole) selectRole(nextRole)
       if (selectedRoleId === role.id) setMobileEditorMode('closed')
       onShellAction?.('角色和对应聊天记录已删除')
     }
+    setPendingDeleteRole(null)
   }
 
   function saveSelectedRole() {
@@ -477,6 +479,16 @@ export function QqFeaturePanel({
               </footer>
             </section>
           </div>
+        )}
+        {pendingDeleteRole && (
+          <MobileConfirmDialog
+            danger
+            title="删除角色"
+            message={`会删除「${pendingDeleteRole.name}」这个角色，并一起清掉她的聊天记录。这个操作不能从聊天列表恢复。`}
+            confirmLabel="删除角色"
+            onCancel={() => setPendingDeleteRole(null)}
+            onConfirm={confirmDeleteRole}
+          />
         )}
       </section>
     </main>

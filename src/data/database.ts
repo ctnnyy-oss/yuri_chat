@@ -72,7 +72,10 @@ function buildLocalBackup(state: AppState, reason: string): LocalBackup {
       conversations: stateWithEmbeddingCache.conversations.length,
       memories: stateWithEmbeddingCache.memories.length,
       worldNodes: stateWithEmbeddingCache.worldNodes.length,
-      trashedItems: stateWithEmbeddingCache.trash.memories.length + stateWithEmbeddingCache.trash.worldNodes.length,
+      trashedItems:
+        stateWithEmbeddingCache.trash.memories.length +
+        stateWithEmbeddingCache.trash.worldNodes.length +
+        stateWithEmbeddingCache.trash.conversations.length,
     },
     state: stateWithEmbeddingCache,
   }

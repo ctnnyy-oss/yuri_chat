@@ -61,8 +61,10 @@ interface MemoryPanelProps {
   onTrashMemory: (memoryId: string) => void
   onUpdateWorldNode: (node: WorldNode) => void
   onTrashWorldNode: (nodeId: string) => void
+  onRestoreConversation: (conversationId: string) => void
   onRestoreMemory: (memoryId: string) => void
   onRestoreWorldNode: (nodeId: string) => void
+  onDeleteTrashedConversation: (conversationId: string) => void
   onDeleteTrashedMemory: (memoryId: string) => void
   onDeleteTrashedWorldNode: (nodeId: string) => void
   onEmptyTrash: () => void
@@ -116,8 +118,10 @@ export function MemoryPanel({
   onTrashMemory,
   onUpdateWorldNode,
   onTrashWorldNode,
+  onRestoreConversation,
   onRestoreMemory,
   onRestoreWorldNode,
+  onDeleteTrashedConversation,
   onDeleteTrashedMemory,
   onDeleteTrashedWorldNode,
   onEmptyTrash,
@@ -350,9 +354,11 @@ export function MemoryPanel({
       )}
       {activeView === 'trash' && (
         <TrashGardenPanel
+          onDeleteTrashedConversation={onDeleteTrashedConversation}
           onDeleteTrashedMemory={onDeleteTrashedMemory}
           onDeleteTrashedWorldNode={onDeleteTrashedWorldNode}
           onEmptyTrash={onEmptyTrash}
+          onRestoreConversation={onRestoreConversation}
           onRestoreMemory={onRestoreMemory}
           onRestoreWorldNode={onRestoreWorldNode}
           trash={trash}

@@ -384,7 +384,7 @@ export function createSeedState(): AppState {
   }))
 
   return {
-    version: 24,
+    version: 25,
     activeCharacterId: characters[0].id,
     characters,
     conversations,
@@ -393,6 +393,7 @@ export function createSeedState(): AppState {
     trash: {
       memories: [],
       worldNodes: [],
+      conversations: [],
     },
     memoryTombstones: [],
     memoryEmbeddings: refreshLocalMemoryEmbeddingCache(memories),

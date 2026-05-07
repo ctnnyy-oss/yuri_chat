@@ -75,7 +75,7 @@ const featureRowsByView: Partial<Record<AppView, AppPaneRow[]>> = {
     { title: '关于应用', text: 'Yuri Chat 的基础信息', icon: Brain, view: 'settings' },
   ],
   trash: [
-    { title: '回收站', text: '被删除的记忆和世界观节点', icon: Settings, view: 'trash', active: true },
+    { title: '回收站', text: '被删除的聊天、记忆和世界观节点', icon: Settings, view: 'trash', active: true },
     { title: '记忆管理', text: '返回长期记忆整理页面', icon: Brain, view: 'memory' },
   ],
 }

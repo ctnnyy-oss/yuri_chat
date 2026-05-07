@@ -27,8 +27,15 @@ export function applyTrashRetention(state: AppState, now = new Date()): AppState
   const memories = state.trash.memories.filter((memory) => new Date(memory.deletedAt).getTime() >= cutoff)
   const expiredMemories = state.trash.memories.filter((memory) => new Date(memory.deletedAt).getTime() < cutoff)
   const worldNodes = state.trash.worldNodes.filter((node) => new Date(node.deletedAt).getTime() >= cutoff)
+  const conversations = state.trash.conversations.filter(
+    (conversation) => new Date(conversation.deletedAt).getTime() >= cutoff,
+  )
 
-  if (memories.length === state.trash.memories.length && worldNodes.length === state.trash.worldNodes.length) {
+  if (
+    memories.length === state.trash.memories.length &&
+    worldNodes.length === state.trash.worldNodes.length &&
+    conversations.length === state.trash.conversations.length
+  ) {
     return state
   }
 
@@ -41,6 +48,7 @@ export function applyTrashRetention(state: AppState, now = new Date()): AppState
     trash: {
       memories,
       worldNodes,
+      conversations,
     },
   }
 }

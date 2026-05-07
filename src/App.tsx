@@ -49,7 +49,10 @@ function App() {
     handleClearConversation,
     handleDeleteLocalBackup,
     handleDeleteCharacter,
+    handleDeleteConversation,
+    handleDeleteGroupChat,
     handleDeleteModelProfile,
+    handleDeleteTrashedConversation,
     handleDeleteTrashedMemory,
     handleDeleteTrashedWorldNode,
     handleDownloadCloudBackup,
@@ -66,6 +69,7 @@ function App() {
     handleReset,
     handleRestoreLocalBackup,
     handleRestoreMemory,
+    handleRestoreConversation,
     handleRestoreMemoryRevision,
     handleRestoreWorldNode,
     handleSaveModelProfile,
@@ -250,7 +254,8 @@ function App() {
           onShellAction={showShellTip}
           onOpenChat={handleOpenMobileChat}
           onOpenGroupChat={handleOpenGroupChat}
-          onDeleteCharacter={handleDeleteCharacter}
+          onDeleteConversation={handleDeleteConversation}
+          onDeleteGroupChat={handleDeleteGroupChat}
           onUpdateSettings={handleUpdateSettings}
           settings={state.settings}
         />
@@ -323,6 +328,7 @@ function App() {
           onCreateLocalBackup={handleCreateLocalBackup}
           onDeleteLocalBackup={handleDeleteLocalBackup}
           onDeleteModelProfile={handleDeleteModelProfile}
+          onDeleteTrashedConversation={handleDeleteTrashedConversation}
           onDeleteTrashedMemory={handleDeleteTrashedMemory}
           onDeleteTrashedWorldNode={handleDeleteTrashedWorldNode}
           onDownloadCloudBackup={handleDownloadCloudBackup}
@@ -337,6 +343,7 @@ function App() {
           onRefreshCloudBackups={handleRefreshCloudBackups}
           onReset={handleReset}
           onRestoreLocalBackup={handleRestoreLocalBackup}
+          onRestoreConversation={handleRestoreConversation}
           onRestoreMemory={handleRestoreMemory}
           onRestoreMemoryRevision={handleRestoreMemoryRevision}
           onRestoreWorldNode={handleRestoreWorldNode}

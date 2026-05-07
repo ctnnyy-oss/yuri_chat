@@ -382,13 +382,14 @@ export function useMemoryActions({
           trash: {
             memories: [],
             worldNodes: [],
+            conversations: [],
           },
         },
         {
           type: 'trash_emptied',
           actor: 'user',
           title: '清空回收花园',
-          detail: `清空了 ${currentState.trash.memories.length} 条记忆和 ${currentState.trash.worldNodes.length} 个世界树节点。`,
+          detail: `清空了 ${currentState.trash.memories.length} 条记忆、${currentState.trash.worldNodes.length} 个世界树节点和 ${currentState.trash.conversations.length} 条聊天。`,
           memoryIds: currentState.trash.memories.map((memory) => memory.id),
           characterId,
         },

@@ -29,7 +29,7 @@ import { MessageBubble } from './MessageBubble'
 import { MobileStatusBar } from './chat/MobileStatusBar'
 import { ChatToolPanels } from './chat/ChatToolPanels'
 import { ChatInfoDrawer } from './chat/ChatInfoDrawer'
-import { canDeleteCharacter, chatSettingRows } from './chat/data'
+import { chatSettingRows } from './chat/data'
 
 interface ChatPhoneProps {
   character: CharacterCard
@@ -54,6 +54,22 @@ interface ChatPhoneProps {
 
 type ToolPanel = 'emoji' | 'sticker' | 'more' | 'info' | 'settings' | null
 
+type BrowserSpeechRecognition = {
+  lang: string
+  interimResults: boolean
+  continuous: boolean
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null
+  onerror: (() => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+}
+
+type SpeechWindow = Window & {
+  SpeechRecognition?: new () => BrowserSpeechRecognition
+  webkitSpeechRecognition?: new () => BrowserSpeechRecognition
+}
+
 export function ChatPhone({
   character,
   characters,
@@ -76,6 +92,10 @@ export function ChatPhone({
 }: ChatPhoneProps) {
   const [activePanel, setActivePanel] = useState<ToolPanel>(null)
   const messageListRef = useRef<HTMLDivElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
   const traceByAssistantMessageId = useMemo(() => {
     return new Map(
       memoryUsageLogs
@@ -83,17 +103,7 @@ export function ChatPhone({
         .map((log) => [log.assistantMessageId as string, buildMessageMemoryTrace(log, memories)]),
     )
   }, [memories, memoryUsageLogs])
-  const settingRows = canDeleteCharacter(character)
-    ? [
-        ...chatSettingRows,
-        {
-          label: character.relationship === '群聊' ? '删除群聊' : '删除角色',
-          value: '',
-          danger: true,
-          action: 'delete-character' as const,
-        },
-      ]
-    : chatSettingRows
+  const settingRows = chatSettingRows
 
   function togglePanel(panel: Exclude<ToolPanel, null>) {
     setActivePanel((current) => (current === panel ? null : panel))
@@ -109,6 +119,44 @@ export function ChatPhone({
       textarea.selectionStart = start + 1
       textarea.selectionEnd = start + 1
     })
+  }
+
+  function appendAttachmentLabel(label: string, file?: File) {
+    if (!file) return
+    const prefix = draft.trim() ? '\n' : ''
+    onDraftChange(`${draft}${prefix}【${label}：${file.name}】`)
+    onShellAction?.(`${label}已放进输入框，可以补一句说明再发送`)
+  }
+
+  function startVoiceInput() {
+    const SpeechRecognition =
+      (window as SpeechWindow).SpeechRecognition ?? (window as SpeechWindow).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      onShellAction?.('当前浏览器不支持网页语音输入，可以先用手机键盘自带语音')
+      return
+    }
+
+    recognitionRef.current?.stop()
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'zh-CN'
+    recognition.interimResults = false
+    recognition.continuous = false
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? '')
+        .join('')
+        .trim()
+      if (!transcript) return
+      const prefix = draft.trim() ? ' ' : ''
+      onDraftChange(`${draft}${prefix}${transcript}`)
+    }
+    recognition.onerror = () => onShellAction?.('语音输入没有接通，检查一下浏览器麦克风权限')
+    recognition.onend = () => {
+      if (recognitionRef.current === recognition) recognitionRef.current = null
+    }
+    recognitionRef.current = recognition
+    recognition.start()
+    onShellAction?.('正在听妹妹说话...')
   }
 
   useEffect(() => {
@@ -277,22 +325,34 @@ export function ChatPhone({
           </button>
         </div>
         <div className="composer-toolbar" aria-label="快捷工具">
-          <button aria-label="语音" className="composer-tool" title="语音" type="button">
+          <button aria-label="语音" className="composer-tool" onClick={startVoiceInput} title="语音" type="button">
             <Mic size={24} />
           </button>
           <button
             aria-label="图片"
-            className={`composer-tool ${activePanel === 'sticker' ? 'active' : ''}`}
-            onClick={() => togglePanel('sticker')}
+            className="composer-tool"
+            onClick={() => galleryInputRef.current?.click()}
             title="图片"
             type="button"
           >
             <Image size={24} />
           </button>
-          <button aria-label="拍摄" className="composer-tool" title="拍摄" type="button">
+          <button
+            aria-label="拍摄"
+            className="composer-tool"
+            onClick={() => cameraInputRef.current?.click()}
+            title="拍摄"
+            type="button"
+          >
             <Camera size={24} />
           </button>
-          <button aria-label="文件" className="composer-tool" onClick={() => togglePanel('more')} title="文件" type="button">
+          <button
+            aria-label="文件"
+            className="composer-tool"
+            onClick={() => fileInputRef.current?.click()}
+            title="文件"
+            type="button"
+          >
             <Paperclip size={23} />
           </button>
           <button
@@ -320,9 +380,42 @@ export function ChatPhone({
             panel={activePanel}
             draft={draft}
             onDraftChange={onDraftChange}
+            onOpenCamera={() => cameraInputRef.current?.click()}
+            onOpenFile={() => fileInputRef.current?.click()}
+            onOpenGallery={() => galleryInputRef.current?.click()}
             onShellAction={onShellAction}
           />
         )}
+        <input
+          accept="image/*"
+          className="chat-file-input"
+          onChange={(event) => {
+            appendAttachmentLabel('图片', event.target.files?.[0])
+            event.target.value = ''
+          }}
+          ref={galleryInputRef}
+          type="file"
+        />
+        <input
+          accept="image/*"
+          capture="environment"
+          className="chat-file-input"
+          onChange={(event) => {
+            appendAttachmentLabel('拍摄', event.target.files?.[0])
+            event.target.value = ''
+          }}
+          ref={cameraInputRef}
+          type="file"
+        />
+        <input
+          className="chat-file-input"
+          onChange={(event) => {
+            appendAttachmentLabel('文件', event.target.files?.[0])
+            event.target.value = ''
+          }}
+          ref={fileInputRef}
+          type="file"
+        />
       </form>
     </main>
   )

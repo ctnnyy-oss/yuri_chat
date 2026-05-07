@@ -1,8 +1,9 @@
 // ChatPhone 右侧抽屉：聊天信息 + 聊天设置
 
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { ChevronLeft, MoreHorizontal, ToggleLeft } from 'lucide-react'
 import type { CharacterCard } from '../../domain/types'
+import { MobileConfirmDialog } from '../MobileConfirmDialog'
 import { GridDots } from './MobileStatusBar'
 import type { ChatSettingRow } from './data'
 
@@ -31,6 +32,8 @@ export function ChatInfoDrawer({
   onClearConversation,
   onDeleteCharacter,
 }: ChatInfoDrawerProps) {
+  const [pendingAction, setPendingAction] = useState<'clear' | 'delete-character' | null>(null)
+
   if (panel === 'info') {
     return (
       <aside className="chat-side-drawer" aria-label="聊天信息">
@@ -99,15 +102,8 @@ export function ChatInfoDrawer({
             className={row.link ? 'link-row' : row.danger ? 'danger-row' : ''}
             key={row.label}
             onClick={() => {
-              if (row.action === 'clear-conversation' && window.confirm(`清空和“${character.name}”的聊天记录吗？`)) {
-                onClearConversation(character.id)
-                onClose()
-              }
-              if (row.action === 'delete-character' && window.confirm(`删除“${character.name}”和对应聊天记录吗？`)) {
-                if (onDeleteCharacter(character.id)) {
-                  onClose()
-                }
-              }
+              if (row.action === 'clear-conversation') setPendingAction('clear')
+              if (row.action === 'delete-character') setPendingAction('delete-character')
             }}
             type="button"
           >
@@ -120,6 +116,34 @@ export function ChatInfoDrawer({
           </button>
         ))}
       </section>
+      {pendingAction === 'clear' && (
+        <MobileConfirmDialog
+          title="清空聊天记录"
+          message={`会清空和「${character.name}」的聊天内容，但角色仍保留。`}
+          confirmLabel="清空记录"
+          onCancel={() => setPendingAction(null)}
+          onConfirm={() => {
+            onClearConversation(character.id)
+            setPendingAction(null)
+            onClose()
+          }}
+        />
+      )}
+      {pendingAction === 'delete-character' && (
+        <MobileConfirmDialog
+          danger
+          title="删除角色"
+          message={`会删除「${character.name}」这个角色，并一起清掉对应聊天记录。`}
+          confirmLabel="删除角色"
+          onCancel={() => setPendingAction(null)}
+          onConfirm={() => {
+            if (onDeleteCharacter(character.id)) {
+              setPendingAction(null)
+              onClose()
+            }
+          }}
+        />
+      )}
     </aside>
   )
 }
