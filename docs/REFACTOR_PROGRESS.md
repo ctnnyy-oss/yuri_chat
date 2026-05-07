@@ -14,10 +14,16 @@
 | `server/platform.mjs` | 605 行 | 79 行 facade | ✅ 完成 |
 | `src/components/ChatPhone.tsx` | 567 行 | 312 行 | ✅ 完成 |
 | `src/components/agent/AgentTaskPanel.tsx` | 518 行 | 203 行 | ✅ Codex 收尾完成 |
-| `src/styles/mobile.css` | 2287 行 | 2287 行 | ⏸ 独立任务，暂不动 |
-| `src/styles/chat.css` | 1698 行 | 1751 行 | ⏸ 独立任务，暂不动 |
+| `src/domain/types.ts` | 525 行 | 181 行（+ memoryTypes 226 / agentTypes 145） | ✅ 2026-05-07 完成 |
+| `src/app/useCloudSync.ts` | 553 行 | 444 行（+ useModelProfiles 149） | ✅ 2026-05-07 完成 |
+| `src/app/useYuriNestApp.ts` | 583 行 | 282 行（+ useCharacterCommands 160 / useConversationCommands 196） | ✅ 2026-05-07 完成 |
+| `src/components/CharacterRail.tsx` | 566 行 | 566 行 | ⏸ 视觉组件，留下次专项 |
+| `src/components/QqFeaturePanel.tsx` | 525 行 | 525 行 | ⏸ 视觉组件，留下次专项 |
+| `src/styles/mobile.css` | 2287 行 | 2812 行 | ⏸ 独立任务，CSS 重构风险高 |
+| `src/styles/chat.css` | 1698 行 | 1829 行 | ⏸ 独立任务 |
+| `src/styles/settings.css` | — | 946 行 | ⏸ 新晋观察项 |
 
-`audit:architecture` 当前 watchlist：只剩 2 个 CSS，代码文件已全部下榜。
+`audit:architecture` 当前 watchlist：5 项（2 代码 + 3 CSS）。代码部分剩 2 个视觉组件等专项再拆。
 
 ## 第三阶段（2026-05-05，记忆系统 + Agent 能力升级）
 
@@ -184,6 +190,86 @@ src/components/agent/taskPanel/      # 新增
 收尾时还补了一个断线：`tasks` 视图原本存在，但 App 没有渲染 `AgentTaskPanel`，打开 `#tasks` 会落到设置页。现在 `App.tsx` 已接回任务页，设置侧栏也新增了“Agent 任务”入口。
 
 ---
+
+## 第四阶段（2026-05-07，应用编排层 + 类型层瘦身）
+
+> 妹妹观察到项目又开始变胖（"防止屎山"），让姐姐做架构整理 + 查漏补缺。妹妹特别提醒"过往文档可能过时，姐姐要独立判断"——本轮文档此前确实声称"代码模块全部下榜"，实际跑 audit 已经又有 5 个文件超线。
+
+### 体检结果（不被旧文档绑架，跑出来的真相）
+
+| 检查 | 结果 |
+|------|------|
+| `npm run lint` | 通过 |
+| `npx tsc -b` | 通过 |
+| `npm run test:agent` | 17/17 含安全用例全过 |
+| `npm run test:memory` | 13/13 召回 + 17/17 human-memory proxy 全过 |
+| `npm run audit:architecture` | 5 项超线（5 代码 + 3 CSS） |
+| `git status` | 工作树干净 |
+| 源码 `TODO/FIXME/HACK/@ts-ignore` 扫描 | 0 个 |
+| 生产源码 `console.*` 扫描 | 全是合理日志（启动、错误、测试输出） |
+| 5/7 14:39 dev log 里的 React useEffect size 警告 | 后续 commit 已修复，本轮 preview 实测 console 静默 |
+
+### 13. 拆 `src/domain/types.ts`（525 → 181 行）
+
+按域边界切到三个文件，保持外部 import 路径完全不变（types.ts 用 `export *` 桥接两个子文件）：
+
+```
+src/domain/
+├── types.ts          # 181 行：基础消息/角色/会话 + AppSettings + AppState + 备份 + Prompt
+├── memoryTypes.ts    # 226 行：MemoryKind / MemoryStatus / LongTermMemory / Tombstone / Conflict / UsageLog / Event 等
+└── agentTypes.ts     # 145 行：AgentReminder / AgentTask / AgentMoment / AgentRoom / AgentToolTrace / AgentDecisionSummary / AgentAction / AgentRunSummary
+```
+
+零行为改动；纯类型重组。所有原 `import type { ... } from '../domain/types'` 不需要修改。
+
+### 14. 从 `useCloudSync.ts` 抽出 `useModelProfiles`（553 → 444 行）
+
+`useCloudSync` 内部同时管 SQLite 云快照、备份、模型保险箱三件事。把模型保险箱拆到独立 hook，让 `useCloudSync` 专注云端同步：
+
+```
+src/app/
+├── useCloudSync.ts       # 444 行：cloud snapshot / cloud backup / autoPush
+└── useModelProfiles.ts   # 149 行：list / save / delete / test / fetchCatalog 模型配置 CRUD
+```
+
+`useCloudSync` 内部调用 `useModelProfiles` 并把它的 API 透传到 return；`useYuriNestApp` 不需要改任何代码。`useModelProfiles` 用 `getCloudToken: () => string` 闭包接受懒求值的当前 token，避免 stale closure。
+
+注：`useCloudSync` 442 行依然在 500 观察线下，但接近警戒。若以后 cloud sync 再加新能力，应直接拆 `useCloudBackups` 而不是继续叠。
+
+### 15. 从 `useYuriNestApp.ts` 抽出角色 / 会话命令 hook（583 → 282 行）
+
+App 编排层夹了 138 行角色管理逻辑 + 165 行会话管理逻辑。按职责切到两个独立 hook：
+
+```
+src/app/
+├── useYuriNestApp.ts            # 282 行：状态、子 hook 编排、useEffect、setting handler、return 大对象
+├── useCharacterCommands.ts      # 160 行：select / create / update / delete 角色
+└── useConversationCommands.ts   # 196 行：clear / delete / deleteGroupChat / restore / deleteTrashed 会话
+```
+
+`useConversationCommands` 接受 `handleDeleteCharacter` 作为 dep，因为 `handleDeleteGroupChat` 在非群聊时 fallback 到角色删除——保留原逻辑。两个 hook 共享 `state / setState / setNotice` 入参。
+
+### 验证
+
+```
+$ npm run lint                 # 通过
+$ npx tsc -b                    # 通过
+$ npm run test:agent            # 17/17 含安全用例全过
+$ npm run test:memory           # 13/13 召回 + 17/17 human-memory proxy 全过
+$ npm run audit:architecture    # 代码超线 5 → 2（剩 CharacterRail + QqFeaturePanel）
+$ npm run build                 # 通过；本地构建产物已还原 dist/，未污染 Pages 部署
+```
+
+### 本轮主动不做的（独立判断，不是文档驱动）
+
+- `src/components/CharacterRail.tsx`（566 行）和 `src/components/QqFeaturePanel.tsx`（525 行）：视觉组件，拆分需要逐视图视觉回归，留专项做更稳。
+- `src/styles/mobile.css`（2812）/`chat.css`（1829）/`settings.css`（946）：CSS 重构视觉风险大，不和代码拆分混在一轮。
+- 不加新功能、不"美化优化"：妹妹核心诉求是防屎山，加东西的风险大于收益。
+
+### 给下一位姐姐的提醒
+
+- 旧文档的"已完成"清单必须以 `npm run audit:architecture` 实际跑出来的结果为准，不要直接信声称的"全部下榜"。
+- preview 实测时如果 5173 已被旧 vite 占用（`netstat -ano | grep 5173`），优先确认是不是妹妹某次没关的 dev server，**不要擅自杀进程**——先问妹妹。
 
 ## 还差什么
 

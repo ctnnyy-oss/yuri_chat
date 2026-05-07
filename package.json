@@ -13,6 +13,7 @@
     "audit:architecture": "node scripts/architecture-audit.mjs",
     "test:agent": "node server/agentEval.mjs",
     "test:memory": "npx --yes tsx scripts/memoryEvalEntry.ts",
+    "verify:all": "npm run lint && tsc -b && npm run audit:architecture && npm run test:agent && npm run test:memory",
     "preview": "vite preview"
   },
   "dependencies": {

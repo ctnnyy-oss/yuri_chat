@@ -4,18 +4,14 @@ import type { AppView } from '../components/CharacterRail'
 import { loadAppState, saveAppState } from '../data/database'
 import { migrateAppState } from '../data/migrations'
 import { createSeedState } from '../data/seed'
-import type { AppSettings, AppState, CharacterCard, ConversationState } from '../domain/types'
+import type { AppSettings, AppState } from '../domain/types'
 import { isCloudSyncConfigured } from '../services/cloudSync'
 import {
   buildPromptBundle,
-  createId,
   detectMemoryConflicts,
   getActiveCharacter,
   getConversation,
-  nowIso,
-  upsertConversation,
 } from '../services/memoryEngine'
-import { buildCharacterSystemPrompt, buildPersonaProfile } from '../services/personaImport'
 import { applyTrashRetention, normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { deliverDueReminders } from './agentActions'
 import { buildViewUrl, readViewFromLocation } from './navigation'
@@ -23,7 +19,9 @@ import { buildCustomThemeVariables, themeVariables } from './theme'
 import { useAgentTasks } from './useAgentTasks'
 import { useBackupRestore } from './useBackupRestore'
 import { useChat } from './useChat'
+import { useCharacterCommands } from './useCharacterCommands'
 import { useCloudSync } from './useCloudSync'
+import { useConversationCommands } from './useConversationCommands'
 import { useMemoryActions } from './useMemoryActions'
 
 export function useYuriNestApp() {
@@ -72,6 +70,15 @@ export function useYuriNestApp() {
   })
 
   const tasks = useAgentTasks({ setState, setNotice })
+
+  const characterCommands = useCharacterCommands({ state, setState, setNotice })
+  const conversationCommands = useConversationCommands({
+    state,
+    setState,
+    setNotice,
+    clearChatAlert: chat.clearChatAlert,
+    handleDeleteCharacter: characterCommands.handleDeleteCharacter,
+  })
 
   // ---- 初始化 ----
   useEffect(() => {
@@ -184,313 +191,6 @@ export function useYuriNestApp() {
     window.history.pushState(statePayload, '', url)
   }
 
-  // ---- 角色切换 ----
-  function handleSelectCharacter(characterId: string) {
-    setState((currentState) => {
-      const conversationForCharacter = getConversation(currentState, characterId)
-      return {
-        ...upsertConversation(currentState, conversationForCharacter),
-        activeCharacterId: characterId,
-      }
-    })
-  }
-
-  function handleCreateCharacter(input: { name: string; relation: string; mood: string; persona: string }): string {
-    const now = nowIso()
-    const name = input.name.trim() || '新角色'
-    const relation = input.relation.trim() || '角色'
-    const mood = input.mood.trim() || '等待补全'
-    const persona = input.persona.trim() || '还没有导入人设。'
-    const personaInput = { name, relation, mood, persona }
-    const characterId = createId('character')
-    const character: CharacterCard = {
-      id: characterId,
-      name,
-      title: relation,
-      subtitle: mood,
-      avatar: name.slice(0, 1),
-      accent: '#ef9ac6',
-      relationship: relation,
-      mood,
-      tags: ['自定义角色', relation, name],
-      systemPrompt: buildCharacterSystemPrompt(personaInput),
-      personaSource: persona,
-      personaProfile: buildPersonaProfile(personaInput),
-      greeting: `${name}已经加入百合小窝。`,
-    }
-    setState((currentState) => ({
-      ...currentState,
-      activeCharacterId: characterId,
-      characters: [character, ...currentState.characters],
-      conversations: [
-        {
-          id: createId('conversation'),
-          characterId,
-          messages: [],
-          summary: '',
-          createdAt: now,
-          updatedAt: now,
-        },
-        ...currentState.conversations,
-      ],
-    }))
-    setNotice(`已添加角色：${name}`)
-    return characterId
-  }
-
-  function handleUpdateCharacter(input: {
-    id: string
-    name: string
-    relation: string
-    mood: string
-    persona: string
-  }): boolean {
-    const target = state.characters.find((item) => item.id === input.id)
-    if (!target) {
-      setNotice('没有找到这个角色')
-      return false
-    }
-
-    const canEdit = target.id.startsWith('character_') || target.tags.includes('自定义角色')
-    if (!canEdit) {
-      setNotice('内置三对 CP 先保留，后续妹妹确认后再开放编辑')
-      return false
-    }
-
-    const name = input.name.trim() || target.name
-    const relation = input.relation.trim() || target.relationship || '角色'
-    const mood = input.mood.trim() || target.mood || '等待补全'
-    const persona = input.persona.trim() || target.personaSource || target.systemPrompt || '还没有导入人设。'
-    const personaInput = { name, relation, mood, persona }
-
-    setState((currentState) => ({
-      ...currentState,
-      characters: currentState.characters.map((characterItem) =>
-        characterItem.id === input.id
-          ? {
-              ...characterItem,
-              name,
-              title: relation,
-              subtitle: mood,
-              avatar: name.slice(0, 1),
-              relationship: relation,
-              mood,
-              systemPrompt: buildCharacterSystemPrompt(personaInput),
-              personaSource: persona,
-              personaProfile: buildPersonaProfile(personaInput),
-              greeting: `${name}已经加入百合小窝。`,
-              tags: ['自定义角色', relation, name],
-            }
-          : characterItem,
-      ),
-    }))
-    setNotice(`已保存角色：${name}`)
-    return true
-  }
-
-  function handleDeleteCharacter(characterId: string): boolean {
-    const target = state.characters.find((item) => item.id === characterId)
-    if (!target) {
-      setNotice('没有找到这个角色')
-      return false
-    }
-
-    const canDelete =
-      target.relationship === '群聊' || target.id.startsWith('character_') || target.tags.includes('自定义角色')
-    if (!canDelete) {
-      setNotice('内置三对 CP 先保留，后续妹妹确认后再开放删除')
-      return false
-    }
-
-    setState((currentState) => {
-      const remainingCharacters = currentState.characters.filter((item) => item.id !== characterId)
-      const nextActiveCharacterId =
-        currentState.activeCharacterId === characterId
-          ? remainingCharacters[0]?.id ?? createSeedState().activeCharacterId
-          : currentState.activeCharacterId
-
-      return {
-        ...currentState,
-        activeCharacterId: nextActiveCharacterId,
-        characters: remainingCharacters,
-        conversations: currentState.conversations.filter((item) => item.characterId !== characterId),
-        trash: {
-          ...currentState.trash,
-          conversations: currentState.trash.conversations.filter((item) => item.characterId !== characterId),
-        },
-      }
-    })
-    setNotice(`已删除：${target.name}`)
-    return true
-  }
-
-  function toRestorableConversation(conversation: ConversationState): ConversationState {
-    return {
-      id: conversation.id,
-      characterId: conversation.characterId,
-      messages: conversation.messages,
-      unreadCount: conversation.unreadCount,
-      summary: conversation.summary,
-      createdAt: conversation.createdAt,
-      updatedAt: conversation.updatedAt,
-    }
-  }
-
-  function handleDeleteGroupChat(characterId: string): boolean {
-    const target = state.characters.find((item) => item.id === characterId)
-    if (!target) {
-      setNotice('没有找到这个群聊')
-      return false
-    }
-    if (target.relationship !== '群聊') {
-      return handleDeleteCharacter(characterId)
-    }
-
-    const now = nowIso()
-    setState((currentState) => {
-      const group = currentState.characters.find((item) => item.id === characterId)
-      if (!group) return currentState
-      const conversation =
-        currentState.conversations.find((item) => item.characterId === characterId) ??
-        ({
-          id: createId('conversation'),
-          characterId,
-          messages: [],
-          summary: '',
-          createdAt: now,
-          updatedAt: now,
-        } satisfies ConversationState)
-      const remainingCharacters = currentState.characters.filter((item) => item.id !== characterId)
-      const nextActiveCharacterId =
-        currentState.activeCharacterId === characterId
-          ? remainingCharacters[0]?.id ?? createSeedState().activeCharacterId
-          : currentState.activeCharacterId
-
-      return {
-        ...currentState,
-        activeCharacterId: nextActiveCharacterId,
-        characters: remainingCharacters,
-        conversations: currentState.conversations.filter((item) => item.characterId !== characterId),
-        trash: {
-          ...currentState.trash,
-          conversations: [
-            {
-              ...conversation,
-              characterName: group.name,
-              character: group,
-              deletedAt: now,
-            },
-            ...currentState.trash.conversations.filter((item) => item.id !== conversation.id),
-          ],
-        },
-      }
-    })
-    setNotice(`群聊「${target.name}」已放入回收花园`)
-    return true
-  }
-
-  function handleClearConversation(characterId: string) {
-    const now = nowIso()
-    chat.clearChatAlert()
-    setState((currentState) => {
-      const existingConversation = getConversation(currentState, characterId)
-      return upsertConversation(currentState, {
-        ...existingConversation,
-        messages: [],
-        summary: '',
-        updatedAt: now,
-      })
-    })
-    setNotice('聊天记录已清空')
-  }
-
-  function handleDeleteConversation(characterId: string) {
-    const target = state.characters.find((item) => item.id === characterId)
-    const now = nowIso()
-    chat.clearChatAlert()
-    let movedToTrash = false
-    setState((currentState) => {
-      const conversation = currentState.conversations.find((item) => item.characterId === characterId)
-      if (!conversation) return currentState
-      const character = currentState.characters.find((item) => item.id === characterId)
-      movedToTrash = true
-      return {
-        ...currentState,
-        conversations: currentState.conversations.filter((item) => item.characterId !== characterId),
-        trash: {
-          ...currentState.trash,
-          conversations: [
-            {
-              ...conversation,
-              characterName: character?.name ?? target?.name ?? '已删除角色',
-              character,
-              deletedAt: now,
-            },
-            ...currentState.trash.conversations.filter((item) => item.id !== conversation.id),
-          ],
-        },
-      }
-    })
-    setNotice(
-      movedToTrash
-        ? target
-          ? `已把和「${target.name}」的会话放入回收花园，角色仍保留`
-          : '会话已放入回收花园'
-        : '没有可删除的聊天记录',
-    )
-  }
-
-  function handleRestoreConversation(conversationId: string) {
-    let restoredName = ''
-    let blockedByMissingCharacter = false
-    setState((currentState) => {
-      const trashedConversation = currentState.trash.conversations.find((item) => item.id === conversationId)
-      if (!trashedConversation) return currentState
-      const hasCharacter = currentState.characters.some((item) => item.id === trashedConversation.characterId)
-      const restoredCharacter = trashedConversation.character
-      if (!hasCharacter && !restoredCharacter) {
-        blockedByMissingCharacter = true
-        return currentState
-      }
-
-      const characters = hasCharacter || !restoredCharacter
-        ? currentState.characters
-        : [restoredCharacter, ...currentState.characters]
-      const restoredConversation = toRestorableConversation(trashedConversation)
-      restoredName = trashedConversation.characterName
-
-      return {
-        ...currentState,
-        activeCharacterId: restoredConversation.characterId,
-        characters,
-        conversations: [
-          restoredConversation,
-          ...currentState.conversations.filter((item) => item.characterId !== restoredConversation.characterId),
-        ],
-        trash: {
-          ...currentState.trash,
-          conversations: currentState.trash.conversations.filter((item) => item.id !== conversationId),
-        },
-      }
-    })
-    if (blockedByMissingCharacter) {
-      setNotice('角色已经不存在，不能恢复这条聊天')
-      return
-    }
-    setNotice(restoredName ? `已恢复「${restoredName}」的聊天` : '聊天已恢复')
-  }
-
-  function handleDeleteTrashedConversation(conversationId: string) {
-    setState((currentState) => ({
-      ...currentState,
-      trash: {
-        ...currentState.trash,
-        conversations: currentState.trash.conversations.filter((item) => item.id !== conversationId),
-      },
-    }))
-    setNotice('聊天已彻底删除')
-  }
-
   // ---- 设置 ----
   function handleUpdateSettings(settings: AppSettings) {
     if (settings.dataStorageMode === 'local' && state.settings.dataStorageMode !== 'local') {
@@ -525,13 +225,13 @@ export function useYuriNestApp() {
     handleAddMemory: memory.handleAddMemory,
     handleClearCompletedTasks: tasks.handleClearCompletedTasks,
     handleConnectCloud: cloud.handleConnectCloud,
-    handleCreateCharacter,
-    handleDeleteCharacter,
-    handleClearConversation,
-    handleDeleteConversation,
-    handleDeleteGroupChat,
-    handleRestoreConversation,
-    handleDeleteTrashedConversation,
+    handleCreateCharacter: characterCommands.handleCreateCharacter,
+    handleDeleteCharacter: characterCommands.handleDeleteCharacter,
+    handleClearConversation: conversationCommands.handleClearConversation,
+    handleDeleteConversation: conversationCommands.handleDeleteConversation,
+    handleDeleteGroupChat: conversationCommands.handleDeleteGroupChat,
+    handleRestoreConversation: conversationCommands.handleRestoreConversation,
+    handleDeleteTrashedConversation: conversationCommands.handleDeleteTrashedConversation,
     handleCreateCloudBackup: cloud.handleCreateCloudBackup,
     handleCreateLocalBackup: backup.handleCreateLocalBackup,
     handleDeleteLocalBackup: backup.handleDeleteLocalBackup,
@@ -556,12 +256,12 @@ export function useYuriNestApp() {
     handleRestoreWorldNode: memory.handleRestoreWorldNode,
     handleSaveModelProfile: cloud.handleSaveModelProfile,
     handleSaveCloudToken: cloud.handleSaveCloudToken,
-    handleSelectCharacter,
+    handleSelectCharacter: characterCommands.handleSelectCharacter,
     handleSend: chat.handleSend,
     handleTestModelProfile: cloud.handleTestModelProfile,
     handleTrashMemory: memory.handleTrashMemory,
     handleTrashWorldNode: memory.handleTrashWorldNode,
-    handleUpdateCharacter,
+    handleUpdateCharacter: characterCommands.handleUpdateCharacter,
     handleUpdateMemory: memory.handleUpdateMemory,
     handleUpdateSettings,
     handleUpdateTaskStatus: tasks.handleUpdateTaskStatus,
