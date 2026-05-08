@@ -13,7 +13,6 @@ import {
   listCloudBackups,
   pullCloudState,
   pushCloudState,
-  saveCloudToken,
 } from '../services/cloudSync'
 import { migrateAppState } from '../data/migrations'
 import { applyTrashRetention } from '../services/trashRetention'
@@ -29,6 +28,8 @@ interface UseCloudSyncDeps {
   setNotice: Dispatch<SetStateAction<string>>
   characterId: string
   makeLocalBackup: (reason: string) => Promise<LocalBackupSummary>
+  authToken: string
+  canManageCloudBackups: boolean
 }
 
 function createAutoPushSignature(state: AppState): string {
@@ -69,8 +70,8 @@ function isCloudStateContainedInLocal(localState: AppState, cloudState: AppState
   })
 }
 
-export function useCloudSync({ state, setState, setNotice, characterId, makeLocalBackup }: UseCloudSyncDeps) {
-  const [cloudToken, setCloudToken] = useState(() => getSavedCloudToken())
+export function useCloudSync({ state, setState, setNotice, characterId, makeLocalBackup, authToken, canManageCloudBackups }: UseCloudSyncDeps) {
+  const [cloudToken] = useState(() => authToken || getSavedCloudToken())
   const [cloudStatus, setCloudStatus] = useState(() => {
     if (!isCloudSyncConfigured()) return '云端后端未配置'
     return '云端直连已启用'
@@ -104,7 +105,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
   } = modelProfilesHook
 
   const refreshCloudBackups = useCallback(async (token: string) => {
-    if (!isCloudSyncConfigured()) {
+    if (!isCloudSyncConfigured() || !canManageCloudBackups) {
       setCloudBackups([])
       return []
     }
@@ -112,7 +113,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
     const backups = await listCloudBackups(token)
     setCloudBackups(backups)
     return backups
-  }, [])
+  }, [canManageCloudBackups])
 
   const refreshCloudMetadata = useCallback(async (token: string) => {
     if (!isCloudSyncConfigured()) {
@@ -212,26 +213,6 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
     setNotice('云端连接已检查')
   }
 
-  function handleSaveCloudToken(token: string) {
-    const cleanedToken = token.trim()
-    saveCloudToken(cleanedToken)
-    setCloudToken(cleanedToken)
-
-    if (!cleanedToken) {
-      setCloudMeta(null)
-      setCloudStatus('云端口令已清空')
-      setModelProfileStatus('模型保险箱需要云端口令后再读取')
-      setNotice('云端口令已清空')
-      return
-    }
-
-    setCloudStatus('云端口令已保存，正在检查连接...')
-    setModelProfileStatus('云端口令已保存，正在读取模型配置...')
-    setNotice('云端口令已保存')
-    void refreshCloudMetadata(cleanedToken)
-    void refreshModelProfileList(cleanedToken)
-  }
-
   async function handlePullCloud() {
     if (cloudBusy) return
     if (state.settings.dataStorageMode === 'local') {
@@ -263,11 +244,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
       setCloudStatus('正在从云端读取...')
       const snapshot = await pullCloudState(cloudToken)
       if (!snapshot.state) {
-        setCloudMeta({
-          hasState: false,
-          revision: snapshot.revision,
-          updatedAt: snapshot.updatedAt,
-        })
+        setCloudMeta({ hasState: false, revision: snapshot.revision, updatedAt: snapshot.updatedAt })
         setCloudStatus('云端还没有数据，可以先保存一次')
         return
       }
@@ -284,11 +261,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
           characterId,
         }),
       )
-      setCloudMeta({
-        hasState: true,
-        revision: snapshot.revision,
-        updatedAt: snapshot.updatedAt,
-      })
+      setCloudMeta({ hasState: true, revision: snapshot.revision, updatedAt: snapshot.updatedAt })
       setCloudStatus(`已读取云端数据 v${snapshot.revision}，本机旧数据已备份`)
       setNotice('云端数据已读取')
     } catch (error) {
@@ -321,11 +294,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
       })
       setState(stateToPush)
       lastAutoPushSignatureRef.current = createAutoPushSignature(stateToPush)
-      setCloudMeta({
-        hasState: true,
-        revision: result.revision,
-        updatedAt: result.updatedAt,
-      })
+      setCloudMeta({ hasState: true, revision: result.revision, updatedAt: result.updatedAt })
       void refreshCloudBackups(cloudToken)
       setCloudStatus(`已保存到云端 v${result.revision}，时间 ${formatCloudTime(result.updatedAt)}`)
       setNotice('云端数据已保存')
@@ -343,6 +312,10 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
     if (cloudBusy) return
     if (state.settings.dataStorageMode === 'local') {
       setCloudStatus('当前为仅本地模式，不会创建云端备份')
+      return
+    }
+    if (!canManageCloudBackups) {
+      setCloudStatus('只有管理员账号可以创建整库云端备份')
       return
     }
 
@@ -371,6 +344,12 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
   }
 
   async function handleRefreshCloudBackups() {
+    if (!canManageCloudBackups) {
+      setCloudBackups([])
+      setCloudStatus('只有管理员账号可以查看整库云端备份')
+      return
+    }
+
     try {
       await refreshCloudBackups(cloudToken)
       setCloudStatus('云端备份列表已刷新')
@@ -380,6 +359,11 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
   }
 
   async function handleDownloadCloudBackup(fileName: string) {
+    if (!canManageCloudBackups) {
+      setCloudStatus('只有管理员账号可以下载整库云端备份')
+      return
+    }
+
     try {
       const blob = await downloadCloudBackup(cloudToken, fileName)
       const url = URL.createObjectURL(blob)
@@ -415,11 +399,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
         const result = await pushCloudState(stateToPush, cloudTokenRef.current, {
           baseRevision: cloudMetaRef.current?.revision ?? 0,
         })
-        const nextMeta = {
-          hasState: true,
-          revision: result.revision,
-          updatedAt: result.updatedAt,
-        }
+        const nextMeta = { hasState: true, revision: result.revision, updatedAt: result.updatedAt }
         cloudMetaRef.current = nextMeta
         lastAutoPushSignatureRef.current = signature
         setCloudMeta(nextMeta)
@@ -428,11 +408,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
         if (error instanceof ApiResponseError && error.status === 409) {
           try {
             const snapshot = await pullCloudState(cloudTokenRef.current)
-            const nextMeta = {
-              hasState: Boolean(snapshot.state),
-              revision: snapshot.revision,
-              updatedAt: snapshot.updatedAt,
-            }
+            const nextMeta = { hasState: Boolean(snapshot.state), revision: snapshot.revision, updatedAt: snapshot.updatedAt }
             cloudMetaRef.current = nextMeta
             setCloudMeta(nextMeta)
 
@@ -441,11 +417,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
               const result = await pushCloudState(stateToPush, cloudTokenRef.current, {
                 baseRevision: snapshot.revision,
               })
-              const rebasedMeta = {
-                hasState: true,
-                revision: result.revision,
-                updatedAt: result.updatedAt,
-              }
+              const rebasedMeta = { hasState: true, revision: result.revision, updatedAt: result.updatedAt }
               cloudMetaRef.current = rebasedMeta
               lastAutoPushSignatureRef.current = signature
               setCloudMeta(rebasedMeta)
@@ -491,7 +463,6 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
     refreshCloudMetadata,
     bootstrapCloudState,
     handleConnectCloud,
-    handleSaveCloudToken,
     handlePullCloud,
     handlePushCloud,
     handleCreateCloudBackup,

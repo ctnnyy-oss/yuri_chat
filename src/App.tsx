@@ -9,10 +9,12 @@ import './styles/buttons.css'
 import './styles/status.css'
 import './styles/social.css'
 import './styles/tasks.css'
+import './styles/auth.css'
 import './styles/mobile.css'
-import { CloudSun, Maximize2, Minus, PanelsTopLeft, X } from 'lucide-react'
+import { CloudSun, LogOut, Maximize2, Minus, PanelsTopLeft, ShieldCheck, X } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { useEffect, useState } from 'react'
+import { useAccountSession } from './app/useAccountSession'
 import { useYuriNestApp } from './app/useYuriNestApp'
 import { CharacterRail } from './components/CharacterRail'
 import { ChatPhone } from './components/ChatPhone'
@@ -21,10 +23,43 @@ import { MobileMessageList } from './components/MobileMessageList'
 import { MobileNav } from './components/MobileNav'
 import { QqFeaturePanel } from './components/QqFeaturePanel'
 import { AgentTaskPanel } from './components/agent/AgentTaskPanel'
+import { AuthPanel } from './components/auth/AuthPanel'
+import type { AccountUser } from './services/accountAuth'
 
 type GroupChatDraft = { name: string; text: string; memberIds?: string[] }
 
 function App() {
+  const account = useAccountSession()
+
+  if (account.status !== 'signed-in' || !account.user) {
+    return (
+      <AuthPanel
+        busy={account.busy}
+        message={account.message}
+        onLogin={account.signIn}
+        onRegister={account.signUp}
+        status={account.status}
+      />
+    )
+  }
+
+  return (
+    <AuthenticatedApp
+      authToken={account.token}
+      key={account.user.id}
+      onLogout={account.signOut}
+      user={account.user}
+    />
+  )
+}
+
+interface AuthenticatedAppProps {
+  authToken: string
+  user: AccountUser
+  onLogout: () => Promise<void>
+}
+
+function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) {
   const [mobileMessageListOpen, setMobileMessageListOpen] = useState(true)
   const [shellTip, setShellTip] = useState('')
   const {
@@ -73,7 +108,6 @@ function App() {
     handleRestoreMemoryRevision,
     handleRestoreWorldNode,
     handleSaveModelProfile,
-    handleSaveCloudToken,
     handleSelectCharacter,
     handleSend,
     handleTestModelProfile,
@@ -95,7 +129,7 @@ function App() {
     notice,
     setDraft,
     state,
-  } = useYuriNestApp()
+  } = useYuriNestApp({ accountId: user.id, authToken, canManageCloudBackups: user.role === 'admin' })
 
   function handleViewChange(view: typeof activeView) {
     navigateView(view)
@@ -233,6 +267,16 @@ function App() {
             <X size={17} />
           </button>
         </div>
+        <div className="desktop-account-badge" aria-label="当前账号">
+          <ShieldCheck size={17} />
+          <span>
+            <strong>{user.displayName || user.username}</strong>
+            <small>{user.role === 'admin' ? '管理员账号' : '普通账号'}</small>
+          </span>
+          <button aria-label="退出登录" onClick={() => void onLogout()} type="button">
+            <LogOut size={15} />
+          </button>
+        </div>
       </header>
 
       <CharacterRail
@@ -348,7 +392,6 @@ function App() {
           onRestoreMemoryRevision={handleRestoreMemoryRevision}
           onRestoreWorldNode={handleRestoreWorldNode}
           onSaveModelProfile={handleSaveModelProfile}
-          onSaveCloudToken={handleSaveCloudToken}
           onTestModelProfile={handleTestModelProfile}
           onTrashMemory={handleTrashMemory}
           onTrashWorldNode={handleTrashWorldNode}

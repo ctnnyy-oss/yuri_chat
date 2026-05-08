@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto'
 import { isProductionRuntime } from './auth.mjs'
-import { getCloudDatabase } from './cloudStore.mjs'
+import { getCloudDatabase, normalizeDataUserId } from './cloudStore.mjs'
 import { readEnv } from './env.mjs'
 import { getBaseUrl, getModel, stripTrailingSlash } from './modelProvider.mjs'
 
@@ -19,26 +19,31 @@ export function getModelSecretConfigurationIssue() {
   return null
 }
 
-export function listModelProfiles() {
-  return [getServerEnvProfileSummary(), ...listStoredModelProfiles()]
+export function listModelProfiles(userId) {
+  return [getServerEnvProfileSummary(userId), ...listStoredModelProfiles(userId)]
 }
 
-export function upsertModelProfile(input) {
+export function upsertModelProfile(input, userId) {
+  const dataUserId = normalizeDataUserId(userId)
   const profile = normalizeModelProfileInput(input)
   const now = new Date().toISOString()
-  const existing = profile.id ? readStoredModelProfile(profile.id) : null
-  const id = existing?.id ?? profile.id ?? randomUUID()
+  const existing = profile.id ? readStoredModelProfile(profile.id, dataUserId) : null
+  const idAlreadyUsedByAnotherUser = Boolean(
+    profile.id && !existing && getCloudDatabase().prepare('SELECT id FROM model_profiles WHERE id = ?').get(profile.id),
+  )
+  const id = existing?.id ?? (idAlreadyUsedByAnotherUser ? randomUUID() : profile.id) ?? randomUUID()
   const encryptedApiKey =
     profile.apiKey && profile.apiKey.trim() ? encryptSecret(profile.apiKey.trim()) : existing?.encryptedApiKey ?? null
 
-  if (profile.isDefault) clearDefaultModelProfiles()
+  if (profile.isDefault) clearDefaultModelProfiles(dataUserId)
 
   getCloudDatabase()
     .prepare(
       `INSERT INTO model_profiles
-        (id, name, provider_kind, base_url, model, encrypted_api_key, enabled, is_default, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, user_id, name, provider_kind, base_url, model, encrypted_api_key, enabled, is_default, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
+         user_id = excluded.user_id,
          name = excluded.name,
          provider_kind = excluded.provider_kind,
          base_url = excluded.base_url,
@@ -50,6 +55,7 @@ export function upsertModelProfile(input) {
     )
     .run(
       id,
+      dataUserId,
       profile.name,
       profile.kind,
       stripTrailingSlash(profile.baseUrl),
@@ -61,26 +67,29 @@ export function upsertModelProfile(input) {
       now,
     )
 
-  return toModelProfileSummary(readStoredModelProfile(id))
+  return toModelProfileSummary(readStoredModelProfile(id, dataUserId))
 }
 
-export function deleteModelProfile(profileId) {
+export function deleteModelProfile(profileId, userId) {
   if (!profileId || profileId === serverEnvProfileId) return false
-  const result = getCloudDatabase().prepare('DELETE FROM model_profiles WHERE id = ?').run(String(profileId))
+  const result = getCloudDatabase()
+    .prepare('DELETE FROM model_profiles WHERE id = ? AND user_id = ?')
+    .run(String(profileId), normalizeDataUserId(userId))
   return result.changes > 0
 }
 
-export function resolveRuntimeProfileForChat(settings) {
+export function resolveRuntimeProfileForChat(settings, userId) {
+  const dataUserId = normalizeDataUserId(userId)
   const selectedProfileId = settings?.modelProfileId
   if (selectedProfileId && selectedProfileId !== serverEnvProfileId) {
-    return storedProfileToRuntime(readStoredModelProfile(selectedProfileId))
+    return storedProfileToRuntime(readStoredModelProfile(selectedProfileId, dataUserId))
   }
 
   if (selectedProfileId === serverEnvProfileId) {
-    return resolveServerEnvProfile(settings)
+    return resolveServerEnvProfile(settings, dataUserId)
   }
 
-  const defaultStoredProfile = readDefaultStoredModelProfile()
+  const defaultStoredProfile = readDefaultStoredModelProfile(dataUserId)
   if (defaultStoredProfile) {
     return storedProfileToRuntime(defaultStoredProfile)
   }
@@ -88,7 +97,8 @@ export function resolveRuntimeProfileForChat(settings) {
   return null
 }
 
-export function resolveRuntimeProfileForTest(input) {
+export function resolveRuntimeProfileForTest(input, userId) {
+  const dataUserId = normalizeDataUserId(userId)
   if (input.profile) {
     const normalized = normalizeModelProfileInput(input.profile)
     return {
@@ -102,13 +112,14 @@ export function resolveRuntimeProfileForTest(input) {
   }
 
   if (input.profileId === serverEnvProfileId) {
-    return resolveRuntimeProfileForChat({ modelProfileId: serverEnvProfileId, model: process.env.AI_MODEL })
+    return resolveRuntimeProfileForChat({ modelProfileId: serverEnvProfileId, model: process.env.AI_MODEL }, dataUserId)
   }
 
-  return storedProfileToRuntime(readStoredModelProfile(input.profileId))
+  return storedProfileToRuntime(readStoredModelProfile(input.profileId, dataUserId))
 }
 
-export function resolveRuntimeProfileForModelCatalog(input) {
+export function resolveRuntimeProfileForModelCatalog(input, userId) {
+  const dataUserId = normalizeDataUserId(userId)
   if (input.profile) {
     const normalized = normalizeModelProfileInput(input.profile, { requireModel: false })
     return {
@@ -122,55 +133,56 @@ export function resolveRuntimeProfileForModelCatalog(input) {
   }
 
   if (input.profileId === serverEnvProfileId) {
-    return resolveRuntimeProfileForChat({ modelProfileId: serverEnvProfileId, model: process.env.AI_MODEL })
+    return resolveRuntimeProfileForChat({ modelProfileId: serverEnvProfileId, model: process.env.AI_MODEL }, dataUserId)
   }
 
-  return storedProfileToRuntime(readStoredModelProfile(input.profileId))
+  return storedProfileToRuntime(readStoredModelProfile(input.profileId, dataUserId))
 }
 
-function listStoredModelProfiles() {
+function listStoredModelProfiles(userId) {
   return getCloudDatabase()
     .prepare(
       `SELECT id, name, provider_kind AS kind, base_url AS baseUrl, model, encrypted_api_key AS encryptedApiKey,
               enabled, is_default AS isDefault, created_at AS createdAt, updated_at AS updatedAt
        FROM model_profiles
+       WHERE user_id = ?
        ORDER BY is_default DESC, updated_at DESC`,
     )
-    .all()
+    .all(normalizeDataUserId(userId))
     .map((row) => toModelProfileSummary(row))
 }
 
-function readStoredModelProfile(profileId) {
+function readStoredModelProfile(profileId, userId) {
   if (!profileId || profileId === serverEnvProfileId) return null
   const row = getCloudDatabase()
     .prepare(
       `SELECT id, name, provider_kind AS kind, base_url AS baseUrl, model, encrypted_api_key AS encryptedApiKey,
               enabled, is_default AS isDefault, created_at AS createdAt, updated_at AS updatedAt
        FROM model_profiles
-       WHERE id = ?`,
+       WHERE id = ? AND user_id = ?`,
     )
-    .get(String(profileId))
+    .get(String(profileId), normalizeDataUserId(userId))
 
   return row ? toModelProfileRecord(row) : null
 }
 
-function readDefaultStoredModelProfile() {
+function readDefaultStoredModelProfile(userId) {
   const row = getCloudDatabase()
     .prepare(
       `SELECT id, name, provider_kind AS kind, base_url AS baseUrl, model, encrypted_api_key AS encryptedApiKey,
               enabled, is_default AS isDefault, created_at AS createdAt, updated_at AS updatedAt
        FROM model_profiles
-       WHERE enabled = 1 AND is_default = 1
+       WHERE user_id = ? AND enabled = 1 AND is_default = 1
        ORDER BY updated_at DESC
        LIMIT 1`,
     )
-    .get()
+    .get(normalizeDataUserId(userId))
 
   return row ? toModelProfileRecord(row) : null
 }
 
-function clearDefaultModelProfiles() {
-  getCloudDatabase().prepare('UPDATE model_profiles SET is_default = 0').run()
+function clearDefaultModelProfiles(userId) {
+  getCloudDatabase().prepare('UPDATE model_profiles SET is_default = 0 WHERE user_id = ?').run(normalizeDataUserId(userId))
 }
 
 function normalizeModelProfileInput(input, options = {}) {
@@ -253,7 +265,7 @@ function toModelProfileSummary(row) {
   }
 }
 
-function getServerEnvProfileSummary() {
+function getServerEnvProfileSummary(userId) {
   const now = new Date(0).toISOString()
   return {
     id: serverEnvProfileId,
@@ -263,13 +275,13 @@ function getServerEnvProfileSummary() {
     model: process.env.AI_MODEL || process.env.OPENAI_MODEL || 'deepseek-v4-flash',
     hasApiKey: hasApiKey(),
     enabled: true,
-    isDefault: !readDefaultStoredModelProfile(),
+    isDefault: !readDefaultStoredModelProfile(userId),
     createdAt: now,
     updatedAt: now,
   }
 }
 
-function resolveServerEnvProfile(settings) {
+function resolveServerEnvProfile(settings, _userId) {
   if (!hasApiKey()) return null
 
   return {

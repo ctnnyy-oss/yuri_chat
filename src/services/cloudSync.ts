@@ -1,5 +1,6 @@
 import { storageConfig } from '../config/storage'
 import type { AppState } from '../domain/types'
+import { getSavedSessionToken } from './accountAuth'
 import { apiFetch, getApiBaseUrl } from './apiClient'
 
 export interface CloudMetadata {
@@ -29,6 +30,8 @@ export function isCloudSyncConfigured(): boolean {
 
 export function getSavedCloudToken(): string {
   if (typeof window === 'undefined') return ''
+  const sessionToken = getSavedSessionToken()
+  if (sessionToken) return sessionToken
   try {
     return window.localStorage.getItem(storageConfig.cloudTokenStorageKey) ?? ''
   } catch {

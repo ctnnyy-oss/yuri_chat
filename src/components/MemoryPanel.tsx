@@ -86,7 +86,6 @@ interface MemoryPanelProps {
   cloudSyncConfigured: boolean
   cloudToken: string
   onConnectCloud: () => void
-  onSaveCloudToken: (token: string) => void
   onPullCloud: () => void
   onPushCloud: () => void
   onRefreshCloud: () => void
@@ -143,7 +142,6 @@ export function MemoryPanel({
   cloudSyncConfigured,
   cloudToken,
   onConnectCloud,
-  onSaveCloudToken,
   onPullCloud,
   onPushCloud,
   onRefreshCloud,
@@ -375,7 +373,6 @@ export function MemoryPanel({
           onDeleteModelProfile={onDeleteModelProfile}
           onFetchModelCatalog={onFetchModelCatalog}
           onSaveModelProfile={onSaveModelProfile}
-          onSaveCloudToken={onSaveCloudToken}
           onTestModelProfile={onTestModelProfile}
           onUpdateSettings={onUpdateSettings}
           settings={settings}

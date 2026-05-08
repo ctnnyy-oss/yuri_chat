@@ -14,6 +14,11 @@ export const cloudRateLimiter = createRateLimiter({
   message: '云端同步请求太密集了，请稍等一分钟再继续。',
 })
 
+export const authRateLimiter = createRateLimiter({
+  limit: readLimit('YURI_CHAT_RATELIMIT_AUTH', 20),
+  message: '账号请求太频繁啦，稍等一分钟再试。',
+})
+
 function createRateLimiter({ limit, message }) {
   return rateLimit({
     windowMs: ONE_MINUTE_MS,

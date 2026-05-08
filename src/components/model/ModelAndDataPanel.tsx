@@ -1,7 +1,7 @@
 import { Activity, AlertCircle, CheckCircle2, CircleDashed, SlidersHorizontal, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import type { AppSettings, ModelProfileInput, ModelProfileSummary } from '../../domain/types'
-import { checkCloudHealth } from '../../services/cloudSync'
+import { checkCloudHealth, saveCloudToken } from '../../services/cloudSync'
 import { listModelProfiles, testModelProfile, type ModelCatalogResult } from '../../services/modelProfiles'
 import { WorkspaceTitle } from '../memory/atoms'
 import { GenerationSettings } from './GenerationSettings'
@@ -68,7 +68,6 @@ interface ModelAndDataPanelProps {
   cloudSyncConfigured: boolean
   cloudToken: string
   cloudStatus?: string
-  onSaveCloudToken: (token: string) => void
   onSaveModelProfile: (profile: ModelProfileInput) => Promise<void>
   onDeleteModelProfile: (profileId: string) => Promise<void>
   onFetchModelCatalog: (input: { profileId?: string; profile?: ModelProfileInput }) => Promise<ModelCatalogResult>
@@ -84,7 +83,6 @@ export function ModelAndDataPanel({
   cloudSyncConfigured,
   cloudToken,
   cloudStatus,
-  onSaveCloudToken,
   onSaveModelProfile,
   onDeleteModelProfile,
   onFetchModelCatalog,
@@ -101,7 +99,7 @@ export function ModelAndDataPanel({
     onTestModelProfile,
   })
   const modelBackendHint = cloudSyncConfigured ? '云端模型后端' : '本机 /api 模型后端'
-  const [cloudTokenDraft, setCloudTokenDraft] = useState(cloudToken)
+  const [cloudTokenDraft, setCloudTokenDraft] = useState('')
   const [diagnostics, setDiagnostics] = useState<DiagnosticItem[]>(initialDiagnostics)
   const [diagnosticBusy, setDiagnosticBusy] = useState(false)
   const diagnosticSummary = summarizeDiagnostics(diagnostics)
@@ -125,15 +123,15 @@ export function ModelAndDataPanel({
   }
 
   function handleStoreCloudToken(token: string) {
+    saveCloudToken(token)
     setCloudTokenDraft(token)
-    onSaveCloudToken(token)
   }
 
   async function handleRunDiagnostics() {
     if (diagnosticBusy) return
 
     setDiagnosticBusy(true)
-    const token = (cloudTokenDraft || cloudToken).trim()
+    const token = cloudToken.trim()
     const nextDiagnostics = initialDiagnostics.map((item) => ({ ...item, status: 'running' as DiagnosticStatus }))
     const publish = (id: DiagnosticItem['id'], status: DiagnosticStatus, detail: string) => {
       const target = nextDiagnostics.find((item) => item.id === id)

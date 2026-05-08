@@ -1,0 +1,138 @@
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(135deg, rgba(255, 246, 250, 0.94), rgba(245, 252, 255, 0.94)),
+    radial-gradient(circle at 20% 20%, rgba(255, 171, 204, 0.26), transparent 32%),
+    radial-gradient(circle at 80% 0%, rgba(108, 165, 245, 0.18), transparent 30%);
+}
+
+.auth-panel {
+  width: min(420px, 100%);
+  padding: 24px;
+  border: 1px solid rgba(216, 91, 138, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 24px 80px rgba(83, 44, 66, 0.14);
+}
+
+.auth-brand,
+.desktop-account-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-brand {
+  margin-bottom: 18px;
+}
+
+.auth-brand-mark {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #fff;
+  background: linear-gradient(135deg, #d85b8a, #f29ab8);
+}
+
+.auth-brand strong,
+.desktop-account-badge strong {
+  display: block;
+}
+
+.auth-brand small,
+.desktop-account-badge small {
+  color: var(--muted-text, #786d75);
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.auth-tabs button,
+.auth-submit {
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #5f5360;
+  background: rgba(216, 91, 138, 0.08);
+}
+
+.auth-tabs button.active,
+.auth-submit {
+  color: #fff;
+  background: linear-gradient(135deg, #d85b8a, #ed83aa);
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.auth-form input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(130, 92, 112, 0.22);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+}
+
+.auth-submit:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.auth-message,
+.auth-note {
+  margin: 14px 0 0;
+  color: #6b5964;
+  line-height: 1.6;
+}
+
+.auth-message {
+  color: #b3315d;
+  font-weight: 700;
+}
+
+.desktop-account-badge {
+  min-height: 34px;
+  padding: 4px 8px 4px 10px;
+  border: 1px solid rgba(216, 91, 138, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.desktop-account-badge button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: #91506c;
+  background: rgba(216, 91, 138, 0.1);
+}

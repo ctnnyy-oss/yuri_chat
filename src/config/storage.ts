@@ -1,10 +1,12 @@
 export const storageConfig = {
-  // 历史名必须保留：改掉会让旧 IndexedDB 库不可见，等于把妹妹本机聊天/记忆/角色“藏起来”。
+  // 历史名必须保留：改掉会让旧 IndexedDB 数据不可见。
   databaseName: 'yuri-nest',
   storeName: 'app',
   stateKey: 'state',
   backupKeyPrefix: 'backup:',
   maxLocalBackups: 12,
-  // 历史 key 必须保留：改掉会让已保存的云端口令不可见，需要妹妹重新找口令。
+  accountSessionStorageKey: 'yuri-chat-session-token',
+  legacyLocalClaimStorageKey: 'yuri-chat-legacy-local-claimed-account',
+  // 历史 key 必须保留：旧云端口令仍可作为短期兼容入口。
   cloudTokenStorageKey: 'yuri-nest-cloud-token',
 }

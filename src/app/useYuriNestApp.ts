@@ -24,7 +24,13 @@ import { useCloudSync } from './useCloudSync'
 import { useConversationCommands } from './useConversationCommands'
 import { useMemoryActions } from './useMemoryActions'
 
-export function useYuriNestApp() {
+interface UseYuriNestAppOptions {
+  accountId: string
+  authToken: string
+  canManageCloudBackups: boolean
+}
+
+export function useYuriNestApp({ accountId, authToken, canManageCloudBackups }: UseYuriNestAppOptions) {
   const [state, setState] = useState<AppState>(() => createSeedState())
   const [isReady, setIsReady] = useState(false)
   const [activeView, setActiveView] = useState<AppView>(() => readViewFromLocation())
@@ -39,7 +45,7 @@ export function useYuriNestApp() {
   } as CSSProperties
 
   // ---- 子 hook ----
-  const backup = useBackupRestore({ state, setState, setNotice, characterId: character.id })
+  const backup = useBackupRestore({ state, setState, setNotice, characterId: character.id, accountId })
 
   const cloud = useCloudSync({
     state,
@@ -47,6 +53,8 @@ export function useYuriNestApp() {
     setNotice,
     characterId: character.id,
     makeLocalBackup: backup.makeLocalBackup,
+    authToken,
+    canManageCloudBackups,
   })
   const { autoPush, bootstrapCloudState, initModelProfiles, onSwitchToCloud, onSwitchToLocal } = cloud
   const bootstrapStateRef = useRef(state)
@@ -117,13 +125,13 @@ export function useYuriNestApp() {
   }, [isReady])
 
   useEffect(() => {
-    void loadAppState().then((savedState) => {
+    void loadAppState(accountId).then((savedState) => {
       if (savedState) {
         setState(migrateAppState(savedState))
       }
       setIsReady(true)
     })
-  }, [])
+  }, [accountId])
 
   useEffect(() => {
     if (!isReady) return
@@ -147,8 +155,8 @@ export function useYuriNestApp() {
 
   useEffect(() => {
     if (!isReady) return
-    void saveAppState(state)
-  }, [isReady, state])
+    void saveAppState(state, accountId)
+  }, [accountId, isReady, state])
 
   useEffect(() => {
     const themeTokens =
@@ -255,7 +263,6 @@ export function useYuriNestApp() {
     handleRestoreMemoryRevision: memory.handleRestoreMemoryRevision,
     handleRestoreWorldNode: memory.handleRestoreWorldNode,
     handleSaveModelProfile: cloud.handleSaveModelProfile,
-    handleSaveCloudToken: cloud.handleSaveCloudToken,
     handleSelectCharacter: characterCommands.handleSelectCharacter,
     handleSend: chat.handleSend,
     handleTestModelProfile: cloud.handleTestModelProfile,

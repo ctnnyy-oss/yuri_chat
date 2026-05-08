@@ -19,18 +19,19 @@ interface UseBackupRestoreDeps {
   setState: Dispatch<SetStateAction<AppState>>
   setNotice: Dispatch<SetStateAction<string>>
   characterId: string
+  accountId: string
 }
 
-export function useBackupRestore({ state, setState, setNotice, characterId }: UseBackupRestoreDeps) {
+export function useBackupRestore({ state, setState, setNotice, characterId, accountId }: UseBackupRestoreDeps) {
   const [localBackups, setLocalBackups] = useState<LocalBackupSummary[]>([])
 
   const refreshLocalBackups = useCallback(async () => {
-    const backups = await listLocalBackups()
+    const backups = await listLocalBackups(accountId)
     setLocalBackups(backups)
-  }, [])
+  }, [accountId])
 
   async function makeLocalBackup(reason: string) {
-    const backup = await createLocalBackup(applyTrashRetention(state), reason)
+    const backup = await createLocalBackup(applyTrashRetention(state), reason, accountId)
     await refreshLocalBackups()
     return backup
   }
@@ -45,7 +46,7 @@ export function useBackupRestore({ state, setState, setNotice, characterId }: Us
         memoryIds: [],
         characterId,
       })
-      const backup = await createLocalBackup(stateWithEvent, '妹妹手动创建')
+      const backup = await createLocalBackup(stateWithEvent, '妹妹手动创建', accountId)
       setState(stateWithEvent)
       await refreshLocalBackups()
       setNotice(`已创建本机备份：${formatShortDateTime(backup.createdAt)}`)
@@ -64,7 +65,7 @@ export function useBackupRestore({ state, setState, setNotice, characterId }: Us
 
     try {
       await makeLocalBackup('恢复本机备份前自动备份')
-      const restoredState = await loadLocalBackup(backupId)
+      const restoredState = await loadLocalBackup(backupId, accountId)
       if (!restoredState) {
         setNotice('这份本机备份没有找到')
         await refreshLocalBackups()
@@ -90,7 +91,7 @@ export function useBackupRestore({ state, setState, setNotice, characterId }: Us
   async function handleDeleteLocalBackup(backupId: string) {
     if (!window.confirm('这只会删除这份本机备份，不影响当前数据。确定删除吗？')) return
 
-    await deleteLocalBackup(backupId)
+    await deleteLocalBackup(backupId, accountId)
     await refreshLocalBackups()
     setNotice('本机备份已删除')
   }
@@ -138,7 +139,7 @@ export function useBackupRestore({ state, setState, setNotice, characterId }: Us
 
     try {
       await makeLocalBackup('重置前自动备份')
-      const nextState = await resetAppState()
+      const nextState = await resetAppState(accountId)
       setState(
         addMemoryEventToState(nextState, {
           type: 'reset',

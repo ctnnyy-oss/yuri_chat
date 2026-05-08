@@ -235,25 +235,25 @@ ssh tencent-astrbot "sudo journalctl -u yuri-chat-tunnel --no-pager -n 120 | gre
 
 - Cloudflare Quick Tunnel 是临时入口，不保证永久稳定。
 - 还没有正式域名。
-- 还没有用户账号系统，目前更像妹妹自己的私有应用。当前为了减少妹妹使用成本，默认不要求登录或口令；公开分享前应升级为登录/注册，并按用户隔离数据、记忆、聊天和模型密钥。
-- 云同步是整个 AppState 快照，不是细粒度多用户同步；事件账本已经为后续细粒度同步打地基，但还没有做多端冲突合并。
+- 已有轻量账号系统，但还没有改密、忘记密码、用户资料页或管理员后台；公开分享前还要补正式运维流程。
+- 云同步已经按账号隔离，但仍是整个 AppState 快照，不是细粒度多用户同步；事件账本已经为后续细粒度同步打地基，但还没有做多端冲突合并。
 - 服务器 SQLite 已有覆盖前自动备份和手动下载入口，但还没有正式的跨机异地备份。
-- 模型密钥目前按单人空间管理，还不是正式多用户账号隔离；后续有账号系统后需要按 user_id 分区。
+- 模型密钥保险箱已按 user_id 隔离；`server-env` 仍是所有登录用户共享的服务器兜底档案。
 
 中期建议：
 
 - 买一个 `.com` 域名先占名字，但不要直接解析到大陆服务器，避免备案问题。
 - 后续可考虑海外服务器、Cloudflare Pages、Cloudflare Named Tunnel。
 - 给数据库加定时备份。
-- 给每个用户做独立数据空间。
-- 给模型供应商配置做 UI 管理，而不是只靠服务器 `.env`。
+- 给账号系统补改密、退出所有设备、管理员重置密码和用户资料页。
+- 给模型供应商配置继续做真实供应商回归，而不是只靠服务器 `.env`。
 
 ## 8. 下一轮最值得做的事
 
 优先级从高到低：
 
 1. 做一次真实手机体验回归，记录卡顿、遮挡、按钮难点。
-2. 设计并实现轻量账号系统：注册/登录/session、每个用户独立 AppState、模型密钥按用户隔离、管理员保留迁移入口。
+2. 做账号系统上线后真实多端验收：同账号多浏览器同步、不同账号数据隔离、旧数据首位管理员接管、整库备份仅管理员可见。
 3. 做模型配置真实回归：至少用当前免费 DeepSeek、一个自定义中转、一个官方接口各测一次。
 4. 把聊天消息也纳入更清晰的云端同步策略。
 5. 给云端备份再加跨机/异地备份策略。
@@ -285,3 +285,32 @@ ssh tencent-astrbot "sudo journalctl -u yuri-chat-tunnel --no-pager -n 120 | gre
 - 改 UI 前先考虑手机端。
 - 记忆系统是灵魂，任何改动都不能破坏用户可编辑、可删除、可恢复、可永久删除。
 - GitHub commit 是后悔药，大改之前先确认工作树干净。
+## 2026-05-08：轻量账号系统接入
+
+本轮把原来的“单人全局云端口令”升级为轻量账号系统：
+
+- 后端新增 `users` 与 `user_sessions` 表；密码使用 `bcryptjs` hash，session 使用服务端 opaque token，不走 URL 参数。
+- `app_snapshots` 与 `model_profiles` 新增 `user_id`，云端快照、角色/对话/记忆/世界树、模型保险箱按当前登录账号隔离。
+- 第一位注册用户自动成为 `admin`，并自动接管旧 `legacy-user` 全局云端快照与模型档案；后续用户会得到自己的空数据空间。
+- `server-env` 模型档案仍是所有登录用户可见的兜底配置，但用户自己保存的模型档案互相隔离。
+- 前端新增注册/登录页、当前账号指示和退出登录；本地 IndexedDB 也按账号 key 保存，避免同一浏览器切账号时把 A 的本地数据推到 B。
+- 旧 `YURI_CHAT_REQUIRE_CLOUD_AUTH` / `YURI_CHAT_SYNC_TOKEN` 逻辑仍保留：如果生产环境短期需要旧口令回滚，旧前端请求仍可作为 `legacy-user` 管理员入口；日常新前端默认走账号 session。
+
+新增/调整环境变量：
+
+```env
+YURI_CHAT_AUTH_SECRET=生成一串至少 32 字符的随机 secret，生产必填
+YURI_CHAT_BCRYPT_COST=11
+YURI_CHAT_RATELIMIT_AUTH=20
+```
+
+服务器上线建议步骤：
+
+```powershell
+ssh tencent-astrbot "cd /opt/yuri-chat && cp data/yuri-chat.sqlite data/yuri-chat-before-account-$(date +%Y%m%d-%H%M%S).sqlite"
+ssh tencent-astrbot "cd /opt/yuri-chat && git fetch --all --prune && git reset --hard origin/main && npm install --omit=dev --no-audit --no-fund"
+ssh tencent-astrbot "cd /opt/yuri-chat && printf '\nYURI_CHAT_AUTH_SECRET=%s\nYURI_CHAT_BCRYPT_COST=11\nYURI_CHAT_RATELIMIT_AUTH=20\n' \"$(openssl rand -hex 32)\" | sudo tee -a /opt/yuri-chat/.env >/dev/null"
+ssh tencent-astrbot "sudo systemctl restart yuri-chat-api.service"
+```
+
+上线后第一次打开网页，注册妹妹自己的账号即可；如果服务器已有旧全局数据，第一位注册账号会自动接管它。管理员账号可以继续下载/创建整库云端备份，普通账号不能下载整库 SQLite，避免多用户数据泄漏。

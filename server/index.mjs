@@ -5,14 +5,15 @@ import express from 'express'
 import { prepareAgentBundle } from './agentTools.mjs'
 import { createDemoReply, createProviderFallbackReply } from './chatReplies.mjs'
 import { readEnv } from './env.mjs'
-import { chatRateLimiter, cloudRateLimiter } from './rateLimits.mjs'
+import { authRateLimiter, chatRateLimiter, cloudRateLimiter } from './rateLimits.mjs'
 import {
-  getCloudAuthFailure,
   getSecurityStartupHints,
   hasCloudSyncToken,
   isProductionRuntime,
-  requireCloudAuth,
-  shouldRequireModelAuth,
+  getRequestSessionToken,
+  requireAccountAuth,
+  requireAdminAuth,
+  resolveAccountAuth,
 } from './auth.mjs'
 import { callModelEmbeddings } from './embeddingProvider.mjs'
 import {
@@ -20,9 +21,9 @@ import {
   CloudRevisionConflictError,
   isValidAppStateShape,
   listCloudBackups,
-  readSnapshot,
+  readUserSnapshot,
   resolveBackupPath,
-  saveSnapshot,
+  saveUserSnapshot,
 } from './cloudStore.mjs'
 import {
   callModelChat,
@@ -55,6 +56,12 @@ import {
   updatePlatformConnector,
   updatePlatformTask,
 } from './platform.mjs'
+import {
+  destroySessionToken,
+  initializeAccountStore,
+  loginAccount,
+  registerAccount,
+} from './userAccounts.mjs'
 
 dotenv.config({ path: '.env.local' })
 dotenv.config()
@@ -67,9 +74,48 @@ const appName = 'Yuri Chat'
 app.set('trust proxy', 1)
 app.use(cors({ origin: corsOrigin }))
 app.use(express.json({ limit: readEnv('YURI_CHAT_JSON_LIMIT') || '10mb' }))
+initializeAccountStore()
 getSecurityStartupHints().forEach((hint) => console.warn(`[${appName} 安全提示] ${hint}`))
 const modelSecretIssue = getModelSecretConfigurationIssue()
 if (modelSecretIssue) console.warn(`[${appName} 安全提示] ${modelSecretIssue}`)
+
+app.use('/api/auth', authRateLimiter)
+
+app.get('/api/auth/session', (request, response) => {
+  try {
+    const user = resolveAccountAuth(request)
+    response.json({ ok: true, user })
+  } catch (error) {
+    response.status(error?.status || 401).json({ error: error instanceof Error ? error.message : '登录状态无效。' })
+  }
+})
+
+app.post('/api/auth/register', async (request, response) => {
+  try {
+    response.json({
+      ok: true,
+      ...(await registerAccount(request.body ?? {}, { userAgent: request.get('user-agent') })),
+    })
+  } catch (error) {
+    response.status(error?.status || 400).json({ error: error instanceof Error ? error.message : '注册失败。' })
+  }
+})
+
+app.post('/api/auth/login', async (request, response) => {
+  try {
+    response.json({
+      ok: true,
+      ...(await loginAccount(request.body ?? {}, { userAgent: request.get('user-agent') })),
+    })
+  } catch (error) {
+    response.status(error?.status || 401).json({ error: error instanceof Error ? error.message : '登录失败。' })
+  }
+})
+
+app.post('/api/auth/logout', (request, response) => {
+  destroySessionToken(getRequestSessionToken(request))
+  response.json({ ok: true })
+})
 
 app.get('/api/health', (_request, response) => {
   response.json({
@@ -81,8 +127,8 @@ app.get('/api/health', (_request, response) => {
   })
 })
 
-app.get('/api/cloud/health', requireCloudAuth, (_request, response) => {
-  const snapshot = readSnapshot()
+app.get('/api/cloud/health', requireAccountAuth, (request, response) => {
+  const snapshot = readUserSnapshot(request.user.id)
   response.json({
     ok: true,
     hasState: Boolean(snapshot),
@@ -93,8 +139,8 @@ app.get('/api/cloud/health', requireCloudAuth, (_request, response) => {
 
 app.use('/api/cloud', cloudRateLimiter)
 
-app.get('/api/cloud/state', requireCloudAuth, (_request, response) => {
-  const snapshot = readSnapshot()
+app.get('/api/cloud/state', requireAccountAuth, (request, response) => {
+  const snapshot = readUserSnapshot(request.user.id)
   response.json({
     ok: true,
     state: snapshot ? JSON.parse(snapshot.payload) : null,
@@ -103,14 +149,14 @@ app.get('/api/cloud/state', requireCloudAuth, (_request, response) => {
   })
 })
 
-app.get('/api/cloud/backups', requireCloudAuth, (_request, response) => {
+app.get('/api/cloud/backups', requireAdminAuth, (_request, response) => {
   response.json({
     ok: true,
     backups: listCloudBackups(),
   })
 })
 
-app.post('/api/cloud/backups', requireCloudAuth, (_request, response) => {
+app.post('/api/cloud/backups', requireAdminAuth, (_request, response) => {
   const backup = createCloudBackup('manual')
   response.json({
     ok: true,
@@ -119,7 +165,7 @@ app.post('/api/cloud/backups', requireCloudAuth, (_request, response) => {
   })
 })
 
-app.get('/api/cloud/backups/:fileName', requireCloudAuth, (request, response) => {
+app.get('/api/cloud/backups/:fileName', requireAdminAuth, (request, response) => {
   const backupPath = resolveBackupPath(request.params.fileName)
   if (!backupPath || !existsSync(backupPath)) {
     response.status(404).json({ error: 'Backup not found' })
@@ -129,7 +175,7 @@ app.get('/api/cloud/backups/:fileName', requireCloudAuth, (request, response) =>
   response.download(backupPath)
 })
 
-app.put('/api/cloud/state', requireCloudAuth, (request, response) => {
+app.put('/api/cloud/state', requireAccountAuth, (request, response) => {
   const state = request.body?.state
   if (!isValidAppStateShape(state)) {
     response.status(400).json({ error: `Invalid ${appName} state payload` })
@@ -137,7 +183,7 @@ app.put('/api/cloud/state', requireCloudAuth, (request, response) => {
   }
 
   try {
-    const snapshot = saveSnapshot(state, { baseRevision: request.body?.baseRevision })
+    const snapshot = saveUserSnapshot(state, { baseRevision: request.body?.baseRevision, userId: request.user.id })
     response.json({
       ok: true,
       updatedAt: snapshot.updatedAt,
@@ -156,28 +202,28 @@ app.put('/api/cloud/state', requireCloudAuth, (request, response) => {
   }
 })
 
-app.get('/api/model/profiles', requireCloudAuth, (_request, response) => {
+app.get('/api/model/profiles', requireAccountAuth, (request, response) => {
   response.json({
     ok: true,
-    profiles: listModelProfiles(),
+    profiles: listModelProfiles(request.user.id),
   })
 })
 
-app.post('/api/model/profiles', requireCloudAuth, (request, response) => {
+app.post('/api/model/profiles', requireAccountAuth, (request, response) => {
   try {
-    const profile = upsertModelProfile(request.body?.profile)
+    const profile = upsertModelProfile(request.body?.profile, request.user.id)
     response.json({
       ok: true,
       profile,
-      profiles: listModelProfiles(),
+      profiles: listModelProfiles(request.user.id),
     })
   } catch (error) {
     response.status(400).json({ error: error instanceof Error ? error.message : '模型配置保存失败' })
   }
 })
 
-app.delete('/api/model/profiles/:profileId', requireCloudAuth, (request, response) => {
-  const deleted = deleteModelProfile(request.params.profileId)
+app.delete('/api/model/profiles/:profileId', requireAccountAuth, (request, response) => {
+  const deleted = deleteModelProfile(request.params.profileId, request.user.id)
   if (!deleted) {
     response.status(404).json({ error: '没有找到这个模型配置' })
     return
@@ -185,13 +231,13 @@ app.delete('/api/model/profiles/:profileId', requireCloudAuth, (request, respons
 
   response.json({
     ok: true,
-    profiles: listModelProfiles(),
+    profiles: listModelProfiles(request.user.id),
   })
 })
 
-app.post('/api/model/test', requireCloudAuth, async (request, response) => {
+app.post('/api/model/test', requireAccountAuth, async (request, response) => {
   try {
-    const runtimeProfile = resolveRuntimeProfileForTest(request.body ?? {})
+    const runtimeProfile = resolveRuntimeProfileForTest(request.body ?? {}, request.user.id)
     if (!runtimeProfile.apiKey) {
       response.status(400).json({ error: '这个模型配置还没有保存密钥' })
       return
@@ -211,9 +257,9 @@ app.post('/api/model/test', requireCloudAuth, async (request, response) => {
   }
 })
 
-app.post('/api/model/models', requireCloudAuth, async (request, response) => {
+app.post('/api/model/models', requireAccountAuth, async (request, response) => {
   try {
-    const runtimeProfile = resolveRuntimeProfileForModelCatalog(request.body ?? {})
+    const runtimeProfile = resolveRuntimeProfileForModelCatalog(request.body ?? {}, request.user.id)
     if (!runtimeProfile.apiKey) {
       response.status(400).json({ error: '拉取模型列表需要先填写或保存 API Key' })
       return
@@ -225,9 +271,9 @@ app.post('/api/model/models', requireCloudAuth, async (request, response) => {
   }
 })
 
-app.post('/api/model/embeddings', requireCloudAuth, async (request, response) => {
+app.post('/api/model/embeddings', requireAccountAuth, async (request, response) => {
   try {
-    const runtimeProfile = resolveRuntimeProfileForModelCatalog(request.body ?? {})
+    const runtimeProfile = resolveRuntimeProfileForModelCatalog(request.body ?? {}, request.user.id)
     if (!runtimeProfile.apiKey) {
       response.status(400).json({ error: '生成 embedding 需要先填写或保存 API Key' })
       return
@@ -247,18 +293,18 @@ app.post('/api/model/embeddings', requireCloudAuth, async (request, response) =>
   }
 })
 
-app.get('/api/platform/status', requireCloudAuth, (_request, response) => {
+app.get('/api/platform/status', requireAccountAuth, (_request, response) => {
   response.json(getPlatformStatus())
 })
 
-app.get('/api/platform/tasks', requireCloudAuth, (request, response) => {
+app.get('/api/platform/tasks', requireAccountAuth, (request, response) => {
   response.json({
     ok: true,
     tasks: listPlatformTasks(request.query.limit),
   })
 })
 
-app.post('/api/platform/tasks', requireCloudAuth, (request, response) => {
+app.post('/api/platform/tasks', requireAccountAuth, (request, response) => {
   try {
     response.json({
       ok: true,
@@ -269,7 +315,7 @@ app.post('/api/platform/tasks', requireCloudAuth, (request, response) => {
   }
 })
 
-app.patch('/api/platform/tasks/:taskId', requireCloudAuth, (request, response) => {
+app.patch('/api/platform/tasks/:taskId', requireAccountAuth, (request, response) => {
   const task = updatePlatformTask(request.params.taskId, request.body ?? {})
   if (!task) {
     response.status(404).json({ error: '没有找到这个后台任务' })
@@ -279,28 +325,28 @@ app.patch('/api/platform/tasks/:taskId', requireCloudAuth, (request, response) =
   response.json({ ok: true, task })
 })
 
-app.get('/api/platform/notifications', requireCloudAuth, (request, response) => {
+app.get('/api/platform/notifications', requireAccountAuth, (request, response) => {
   response.json({
     ok: true,
     notifications: listPlatformNotifications(request.query.limit),
   })
 })
 
-app.patch('/api/platform/notifications', requireCloudAuth, (request, response) => {
+app.patch('/api/platform/notifications', requireAccountAuth, (request, response) => {
   response.json({
     ok: true,
     notifications: markPlatformNotificationsSeen(request.body?.ids ?? []),
   })
 })
 
-app.get('/api/platform/connectors', requireCloudAuth, (_request, response) => {
+app.get('/api/platform/connectors', requireAccountAuth, (_request, response) => {
   response.json({
     ok: true,
     connectors: listPlatformConnectors(),
   })
 })
 
-app.patch('/api/platform/connectors/:connectorId', requireCloudAuth, (request, response) => {
+app.patch('/api/platform/connectors/:connectorId', requireAccountAuth, (request, response) => {
   const connector = updatePlatformConnector(request.params.connectorId, request.body ?? {})
   if (!connector) {
     response.status(404).json({ error: '没有找到这个连接器' })
@@ -310,14 +356,14 @@ app.patch('/api/platform/connectors/:connectorId', requireCloudAuth, (request, r
   response.json({ ok: true, connector, connectors: listPlatformConnectors() })
 })
 
-app.get('/api/platform/executors', requireCloudAuth, (_request, response) => {
+app.get('/api/platform/executors', requireAccountAuth, (_request, response) => {
   response.json({
     ok: true,
     executors: listPlatformExecutors(),
   })
 })
 
-app.post('/api/chat', chatRateLimiter, async (request, response) => {
+app.post('/api/chat', requireAccountAuth, chatRateLimiter, async (request, response) => {
   const { bundle, settings } = request.body ?? {}
 
   if (!bundle?.systemPrompt || !Array.isArray(bundle?.messages)) {
@@ -325,17 +371,11 @@ app.post('/api/chat', chatRateLimiter, async (request, response) => {
     return
   }
 
-  const authFailure = shouldRequireModelAuth() ? getCloudAuthFailure(request) : null
-  if (authFailure) {
-    response.status(authFailure.status).json({ error: '模型代理需要登录或云端口令授权。' })
-    return
-  }
-
   const agentRun = await prepareAgentBundle(bundle)
   const agentBundle = agentRun.bundle
   let runtimeProfile
   try {
-    runtimeProfile = resolveRuntimeProfileForChat(settings)
+    runtimeProfile = resolveRuntimeProfileForChat(settings, request.user.id)
   } catch (error) {
     response.status(formatModelConfigErrorStatus(error)).json({
       error: error instanceof Error ? error.message : '模型配置暂时不可用',

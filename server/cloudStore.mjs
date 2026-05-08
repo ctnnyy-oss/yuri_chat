@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { readEnv } from './env.mjs'
 import { clampNumber, quoteSqlString } from './shared/utils.mjs'
 
-const snapshotId = 'default'
+export const legacyUserId = 'legacy-user'
 
 let cloudDatabase
 
@@ -27,6 +27,7 @@ export function getCloudDatabase() {
   cloudDatabase.exec(`
     CREATE TABLE IF NOT EXISTS app_snapshots (
       id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL DEFAULT '${legacyUserId}',
       payload TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       revision INTEGER NOT NULL
@@ -35,6 +36,7 @@ export function getCloudDatabase() {
   cloudDatabase.exec(`
     CREATE TABLE IF NOT EXISTS model_profiles (
       id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL DEFAULT '${legacyUserId}',
       name TEXT NOT NULL,
       provider_kind TEXT NOT NULL,
       base_url TEXT NOT NULL,
@@ -46,6 +48,7 @@ export function getCloudDatabase() {
       updated_at TEXT NOT NULL
     )
   `)
+  migrateCloudDatabaseSchema(cloudDatabase)
   return cloudDatabase
 }
 
@@ -53,6 +56,21 @@ export function closeCloudDatabaseForTests() {
   if (!cloudDatabase) return
   cloudDatabase.close()
   cloudDatabase = null
+}
+
+function migrateCloudDatabaseSchema(database) {
+  ensureColumn(database, 'app_snapshots', 'user_id', `TEXT NOT NULL DEFAULT '${legacyUserId}'`)
+  ensureColumn(database, 'model_profiles', 'user_id', `TEXT NOT NULL DEFAULT '${legacyUserId}'`)
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS idx_app_snapshots_user_id ON app_snapshots(user_id);
+    CREATE INDEX IF NOT EXISTS idx_model_profiles_user_id ON model_profiles(user_id, is_default, updated_at);
+  `)
+}
+
+function ensureColumn(database, tableName, columnName, definition) {
+  const columns = database.prepare(`PRAGMA table_info(${tableName})`).all()
+  if (columns.some((column) => column.name === columnName)) return
+  database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`)
 }
 
 function getCloudDatabasePath() {
@@ -64,15 +82,31 @@ function getCloudBackupDir() {
 }
 
 export function readSnapshot() {
+  return readUserSnapshot(legacyUserId)
+}
+
+export function readUserSnapshot(userId) {
+  const dataUserId = normalizeDataUserId(userId)
   const row = getCloudDatabase()
-    .prepare('SELECT payload, updated_at AS updatedAt, revision FROM app_snapshots WHERE id = ?')
-    .get(snapshotId)
+    .prepare(
+      `SELECT id, payload, updated_at AS updatedAt, revision
+       FROM app_snapshots
+       WHERE user_id = ?
+       ORDER BY updated_at DESC
+       LIMIT 1`,
+    )
+    .get(dataUserId)
 
   return row ?? null
 }
 
 export function saveSnapshot(state, options = {}) {
-  const existing = readSnapshot()
+  return saveUserSnapshot(state, { ...options, userId: legacyUserId })
+}
+
+export function saveUserSnapshot(state, options = {}) {
+  const dataUserId = normalizeDataUserId(options.userId)
+  const existing = readUserSnapshot(dataUserId)
   const baseRevision = normalizeBaseRevision(options.baseRevision)
   if (baseRevision !== null && Number(existing?.revision ?? 0) !== baseRevision) {
     throw new CloudRevisionConflictError(existing, baseRevision)
@@ -84,19 +118,51 @@ export function saveSnapshot(state, options = {}) {
   const nextRevision = Number(existing?.revision ?? 0) + 1
   const updatedAt = new Date().toISOString()
   const payload = JSON.stringify(state)
+  const snapshotId = getSnapshotIdForUser(dataUserId)
 
-  getCloudDatabase()
-    .prepare(
-      `INSERT INTO app_snapshots (id, payload, updated_at, revision)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET
-         payload = excluded.payload,
-         updated_at = excluded.updated_at,
-         revision = excluded.revision`,
-    )
-    .run(snapshotId, payload, updatedAt, nextRevision)
+  if (existing) {
+    getCloudDatabase()
+      .prepare(
+        `UPDATE app_snapshots
+         SET id = ?, payload = ?, updated_at = ?, revision = ?
+         WHERE user_id = ?`,
+      )
+      .run(snapshotId, payload, updatedAt, nextRevision, dataUserId)
+  } else {
+    getCloudDatabase()
+      .prepare(
+        `INSERT INTO app_snapshots (id, user_id, payload, updated_at, revision)
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run(snapshotId, dataUserId, payload, updatedAt, nextRevision)
+  }
 
   return { payload, updatedAt, revision: nextRevision }
+}
+
+export function claimLegacyCloudDataForUser(userId) {
+  const dataUserId = normalizeDataUserId(userId)
+  if (dataUserId === legacyUserId) return
+
+  const database = getCloudDatabase()
+  const legacySnapshot = readUserSnapshot(legacyUserId)
+  const userSnapshot = readUserSnapshot(dataUserId)
+  if (legacySnapshot && !userSnapshot) {
+    database
+      .prepare('UPDATE app_snapshots SET id = ?, user_id = ? WHERE user_id = ?')
+      .run(getSnapshotIdForUser(dataUserId), dataUserId, legacyUserId)
+  }
+
+  database.prepare('UPDATE model_profiles SET user_id = ? WHERE user_id = ?').run(dataUserId, legacyUserId)
+}
+
+export function normalizeDataUserId(userId) {
+  const normalized = String(userId || '').trim()
+  return normalized || legacyUserId
+}
+
+function getSnapshotIdForUser(userId) {
+  return `snapshot:${normalizeDataUserId(userId)}`
 }
 
 function normalizeBaseRevision(value) {
