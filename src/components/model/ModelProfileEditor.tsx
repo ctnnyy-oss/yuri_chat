@@ -124,7 +124,7 @@ export function ModelProfileEditor({
       </small>
 
       <div className="settings-actions">
-        <button disabled={!canUseDraft} onClick={onSaveProfile} type="button">
+        <button className="secondary-action" disabled={!canUseDraft} onClick={onSaveProfile} type="button">
           <Save size={15} />
           保存并启用
         </button>

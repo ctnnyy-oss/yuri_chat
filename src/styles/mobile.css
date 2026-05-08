@@ -2658,14 +2658,6 @@
     padding: 14px 20px calc(18px + env(safe-area-inset-bottom)) !important;
   }
 
-  .chat-file-input {
-    position: fixed;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-    pointer-events: none;
-  }
-
   .app-confirm-backdrop {
     position: fixed;
     inset: 0;

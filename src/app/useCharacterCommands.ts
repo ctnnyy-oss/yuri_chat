@@ -129,12 +129,22 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
       return false
     }
 
+    const now = nowIso()
     setState((currentState) => {
       const remainingCharacters = currentState.characters.filter((item) => item.id !== characterId)
       const nextActiveCharacterId =
         currentState.activeCharacterId === characterId
           ? remainingCharacters[0]?.id ?? createSeedState().activeCharacterId
           : currentState.activeCharacterId
+
+      const movedConversations = currentState.conversations
+        .filter((item) => item.characterId === characterId)
+        .map((item) => ({
+          ...item,
+          deletedAt: now,
+          characterName: target.name,
+          character: target,
+        }))
 
       return {
         ...currentState,
@@ -145,11 +155,11 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
         memoryEvents: currentState.memoryEvents.filter((item) => item.characterId !== characterId),
         trash: {
           ...currentState.trash,
-          conversations: currentState.trash.conversations.filter((item) => item.characterId !== characterId),
+          conversations: [...movedConversations, ...currentState.trash.conversations],
         },
       }
     })
-    setNotice(`已删除：${target.name}`)
+    setNotice(`已删除：${target.name}（聊天记录已挪到回收站，30 天内可恢复）`)
     return true
   }
 

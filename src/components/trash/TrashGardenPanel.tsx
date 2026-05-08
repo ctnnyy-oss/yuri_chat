@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { ArchiveRestore, RotateCcw, Trash2 } from 'lucide-react'
 import type { AppTrash } from '../../domain/types'
 import { EmptyState, IconTextButton, WorkspaceTitle } from '../memory/atoms'
 import { formatDeletedAt } from '../memory/memoryPanelUtils'
+import { MobileConfirmDialog } from '../MobileConfirmDialog'
 
 interface TrashGardenPanelProps {
   onDeleteTrashedConversation: (conversationId: string) => void
@@ -14,6 +16,12 @@ interface TrashGardenPanelProps {
   trash: AppTrash
 }
 
+type PendingTrashAction =
+  | { kind: 'empty' }
+  | { kind: 'conversation'; id: string; characterName: string }
+  | { kind: 'memory'; id: string; title: string }
+  | { kind: 'world'; id: string; title: string }
+
 export function TrashGardenPanel({
   onDeleteTrashedConversation,
   onDeleteTrashedMemory,
@@ -24,7 +32,60 @@ export function TrashGardenPanel({
   onRestoreWorldNode,
   trash,
 }: TrashGardenPanelProps) {
+  const [pendingAction, setPendingAction] = useState<PendingTrashAction | null>(null)
   const hasTrash = trash.memories.length > 0 || trash.worldNodes.length > 0 || trash.conversations.length > 0
+
+  function confirmPendingAction() {
+    if (!pendingAction) return
+    const action = pendingAction
+    setPendingAction(null)
+    switch (action.kind) {
+      case 'empty':
+        onEmptyTrash()
+        break
+      case 'conversation':
+        onDeleteTrashedConversation(action.id)
+        break
+      case 'memory':
+        onDeleteTrashedMemory(action.id)
+        break
+      case 'world':
+        onDeleteTrashedWorldNode(action.id)
+        break
+    }
+  }
+
+  function dialogProps(): { title: string; message: string; confirmLabel: string } | null {
+    if (!pendingAction) return null
+    switch (pendingAction.kind) {
+      case 'empty':
+        return {
+          title: '清空回收花园',
+          message: '回收花园里的全部内容会被彻底删除，不能再恢复。要继续吗？',
+          confirmLabel: '清空回收花园',
+        }
+      case 'conversation':
+        return {
+          title: '彻底删除聊天',
+          message: `「${pendingAction.characterName}」这条聊天会被彻底删除，不能再恢复。要继续吗？`,
+          confirmLabel: '彻底删除',
+        }
+      case 'memory':
+        return {
+          title: '彻底删除记忆',
+          message: `记忆「${pendingAction.title}」会被彻底删除，不能再恢复。要继续吗？`,
+          confirmLabel: '彻底删除',
+        }
+      case 'world':
+        return {
+          title: '彻底删除世界树节点',
+          message: `世界树节点「${pendingAction.title}」会被彻底删除，不能再恢复。要继续吗？`,
+          confirmLabel: '彻底删除',
+        }
+    }
+  }
+
+  const dialog = dialogProps()
 
   return (
     <>
@@ -37,11 +98,7 @@ export function TrashGardenPanel({
         <div className="detail-actions">
           <button
             className="danger-button secondary-danger"
-            onClick={() => {
-              if (window.confirm('回收花园里的内容会全部彻底删除，不能再恢复。确定吗？')) {
-                onEmptyTrash()
-              }
-            }}
+            onClick={() => setPendingAction({ kind: 'empty' })}
             type="button"
           >
             清空回收花园
@@ -72,11 +129,13 @@ export function TrashGardenPanel({
                   danger
                   icon={<Trash2 size={16} />}
                   label="彻底删除"
-                  onClick={() => {
-                    if (window.confirm('这条聊天会被彻底删除，不能再恢复。确定吗？')) {
-                      onDeleteTrashedConversation(conversation.id)
-                    }
-                  }}
+                  onClick={() =>
+                    setPendingAction({
+                      kind: 'conversation',
+                      id: conversation.id,
+                      characterName: conversation.characterName,
+                    })
+                  }
                 />
               </div>
             </article>
@@ -96,11 +155,7 @@ export function TrashGardenPanel({
                 danger
                 icon={<Trash2 size={16} />}
                 label="彻底删除"
-                onClick={() => {
-                  if (window.confirm('这条记忆会被彻底删除，不能再恢复。确定吗？')) {
-                    onDeleteTrashedMemory(memory.id)
-                  }
-                }}
+                onClick={() => setPendingAction({ kind: 'memory', id: memory.id, title: memory.title })}
               />
             </div>
           </article>
@@ -119,16 +174,22 @@ export function TrashGardenPanel({
                 danger
                 icon={<Trash2 size={16} />}
                 label="彻底删除"
-                onClick={() => {
-                  if (window.confirm('这个世界树节点会被彻底删除，不能再恢复。确定吗？')) {
-                    onDeleteTrashedWorldNode(node.id)
-                  }
-                }}
+                onClick={() => setPendingAction({ kind: 'world', id: node.id, title: node.title })}
               />
             </div>
           </article>
         ))}
       </section>
+      {dialog && (
+        <MobileConfirmDialog
+          danger
+          title={dialog.title}
+          message={dialog.message}
+          confirmLabel={dialog.confirmLabel}
+          onCancel={() => setPendingAction(null)}
+          onConfirm={confirmPendingAction}
+        />
+      )}
     </>
   )
 }

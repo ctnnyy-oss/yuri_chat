@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { MessageCircle, Plus, Save, Search, Trash2, UserRound, X } from 'lucide-react'
 import type { CharacterCard } from '../domain/types'
 import { analyzePersonaImport } from '../services/personaImport'
@@ -37,6 +37,21 @@ type RoleDraft = {
 type MobileEditorMode = 'closed' | 'create' | 'view'
 
 const LONG_PRESS_MS = 560
+const MOBILE_VIEWPORT_QUERY = '(max-width: 760px)'
+
+function useIsMobileViewport() {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(MOBILE_VIEWPORT_QUERY).matches,
+  )
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mediaQuery = window.matchMedia(MOBILE_VIEWPORT_QUERY)
+    const handler = (event: MediaQueryListEvent) => setIsMobile(event.matches)
+    mediaQuery.addEventListener('change', handler)
+    return () => mediaQuery.removeEventListener('change', handler)
+  }, [])
+  return isMobile
+}
 
 function MobileStatusBar() {
   return null
@@ -90,6 +105,7 @@ export function QqFeaturePanel({
   onOpenChat,
   onShellAction,
 }: QqFeaturePanelProps) {
+  const isMobile = useIsMobileViewport()
   const roleLongPressTimerRef = useRef<number | null>(null)
   const roleLongPressTriggeredRef = useRef(false)
   const roleLongPressStartPointRef = useRef({ x: 0, y: 0 })
@@ -259,7 +275,12 @@ export function QqFeaturePanel({
 
   return (
     <main className="workspace qq-feature-workspace">
-      <section className="qq-desktop-feature role-desktop-feature" aria-label="角色管理">
+      <section
+        className="qq-desktop-feature role-desktop-feature"
+        aria-label="角色管理"
+        aria-hidden={isMobile || undefined}
+        inert={isMobile || undefined}
+      >
         <header className="qq-desktop-feature-head">
           <strong>角色管理</strong>
           <div>
@@ -374,7 +395,12 @@ export function QqFeaturePanel({
         </div>
       </section>
 
-      <section className="mobile-feature-page mobile-contact-page role-mobile-page" aria-label="角色">
+      <section
+        className="mobile-feature-page mobile-contact-page role-mobile-page"
+        aria-label="角色"
+        aria-hidden={!isMobile || undefined}
+        inert={!isMobile || undefined}
+      >
         <MobileStatusBar />
         <header className="mobile-feature-header">
           <span className="avatar" style={{ '--avatar-accent': selectedRole?.accent ?? '#ef9ac6' } as CSSProperties}>

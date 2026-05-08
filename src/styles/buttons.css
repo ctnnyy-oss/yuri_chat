@@ -138,3 +138,32 @@
   border-color: rgba(255, 124, 174, 0.32);
   color: var(--pink-700);
 }
+
+.chat-file-input {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.settings-actions button:disabled,
+.settings-actions button[disabled],
+.secondary-action:disabled,
+.secondary-action[disabled],
+.secondary-danger:disabled,
+.secondary-danger[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: saturate(0.6);
+  box-shadow: none;
+  transform: none;
+}
+
+.settings-actions button:disabled:hover,
+.secondary-action:disabled:hover,
+.secondary-danger:disabled:hover {
+  transform: none;
+  filter: saturate(0.6);
+  box-shadow: none;
+}

@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { CheckCircle2, Trash2 } from 'lucide-react'
 import type { ModelProfileSummary } from '../../domain/types'
+import { MobileConfirmDialog } from '../MobileConfirmDialog'
 import { isServerEnvProfileId, providerKindLabels } from './modelPanelUtils'
 
 interface SavedModelProfilesProps {
@@ -19,6 +21,15 @@ export function SavedModelProfiles({
   onTestProfile,
   onUseProfile,
 }: SavedModelProfilesProps) {
+  const [pendingDeleteProfile, setPendingDeleteProfile] = useState<ModelProfileSummary | null>(null)
+
+  function confirmDeletePendingProfile() {
+    if (!pendingDeleteProfile) return
+    const profileId = pendingDeleteProfile.id
+    setPendingDeleteProfile(null)
+    void onDeleteModelProfile(profileId)
+  }
+
   return (
     <>
       <div className="settings-section-title">
@@ -53,11 +64,7 @@ export function SavedModelProfiles({
                 {!isServerEnvProfileId(profile.id) && (
                   <button
                     className="danger-button"
-                    onClick={() => {
-                      if (window.confirm(`删除“${profile.model}”这组模型配置吗？保存的密钥也会一起删除。`)) {
-                        void onDeleteModelProfile(profile.id)
-                      }
-                    }}
+                    onClick={() => setPendingDeleteProfile(profile)}
                     type="button"
                   >
                     <Trash2 size={13} />
@@ -68,6 +75,16 @@ export function SavedModelProfiles({
           ))
         )}
       </div>
+      {pendingDeleteProfile && (
+        <MobileConfirmDialog
+          danger
+          title="删除模型配置"
+          message={`会删除「${pendingDeleteProfile.model}」这组模型配置，保存的密钥也会一起清掉。这个操作不能恢复。`}
+          confirmLabel="删除配置"
+          onCancel={() => setPendingDeleteProfile(null)}
+          onConfirm={confirmDeletePendingProfile}
+        />
+      )}
     </>
   )
 }
