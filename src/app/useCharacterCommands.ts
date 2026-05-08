@@ -141,6 +141,8 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
         activeCharacterId: nextActiveCharacterId,
         characters: remainingCharacters,
         conversations: currentState.conversations.filter((item) => item.characterId !== characterId),
+        memoryUsageLogs: currentState.memoryUsageLogs.filter((item) => item.characterId !== characterId),
+        memoryEvents: currentState.memoryEvents.filter((item) => item.characterId !== characterId),
         trash: {
           ...currentState.trash,
           conversations: currentState.trash.conversations.filter((item) => item.characterId !== characterId),

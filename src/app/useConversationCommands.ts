@@ -35,12 +35,17 @@ export function useConversationCommands({
     clearChatAlert()
     setState((currentState) => {
       const existingConversation = getConversation(currentState, characterId)
-      return upsertConversation(currentState, {
+      const nextState = upsertConversation(currentState, {
         ...existingConversation,
         messages: [],
         summary: '',
         updatedAt: now,
       })
+      return {
+        ...nextState,
+        memoryUsageLogs: currentState.memoryUsageLogs.filter((item) => item.conversationId !== existingConversation.id),
+        memoryEvents: currentState.memoryEvents.filter((item) => item.conversationId !== existingConversation.id),
+      }
     })
     setNotice('聊天记录已清空')
   }
@@ -58,6 +63,8 @@ export function useConversationCommands({
       return {
         ...currentState,
         conversations: currentState.conversations.filter((item) => item.characterId !== characterId),
+        memoryUsageLogs: currentState.memoryUsageLogs.filter((item) => item.conversationId !== conversation.id),
+        memoryEvents: currentState.memoryEvents.filter((item) => item.conversationId !== conversation.id),
         trash: {
           ...currentState.trash,
           conversations: [
