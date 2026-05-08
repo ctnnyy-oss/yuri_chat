@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppState, LocalBackupSummary } from '../domain/types'
+import { ApiResponseError } from '../services/apiClient'
 import {
   checkCloudHealth,
   type CloudBackupSummary,
@@ -32,6 +33,40 @@ interface UseCloudSyncDeps {
 
 function createAutoPushSignature(state: AppState): string {
   return JSON.stringify(state)
+}
+
+function jsonEqual(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+function containsEqualItemsById<T extends { id: string }>(localItems: T[], cloudItems: T[]): boolean {
+  const localById = new Map(localItems.map((item) => [item.id, item]))
+  return cloudItems.every((item) => jsonEqual(localById.get(item.id), item))
+}
+
+function isCloudStateContainedInLocal(localState: AppState, cloudState: AppState): boolean {
+  if (!jsonEqual(localState.settings, cloudState.settings)) return false
+  if (!jsonEqual(localState.trash, cloudState.trash)) return false
+
+  if (!containsEqualItemsById(localState.characters, cloudState.characters)) return false
+  if (!containsEqualItemsById(localState.memories, cloudState.memories)) return false
+  if (!containsEqualItemsById(localState.worldNodes, cloudState.worldNodes)) return false
+  if (!containsEqualItemsById(localState.memoryTombstones, cloudState.memoryTombstones)) return false
+  if (!containsEqualItemsById(localState.memoryEmbeddings, cloudState.memoryEmbeddings)) return false
+  if (!containsEqualItemsById(localState.memoryUsageLogs, cloudState.memoryUsageLogs)) return false
+  if (!containsEqualItemsById(localState.memoryEvents, cloudState.memoryEvents)) return false
+  if (!containsEqualItemsById(localState.agentReminders, cloudState.agentReminders)) return false
+  if (!containsEqualItemsById(localState.agentTasks, cloudState.agentTasks)) return false
+  if (!containsEqualItemsById(localState.agentMoments, cloudState.agentMoments)) return false
+  if (!containsEqualItemsById(localState.agentRooms, cloudState.agentRooms)) return false
+
+  const localConversations = new Map(localState.conversations.map((conversation) => [conversation.id, conversation]))
+  return cloudState.conversations.every((cloudConversation) => {
+    const localConversation = localConversations.get(cloudConversation.id)
+    if (!localConversation || localConversation.characterId !== cloudConversation.characterId) return false
+    if (localConversation.messages.length < cloudConversation.messages.length) return false
+    return cloudConversation.messages.every((message, index) => jsonEqual(localConversation.messages[index], message))
+  })
 }
 
 export function useCloudSync({ state, setState, setNotice, characterId, makeLocalBackup }: UseCloudSyncDeps) {
@@ -390,6 +425,41 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
         setCloudMeta(nextMeta)
         setCloudStatus(`自动保存 v${result.revision}`)
       } catch (error) {
+        if (error instanceof ApiResponseError && error.status === 409) {
+          try {
+            const snapshot = await pullCloudState(cloudTokenRef.current)
+            const nextMeta = {
+              hasState: Boolean(snapshot.state),
+              revision: snapshot.revision,
+              updatedAt: snapshot.updatedAt,
+            }
+            cloudMetaRef.current = nextMeta
+            setCloudMeta(nextMeta)
+
+            const cloudState = snapshot.state ? applyTrashRetention(migrateAppState(snapshot.state)) : null
+            if (cloudState && isCloudStateContainedInLocal(stateToPush, cloudState)) {
+              const result = await pushCloudState(stateToPush, cloudTokenRef.current, {
+                baseRevision: snapshot.revision,
+              })
+              const rebasedMeta = {
+                hasState: true,
+                revision: result.revision,
+                updatedAt: result.updatedAt,
+              }
+              cloudMetaRef.current = rebasedMeta
+              lastAutoPushSignatureRef.current = signature
+              setCloudMeta(rebasedMeta)
+              setCloudStatus(`自动保存 v${result.revision}`)
+              return
+            }
+
+            setCloudStatus('云端版本已经变化，请先读取云端或手动保存前创建本机备份。')
+            return
+          } catch (retryError) {
+            setCloudStatus(retryError instanceof Error ? retryError.message : '自动保存重试失败，请稍后手动检查云端状态。')
+            return
+          }
+        }
         setCloudStatus(error instanceof Error ? error.message : '自动保存失败，请稍后手动检查云端状态')
       } finally {
         autoPushInFlightRef.current = false

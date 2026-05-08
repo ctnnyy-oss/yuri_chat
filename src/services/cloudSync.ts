@@ -19,6 +19,10 @@ export interface CloudBackupSummary {
   sizeBytes: number
 }
 
+type CloudFetchOptions = RequestInit & {
+  timeoutMs?: number
+}
+
 export function isCloudSyncConfigured(): boolean {
   return Boolean(getCloudApiBaseUrl())
 }
@@ -68,6 +72,7 @@ export async function pushCloudState(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ state, baseRevision: options.baseRevision ?? null }),
+    timeoutMs: 90_000,
   })
   return response.json()
 }
@@ -90,13 +95,13 @@ export async function downloadCloudBackup(token: string, fileName: string): Prom
   return response.blob()
 }
 
-async function cloudFetch(path: string, token: string, init: RequestInit = {}): Promise<Response> {
+async function cloudFetch(path: string, token: string, init: CloudFetchOptions = {}): Promise<Response> {
   const apiBaseUrl = getCloudApiBaseUrl()
   if (!apiBaseUrl) throw new Error('云端后端还没有配置')
   return apiFetch(path, {
     ...init,
     token,
-    timeoutMs: 30_000,
+    timeoutMs: init.timeoutMs ?? 30_000,
     timeoutMessage: '云端请求超时（30 秒），请检查网络或稍后再试',
     errorFormatter: formatCloudError,
   })
