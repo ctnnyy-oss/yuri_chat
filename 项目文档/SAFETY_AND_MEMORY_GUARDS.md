@@ -10,19 +10,21 @@
 - 模型保险箱：保存服务器端加密后的模型配置。
 - 聊天代理：会调用服务器上的模型能力。
 
-本地开发时默认不要求 token，方便妹妹直接启动和调试。生产或公网模式下，后端会默认要求 `YURI_NEST_SYNC_TOKEN`：
+本地开发时默认不要求 token，方便妹妹直接启动和调试。生产或公网模式下，后端会默认要求 `YURI_CHAT_SYNC_TOKEN`：
 
 - 云端同步、备份、模型保险箱接口没有 token 会拒绝访问。
 - 如果开启聊天授权，`/api/chat` 没有 token 也会拒绝访问。
 - 错误提示只说缺少或无效，不会打印 token、API Key 或 secret。
+- `YURI_CHAT_RATELIMIT_CHAT=30`：`/api/chat` 默认每 IP 每分钟 30 次，防止 token 泄露后无限烧模型额度。
+- `YURI_CHAT_RATELIMIT_CLOUD=60`：`/api/cloud/*` 默认每 IP 每分钟 60 次，保护云端同步与备份接口；`/api/health` 和 `/api/cloud/health` 不限速，避免监控被误伤。
 
 如果只是妹妹自己的本地开发后端，可以显式关闭授权；如果通过隧道、服务器或正式域名对外访问，就应该配置 token。
 
 ## 模型保险箱为什么要 secret
 
-模型保险箱的用途是让浏览器不保存 API Key。服务器保存模型配置时，会用 `YURI_NEST_MODEL_SECRET` 加密密钥。
+模型保险箱的用途是让浏览器不保存 API Key。服务器保存模型配置时，会用 `YURI_CHAT_MODEL_SECRET` 加密密钥。
 
-本地开发没有配置 secret 时，会使用开发兜底材料，方便先验证界面。生产环境不能依赖这个兜底值；缺少 `YURI_NEST_MODEL_SECRET` 时，服务器会拒绝保存或解密模型保险箱里的密钥。
+本地开发没有配置 secret 时，会使用开发兜底材料，方便先验证界面。生产环境不能依赖这个兜底值；缺少 `YURI_CHAT_MODEL_SECRET` 时，服务器会拒绝保存或解密模型保险箱里的密钥。
 
 这能避免一个危险情况：代码跑到公网后，还在用开发默认值保护真正的模型密钥。
 

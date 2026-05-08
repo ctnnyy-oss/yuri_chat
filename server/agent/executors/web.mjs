@@ -14,7 +14,7 @@ import { fetchWebSearchResults, refineSearchResultsForIntent } from '../searchEn
 import { extractSearchQuery, buildSearchEngineQuery } from '../actionDetectors.mjs'
 
 const PAGE_FETCH_HEADERS = {
-  'User-Agent': 'YuriNestAgent/0.1 (+https://ctnnyy-oss.github.io/yuri-nest/)',
+  'User-Agent': 'YuriChatAgent/0.1 (+https://ctnnyy-oss.github.io/yuri-chat/)',
   Accept: 'text/html,text/plain,application/xhtml+xml,application/xml;q=0.8,*/*;q=0.5',
 }
 

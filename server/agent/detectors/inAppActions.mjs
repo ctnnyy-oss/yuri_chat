@@ -399,9 +399,9 @@ export function detectRoomMessageActions(text) {
 
   const topic = extractRoomTopic(text)
   const room = usePublicRoom
-    ? { roomId: 'room-yuri-nest', title: '百合小窝群', members: memberCharacterIds }
+    ? { roomId: 'room-yuri-chat', title: '百合小窝群', members: memberCharacterIds }
     : findRoomByMembers(memberCharacterIds) || {
-        roomId: 'room-yuri-nest',
+        roomId: 'room-yuri-chat',
         title: '百合小窝群',
         members: memberCharacterIds,
       }

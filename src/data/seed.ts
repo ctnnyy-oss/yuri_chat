@@ -253,7 +253,7 @@ export const agentRooms: AgentRoom[] = [
     updatedAt: nowIso(),
   },
   {
-    id: 'room-yuri-nest',
+    id: 'room-yuri-chat',
     title: '百合小窝群',
     description: '默认角色和三对 CP 的公共小群',
     memberCharacterIds: characters.map((character) => character.id),
@@ -388,7 +388,7 @@ export function createSeedState(): AppState {
   }))
 
   return {
-    version: 26,
+    version: 27,
     activeCharacterId: characters[0].id,
     characters,
     conversations,

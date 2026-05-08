@@ -81,7 +81,7 @@ async function runWebFetchTask(task) {
   const timeout = setTimeout(() => controller.abort(), WEB_FETCH_TIMEOUT_MS)
   try {
     const response = await fetch(url, {
-      headers: { 'User-Agent': 'YuriNestAgent/0.1' },
+      headers: { 'User-Agent': 'YuriChatAgent/0.1' },
       signal: controller.signal,
     })
     const text = await response.text()

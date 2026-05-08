@@ -1,12 +1,12 @@
-# 百合小窝 / Yuri Nest
+# 百合小窝 / Yuri Chat
 
 网页端 AI 百合陪伴应用。它是妹妹“百合帝国”的应用侧起点，当前重点不是做一次性聊天 demo，而是把角色、长期记忆、世界树、本地/云端数据和可控的记忆主权慢慢打磨成长期可用的陪伴花园。
 
 线上预览：
 
-- https://ctnnyy-oss.github.io/yuri-nest/
+- https://ctnnyy-oss.github.io/yuri-chat/
 
-当前仓库、部署路径和服务器技术名已经统一为 `yuri-nest`，面向用户的产品名是“百合小窝 / Yuri Nest”。
+当前仓库、部署路径和服务器技术名已经统一为 `yuri-chat`，面向用户的产品名是“百合小窝 / Yuri Chat”。
 
 ## 当前功能
 
@@ -53,23 +53,25 @@ AI_ESCAPE_UNICODE_CONTENT=false
 
 - `secrets/`
 - `.env.local`
-- 服务器 `/opt/yuri-nest/.env`
+- 服务器 `/opt/yuri-chat/.env`
 
-本地开发阶段仍然默认免口令直连，方便妹妹调试。生产/公网模式会默认要求 `YURI_NEST_SYNC_TOKEN`，聊天授权开启时 `/api/chat` 也会走同一口令校验；模型保险箱在生产环境需要 `YURI_NEST_MODEL_SECRET` 保护服务器保存的模型密钥。
+本地开发阶段仍然默认免口令直连，方便妹妹调试。生产/公网模式会默认要求 `YURI_CHAT_SYNC_TOKEN`，聊天授权开启时 `/api/chat` 也会走同一口令校验；模型保险箱在生产环境需要 `YURI_CHAT_MODEL_SECRET` 保护服务器保存的模型密钥。
+
+公网部署还默认启用接口限流：`YURI_CHAT_RATELIMIT_CHAT` 控制 `/api/chat` 每 IP 每分钟次数（默认 30），`YURI_CHAT_RATELIMIT_CLOUD` 控制 `/api/cloud/*`（默认 60）。两个 health 接口不走限流，方便监控和前端启动检查。
 
 当前后端服务名：
 
-- `yuri-nest-api.service`
-- `yuri-nest-tunnel.service`
+- `yuri-chat-api.service`
+- `yuri-chat-tunnel.service`
 
 如果 Cloudflare Quick Tunnel 地址变化，需要更新前端的 `VITE_API_BASE_URL` 后重新构建并推送。
 
 ## 构建和上线
 
-GitHub Pages 使用仓库路径 `/yuri-nest/`，构建时必须带正确 base path：
+GitHub Pages 使用仓库路径 `/yuri-chat/`，构建时必须带正确 base path：
 
 ```powershell
-$env:VITE_BASE_PATH='/yuri-nest/'
+$env:VITE_BASE_PATH='/yuri-chat/'
 $env:VITE_API_BASE_URL='<当前云端 API 地址>'
 npm run build
 ```
@@ -77,7 +79,7 @@ npm run build
 构建后要检查 `dist/index.html` 是否引用：
 
 ```text
-/yuri-nest/assets/...
+/yuri-chat/assets/...
 ```
 
 `dist` 是当前 Pages 部署产物的一部分，提交前请确认没有把任何密钥、token 或 `.env.local` 加入 Git。

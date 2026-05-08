@@ -1,5 +1,6 @@
 import type { AgentAction, AgentTaskPriority, AgentTaskStatus } from '../domain/types'
 import { getCloudApiBaseUrl, getSavedCloudToken } from './cloudSync'
+import { apiFetch, isStaticPreviewHost } from './apiClient'
 
 export type PlatformTaskStatus = AgentTaskStatus | 'cancelled'
 export type PlatformTaskKind = 'generic' | 'web_fetch' | 'file_scan' | 'connector_check'
@@ -189,35 +190,13 @@ async function platformFetch(path: string, init: RequestInit = {}): Promise<Resp
   if (!apiBaseUrl && isStaticPreviewHost()) {
     throw new Error('线上静态版还没有连接后台平台。后台任务、通知和账号连接需要云端后端。')
   }
-  const headers = new Headers(init.headers)
-  const token = getSavedCloudToken()
-  if (token.trim()) headers.set('Authorization', `Bearer ${token.trim()}`)
-
-  const controller = new AbortController()
-  const timeoutId = window.setTimeout(() => controller.abort(), 30_000)
-  let response: Response
-  try {
-    response = await fetch(`${apiBaseUrl}${path}`, {
-      ...init,
-      headers,
-      signal: init.signal ?? controller.signal,
-    })
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('后台平台请求超时（30 秒），请检查网络或稍后再试', { cause: error })
-    }
-    throw error
-  } finally {
-    window.clearTimeout(timeoutId)
-  }
-
-  if (!response.ok) {
-    const detail = await readPlatformError(response)
-    if (!detail) throw new Error(`后台平台暂时没有接通：${response.status}`)
-    throw new Error(detail || `平台请求失败：${response.status}`)
-  }
-
-  return response
+  return apiFetch(path, {
+    ...init,
+    token: getSavedCloudToken(),
+    timeoutMs: 30_000,
+    timeoutMessage: '后台平台请求超时（30 秒），请检查网络或稍后再试',
+    errorFormatter: formatPlatformError,
+  })
 }
 
 function getPlatformApiBaseUrl(): string {
@@ -226,27 +205,9 @@ function getPlatformApiBaseUrl(): string {
   return ''
 }
 
-function isStaticPreviewHost(): boolean {
-  if (typeof window === 'undefined') return false
-  return window.location.hostname.endsWith('github.io') && !getCloudApiBaseUrl()
-}
-
-async function readPlatformError(response: Response): Promise<string> {
-  const detail = await response.text()
-  if (!detail) return ''
-  if (looksLikeHtml(detail)) return ''
-
-  try {
-    const parsed = JSON.parse(detail) as { error?: string; message?: string }
-    return parsed.error || parsed.message || detail
-  } catch {
-    return detail
-  }
-}
-
-function looksLikeHtml(value: string): boolean {
-  const sample = value.trim().slice(0, 200).toLowerCase()
-  return sample.startsWith('<!doctype html') || sample.startsWith('<html') || sample.includes('<title>site not found')
+function formatPlatformError(status: number, detail: string): string {
+  if (!detail) return `后台平台暂时没有接通：${status}`
+  return detail || `平台请求失败：${status}`
 }
 
 function normalizeBaseUrl(value: string) {

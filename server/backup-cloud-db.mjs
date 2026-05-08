@@ -2,14 +2,15 @@ import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import dotenv from 'dotenv'
+import { readEnv } from './env.mjs'
 import { clampNumber, quoteSqlString } from './shared/utils.mjs'
 
 dotenv.config({ path: '.env.local' })
 dotenv.config()
 
-const databasePath = resolve(process.env.YURI_NEST_DB_PATH || './data/yuri-nest.sqlite')
-const backupDir = resolve(process.env.YURI_NEST_BACKUP_DIR || './data/backups')
-const maxBackups = clampNumber(process.env.YURI_NEST_MAX_BACKUPS, 3, 120, 24)
+const databasePath = resolve(readEnv('YURI_CHAT_DB_PATH') || './data/yuri-chat.sqlite')
+const backupDir = resolve(readEnv('YURI_CHAT_BACKUP_DIR') || './data/backups')
+const maxBackups = clampNumber(readEnv('YURI_CHAT_MAX_BACKUPS'), 3, 120, 24)
 
 if (!existsSync(databasePath)) {
   console.log(`No database found at ${databasePath}`)
@@ -20,7 +21,7 @@ mkdirSync(dirname(databasePath), { recursive: true })
 mkdirSync(backupDir, { recursive: true })
 
 const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-const backupPath = join(backupDir, `yuri-nest-scheduled-${stamp}.sqlite`)
+const backupPath = join(backupDir, `yuri-chat-scheduled-${stamp}.sqlite`)
 const database = new DatabaseSync(databasePath)
 
 database.exec(`VACUUM INTO ${quoteSqlString(backupPath)}`)
@@ -31,7 +32,7 @@ console.log(`Created ${basename(backupPath)}`)
 
 function pruneBackups() {
   readdirSync(backupDir)
-    .filter((fileName) => fileName.startsWith('yuri-nest-') && fileName.endsWith('.sqlite'))
+    .filter((fileName) => fileName.startsWith('yuri-chat-') && fileName.endsWith('.sqlite'))
     .map((fileName) => {
       const path = join(backupDir, fileName)
       return { path, createdAt: statSync(path).mtime.toISOString() }

@@ -4,7 +4,9 @@ import { normalizeMemories } from '../services/memoryEngine'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { agentRooms, createSeedState } from './seed'
 
-const currentStateVersion = 26
+const currentStateVersion = 27
+const legacyDefaultRoomId = 'room-yuri-nest'
+const currentDefaultRoomId = 'room-yuri-chat'
 
 export function migrateAppState(state: AppState): AppState {
   const defaults = createSeedState()
@@ -14,7 +16,7 @@ export function migrateAppState(state: AppState): AppState {
   const memories = replaceSeedMemories(
     sourceVersion < 10 ? mergeMissingSeedMemories(baseMemories, defaults.memories) : baseMemories,
     defaults.memories,
-    sourceVersion < 26,
+    sourceVersion < 27,
   )
   const shouldResetCharacterShell = sourceVersion < 19
   const characters = shouldResetCharacterShell
@@ -32,7 +34,7 @@ export function migrateAppState(state: AppState): AppState {
       characters,
     ),
     memories,
-    worldNodes: mergeSeedWorldNodes(state.worldNodes ?? defaults.worldNodes, defaults.worldNodes, sourceVersion < 26),
+    worldNodes: mergeSeedWorldNodes(state.worldNodes ?? defaults.worldNodes, defaults.worldNodes, sourceVersion < 27),
     trash: {
       memories: normalizeMemories(state.trash?.memories ?? defaults.trash.memories).map((memory, index) => ({
         ...memory,
@@ -53,7 +55,7 @@ export function migrateAppState(state: AppState): AppState {
     agentReminders: Array.isArray(state.agentReminders) ? state.agentReminders : defaults.agentReminders,
     agentTasks: Array.isArray(state.agentTasks) ? state.agentTasks : defaults.agentTasks,
     agentMoments: Array.isArray(state.agentMoments) ? state.agentMoments : defaults.agentMoments,
-    agentRooms: mergeSeedAgentRooms(Array.isArray(state.agentRooms) ? state.agentRooms : defaults.agentRooms, sourceVersion < 26),
+    agentRooms: mergeSeedAgentRooms(Array.isArray(state.agentRooms) ? state.agentRooms : defaults.agentRooms, sourceVersion < 27),
     settings: {
       ...defaults.settings,
       ...sourceSettings,
@@ -103,7 +105,10 @@ function sanitizeCharacterShell(characters: CharacterCard[], defaultCharacters: 
 
 function mergeSeedAgentRooms(rooms: AppState['agentRooms'], replaceExistingSeeds = false): AppState['agentRooms'] {
   const seedRoomsById = new Map(agentRooms.map((room) => [room.id, room]))
-  const mergedRooms = rooms.map((room) => {
+  const normalizedRooms = dedupeAgentRooms(
+    rooms.map((room) => (room.id === legacyDefaultRoomId ? { ...room, id: currentDefaultRoomId } : room)),
+  )
+  const mergedRooms = normalizedRooms.map((room) => {
     const seedRoom = seedRoomsById.get(room.id)
     return replaceExistingSeeds && seedRoom
       ? {
@@ -116,6 +121,23 @@ function mergeSeedAgentRooms(rooms: AppState['agentRooms'], replaceExistingSeeds
   const existingIds = new Set(mergedRooms.map((room) => room.id))
   const missingRooms = agentRooms.filter((room) => !existingIds.has(room.id))
   return [...mergedRooms, ...missingRooms]
+}
+
+function dedupeAgentRooms(rooms: AppState['agentRooms']): AppState['agentRooms'] {
+  const roomById = new Map<string, AppState['agentRooms'][number]>()
+  for (const room of rooms) {
+    const existing = roomById.get(room.id)
+    if (!existing) {
+      roomById.set(room.id, room)
+      continue
+    }
+    const roomMessageCount = Array.isArray(room.messages) ? room.messages.length : 0
+    const existingMessageCount = Array.isArray(existing.messages) ? existing.messages.length : 0
+    if (roomMessageCount > existingMessageCount || room.updatedAt > existing.updatedAt) {
+      roomById.set(room.id, room)
+    }
+  }
+  return [...roomById.values()]
 }
 
 function mergeCoreConversations(

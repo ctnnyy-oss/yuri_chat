@@ -18,6 +18,14 @@ interface UseModelProfilesDeps {
   getCloudToken: () => string
 }
 
+function pickFallbackProfile(profiles: ModelProfileSummary[]): ModelProfileSummary | undefined {
+  return (
+    profiles.find((profile) => profile.isDefault && profile.hasApiKey) ??
+    profiles.find((profile) => profile.hasApiKey) ??
+    profiles[0]
+  )
+}
+
 export function useModelProfiles({ setState, setNotice, getCloudToken }: UseModelProfilesDeps) {
   const [modelProfiles, setModelProfiles] = useState<ModelProfileSummary[]>([])
   const [modelProfileStatus, setModelProfileStatus] = useState(() => {
@@ -33,6 +41,20 @@ export function useModelProfiles({ setState, setNotice, getCloudToken }: UseMode
     try {
       const profiles = await listModelProfiles(token)
       setModelProfiles(profiles)
+      const fallbackProfile = pickFallbackProfile(profiles)
+      if (fallbackProfile) {
+        setState((currentState) => {
+          if (currentState.settings.modelProfileId) return currentState
+          return {
+            ...currentState,
+            settings: normalizeTrashRetentionSettings({
+              ...currentState.settings,
+              modelProfileId: fallbackProfile.id,
+              model: fallbackProfile.model,
+            }),
+          }
+        })
+      }
       setModelProfileStatus(`已读取 ${profiles.length} 组模型配置`)
       return profiles
     } catch (error) {
@@ -42,7 +64,7 @@ export function useModelProfiles({ setState, setNotice, getCloudToken }: UseMode
     } finally {
       setModelProfileBusy(false)
     }
-  }, [getCloudToken])
+  }, [getCloudToken, setState])
 
   async function handleSaveModelProfile(profile: ModelProfileInput) {
     try {
@@ -74,13 +96,15 @@ export function useModelProfiles({ setState, setNotice, getCloudToken }: UseMode
       setModelProfileBusy(true)
       const profiles = await deleteModelProfile(token, profileId)
       setModelProfiles(profiles)
+      const fallbackProfile = pickFallbackProfile(profiles)
       setState((currentState) => ({
         ...currentState,
         settings:
           currentState.settings.modelProfileId === profileId
             ? normalizeTrashRetentionSettings({
                 ...currentState.settings,
-                modelProfileId: 'server-env',
+                modelProfileId: fallbackProfile?.id ?? 'server-env',
+                model: fallbackProfile?.model ?? currentState.settings.model,
               })
             : currentState.settings,
       }))

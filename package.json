@@ -1,5 +1,5 @@
 {
-  "name": "yuri-nest",
+  "name": "yuri-chat",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -21,6 +21,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.1",
     "idb": "^8.0.3",
     "lucide-react": "^1.14.0",
     "react": "^19.2.5",

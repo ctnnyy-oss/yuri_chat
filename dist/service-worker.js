@@ -1,6 +1,6 @@
 /* global caches, fetch, self */
 
-const CACHE_NAME = 'yuri-nest-shell-v1'
+const CACHE_NAME = 'yuri-chat-shell-v1'
 const SHELL_URL = './'
 
 self.addEventListener('install', (event) => {

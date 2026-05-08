@@ -224,8 +224,8 @@ function runSecurityRegression() {
         withEnv(
           {
             NODE_ENV: 'production',
-            YURI_NEST_REQUIRE_CLOUD_AUTH: 'false',
-            YURI_NEST_REQUIRE_CHAT_AUTH: 'false',
+            YURI_CHAT_REQUIRE_CLOUD_AUTH: 'false',
+            YURI_CHAT_REQUIRE_CHAT_AUTH: 'false',
           },
           () => !shouldRequireCloudAuth() && !shouldRequireModelAuth(),
         ),
@@ -233,7 +233,7 @@ function runSecurityRegression() {
     {
       name: 'missing production token rejects without leaking expected token',
       run: () =>
-        withEnv({ NODE_ENV: 'production', YURI_NEST_SYNC_TOKEN: 'expected-secret-token' }, () => {
+        withEnv({ NODE_ENV: 'production', YURI_CHAT_SYNC_TOKEN: 'expected-secret-token' }, () => {
           const failure = getCloudAuthFailure({
             get: () => '',
           })
@@ -244,7 +244,7 @@ function runSecurityRegression() {
       name: 'production model vault requires dedicated encryption secret',
       run: () =>
         withEnv({ NODE_ENV: 'production' }, () =>
-          Boolean(getModelSecretConfigurationIssue()?.includes('YURI_NEST_MODEL_SECRET')),
+          Boolean(getModelSecretConfigurationIssue()?.includes('YURI_CHAT_MODEL_SECRET')),
         ),
     },
     {
@@ -254,9 +254,9 @@ function runSecurityRegression() {
     {
       name: 'cloud snapshot rejects stale base revision',
       run: () => {
-        const dir = mkdtempSync(join(tmpdir(), 'yuri-nest-cloud-cas-'))
+        const dir = mkdtempSync(join(tmpdir(), 'yuri-chat-cloud-cas-'))
         try {
-          return withEnv({ NODE_ENV: 'development', YURI_NEST_DB_PATH: join(dir, 'cloud.sqlite') }, () => {
+          return withEnv({ NODE_ENV: 'development', YURI_CHAT_DB_PATH: join(dir, 'cloud.sqlite') }, () => {
             const first = saveSnapshot(minimalCloudState(), { baseRevision: 0 })
             if (first.revision !== 1) return false
             try {
@@ -291,13 +291,13 @@ function runSecurityRegression() {
 function withEnv(overrides, run) {
   const keys = [
     'NODE_ENV',
-    'YURI_NEST_PUBLIC_SERVER',
-    'YURI_NEST_PUBLIC_MODE',
-    'YURI_NEST_REQUIRE_CLOUD_AUTH',
-    'YURI_NEST_REQUIRE_CHAT_AUTH',
-    'YURI_NEST_SYNC_TOKEN',
-    'YURI_NEST_MODEL_SECRET',
-    'YURI_NEST_DB_PATH',
+    'YURI_CHAT_PUBLIC_SERVER',
+    'YURI_CHAT_PUBLIC_MODE',
+    'YURI_CHAT_REQUIRE_CLOUD_AUTH',
+    'YURI_CHAT_REQUIRE_CHAT_AUTH',
+    'YURI_CHAT_SYNC_TOKEN',
+    'YURI_CHAT_MODEL_SECRET',
+    'YURI_CHAT_DB_PATH',
   ]
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]))
 

@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { readEnv } from './env.mjs'
 import { clampNumber, quoteSqlString } from './shared/utils.mjs'
 
 const snapshotId = 'default'
@@ -55,11 +56,11 @@ export function closeCloudDatabaseForTests() {
 }
 
 function getCloudDatabasePath() {
-  return resolve(process.env.YURI_NEST_DB_PATH || './data/yuri-nest.sqlite')
+  return resolve(readEnv('YURI_CHAT_DB_PATH') || './data/yuri-chat.sqlite')
 }
 
 function getCloudBackupDir() {
-  return resolve(process.env.YURI_NEST_BACKUP_DIR || './data/backups')
+  return resolve(readEnv('YURI_CHAT_BACKUP_DIR') || './data/backups')
 }
 
 export function readSnapshot() {
@@ -112,7 +113,7 @@ export function createCloudBackup(reason = 'manual') {
 
   const safeReason = String(reason).toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/-+/g, '-').slice(0, 48) || 'backup'
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const fileName = `yuri-nest-${safeReason}-${stamp}.sqlite`
+  const fileName = `yuri-chat-${safeReason}-${stamp}.sqlite`
   const backupPath = join(backupDir, fileName)
 
   database.exec(`VACUUM INTO ${quoteSqlString(backupPath)}`)
@@ -125,13 +126,13 @@ export function listCloudBackups() {
   if (!existsSync(backupDir)) return []
 
   return readdirSync(backupDir)
-    .filter((fileName) => fileName.startsWith('yuri-nest-') && fileName.endsWith('.sqlite'))
+    .filter((fileName) => fileName.startsWith('yuri-chat-') && fileName.endsWith('.sqlite'))
     .map((fileName) => toCloudBackupSummary(join(backupDir, fileName)))
     .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
 }
 
 function pruneCloudBackups() {
-  const maxBackups = clampNumber(process.env.YURI_NEST_MAX_BACKUPS, 3, 120, 24)
+  const maxBackups = clampNumber(readEnv('YURI_CHAT_MAX_BACKUPS'), 3, 120, 24)
   const backups = listCloudBackups()
   backups.slice(maxBackups).forEach((backup) => {
     const backupPath = resolveBackupPath(backup.fileName)
@@ -141,7 +142,7 @@ function pruneCloudBackups() {
 
 export function resolveBackupPath(fileName) {
   const cleanName = basename(String(fileName))
-  if (!cleanName.startsWith('yuri-nest-') || !cleanName.endsWith('.sqlite')) return null
+  if (!cleanName.startsWith('yuri-chat-') || !cleanName.endsWith('.sqlite')) return null
   const backupDir = getCloudBackupDir()
   const backupPath = resolve(backupDir, cleanName)
   return backupPath.startsWith(`${backupDir}${sep}`) ? backupPath : null
@@ -152,7 +153,7 @@ function toCloudBackupSummary(backupPath) {
   const fileName = basename(backupPath)
   return {
     fileName,
-    label: fileName.replace(/^yuri-nest-/, '').replace(/\.sqlite$/, ''),
+    label: fileName.replace(/^yuri-chat-/, '').replace(/\.sqlite$/, ''),
     createdAt: stats.mtime.toISOString(),
     sizeBytes: stats.size,
   }

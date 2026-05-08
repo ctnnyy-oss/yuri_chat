@@ -1,5 +1,6 @@
 import { storageConfig } from '../config/storage'
 import type { AppState } from '../domain/types'
+import { apiFetch, getApiBaseUrl } from './apiClient'
 
 export interface CloudMetadata {
   hasState: boolean
@@ -92,45 +93,13 @@ export async function downloadCloudBackup(token: string, fileName: string): Prom
 async function cloudFetch(path: string, token: string, init: RequestInit = {}): Promise<Response> {
   const apiBaseUrl = getCloudApiBaseUrl()
   if (!apiBaseUrl) throw new Error('云端后端还没有配置')
-  const headers = new Headers(init.headers)
-  if (token.trim()) headers.set('Authorization', `Bearer ${token.trim()}`)
-
-  const controller = new AbortController()
-  const timeoutId = window.setTimeout(() => controller.abort(), 30_000)
-  let response: Response
-  try {
-    response = await fetch(`${apiBaseUrl}${path}`, {
-      ...init,
-      headers,
-      signal: init.signal ?? controller.signal,
-    })
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('云端请求超时（30 秒），请检查网络或稍后再试', { cause: error })
-    }
-    throw error
-  } finally {
-    window.clearTimeout(timeoutId)
-  }
-
-  if (!response.ok) {
-    const detail = await readCloudError(response)
-    throw new Error(formatCloudError(response.status, detail))
-  }
-
-  return response
-}
-
-async function readCloudError(response: Response): Promise<string> {
-  const detail = await response.text()
-  if (!detail) return ''
-
-  try {
-    const parsed = JSON.parse(detail) as { error?: string; message?: string }
-    return parsed.error || parsed.message || detail
-  } catch {
-    return detail
-  }
+  return apiFetch(path, {
+    ...init,
+    token,
+    timeoutMs: 30_000,
+    timeoutMessage: '云端请求超时（30 秒），请检查网络或稍后再试',
+    errorFormatter: formatCloudError,
+  })
 }
 
 function formatCloudError(status: number, detail: string): string {
@@ -142,7 +111,5 @@ function formatCloudError(status: number, detail: string): string {
 }
 
 export function getCloudApiBaseUrl(): string {
-  const configuredUrl = import.meta.env.VITE_API_BASE_URL
-  if (!configuredUrl) return ''
-  return configuredUrl.replace(/\/+$/, '')
+  return getApiBaseUrl()
 }

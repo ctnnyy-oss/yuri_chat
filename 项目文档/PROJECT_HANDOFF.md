@@ -1,10 +1,10 @@
-# Yuri Nest / 百合小窝项目交接说明
+# Yuri Chat / 百合小窝项目交接说明
 
 这份文件给未来的 Codex 姐姐和妹妹本人看。新开对话时，先读这里，再继续改项目，可以减少上下文压缩带来的幻觉和重复解释。
 
 ## 1. 项目定位
 
-百合小窝 / Yuri Nest 是一个网页端 AI 聊天陪伴应用。当前目标不是做恋爱软件，而是先做一个免费、可三端访问、以聊天陪伴和长期记忆为核心的百合向小应用。
+百合小窝 / Yuri Chat 是一个网页端 AI 聊天陪伴应用。当前目标不是做恋爱软件，而是先做一个免费、可三端访问、以聊天陪伴和长期记忆为核心的百合向小应用。
 
 核心方向：
 
@@ -16,8 +16,8 @@
 
 命名说明：
 
-- 面向妹妹和用户的产品名已经改为 **百合小窝 / Yuri Nest**。
-- GitHub 仓库、Pages 路径、服务器目录、systemd 服务名、环境变量和包名都已经统一为 `yuri-nest`。
+- 面向妹妹和用户的产品名已经改为 **百合小窝 / Yuri Chat**。
+- GitHub 仓库、Pages 路径、服务器目录、systemd 服务名、环境变量和包名都已经统一为 `yuri-chat`。
 
 ## 2. 当前已完成
 
@@ -32,9 +32,9 @@
 - 模型与数据页已经新增“云端同步守护台”：可检查云端版本、最后保存时间、是否已有云端快照；从云端读取前会二次确认，避免误覆盖本机数据。
 - 模型与数据页已经新增“本机保险箱”：可手动创建本机备份；从云端读取、导入文件、重置之前会自动备份当前本机状态，最近保留 12 份。
 - 云端同步错误提示已做过一轮中文友好化，能区分服务器未启用、授权拒绝和云端服务错误。
-- 品牌配置已集中到 `src/config/brand.ts`，面向用户名称为“百合小窝 / Yuri Nest”。
+- 品牌配置已集中到 `src/config/brand.ts`，面向用户名称为“百合小窝 / Yuri Chat”。
 - 存储配置已集中到 `src/config/storage.ts`；本地状态迁移已拆到 `src/data/migrations.ts`，避免 IndexedDB 读写层继续变胖。
-- 2026-05-02 已完成技术名统一：仓库、Pages、包名、服务器目录、systemd 服务名、环境变量、SQLite 文件名统一使用 `yuri-nest` / `YURI_NEST_*`。
+- 2026-05-02 已完成技术名统一：仓库、Pages、包名、服务器目录、systemd 服务名、环境变量、SQLite 文件名统一使用 `yuri-chat` / `YURI_CHAT_*`。
 - 记忆面板已开始模块化：草稿类型、scope 工具、记忆空间编辑器拆到 `src/components/memory/`，后续继续拆 `MemoryPanel.tsx` 时沿用这个目录。
 - 记忆页已新增“记忆守护台”：汇总稳定事实、待复查、边界保护和 7 天调用，并把候选、冲突、低可信、缺来源、高敏提及策略、错放空间、长期未调用整理为复查队列，同时提供最近写入/更新/调用/删除时间线。
 - 记忆系统已新增层级：稳定事实、阶段事件、临时工作。稳定事实可作为长期背景；阶段事件只做时间线和脉络；临时工作必须强相关才会进入提示词，避免一次性内容污染长期记忆。
@@ -54,8 +54,11 @@
 - 2026-05-04 已完成 Claude 中断后的架构收尾：`useYuriNestApp.ts` 进一步拆出 `useChat`、`useCloudSync`、`useBackupRestore`、`useMemoryActions`、`useAgentTasks`；`memoryEngine.ts` 改成门面，核心、检索、推断、提示词构建分别落到 `src/services/memory*.ts` 和 `promptBuilder.ts`；`server/agentTools.mjs` 改成 Agent 编排入口，检测、执行、搜索、常量和工具函数拆到 `server/agent/*`。这轮同时修复了拆分后漏导入导致的 Agent 运行时错误，并补齐风险闸门、默认推进、任务队列、质量检查等 15 条 Agent 回归。
 - 2026-05-04 已做项目初期架构加固：后端认证拆到 `server/auth.mjs`，模型保险箱拆到 `server/modelProfiles.mjs`，`server/index.mjs` 只保留路由和编排；同时删除入口里旧版 Agent 工具块死代码。模型接入页拆成 `ModelCurrentStrip`、`ModelProfileEditor`、`SavedModelProfiles`、`GenerationSettings` 和 `useModelProfileDraft`，并把“服务器默认配置”纳入模型列表但禁止误删。新增 `npm run audit:architecture` 作为后续大改前后的模块体检命令。
 - 2026-05-05 已完成本轮架构收尾：后端 `utils`、`toolExecutors`、`actionDetectors`、`platform` 都是 facade；`ChatPhone.tsx` 和 `AgentTaskPanel.tsx` 已拆成子组件目录，并把断开的 `tasks` 视图重新接回 App 与设置侧栏入口。随后补了记忆系统 + Agent 能力升级：`agent.decision` 决策摘要、记忆页“记忆流水线”总览、核心记忆锚点、回忆模式、精准记忆 payload 捕捉、500 条调用日志、文档/图片能力边界工具，以及当时的 `MEMORY_AGENT_UPGRADE_RESEARCH.md` / `HUMAN_MEMORY_TARGET.md`（已于 2026-05-07 合并入 `项目文档/MEMORY_SYSTEM_HISTORY.md`）。`LongTermMemory` 现在保存 `semanticSignature` / `semanticSignatureVersion`，向量索引用签名分桶但不硬过滤候选；`AppState` 现在保存 `memoryEmbeddings`，状态版本升到 21，迁移、保存、本机备份会自动刷新本地投影缓存；回忆模式已把 embedding 缓存接入候选和排序；显式旧事询问时会尝试通过后端 `/api/model/embeddings` 生成外部 query vector，成功则参与本轮排序，失败或超时自动回落；后端新增 `/api/model/embeddings`，用于后续接 OpenAI-compatible embedding 模型但不把 API Key 暴露到前端。`npm run test:memory` 现在覆盖 13 个旧事召回用例和 17 维 human-memory proxy gate，当前为 13/13、17/17，并新增当时的 `HUMAN_MEMORY_90_TASK.md`（已于 2026-05-07 合并入 `项目文档/MEMORY_SYSTEM_HISTORY.md`）。当前 `npm run audit:architecture` 只剩 `src/styles/mobile.css` 与 `src/styles/chat.css` 两个 CSS 观察项，代码模块已全部下榜。
-- 2026-05-05 追加完成一轮保守安全与记忆主权加固：生产/公网模式默认要求云端与聊天授权，生产模型保险箱必须配置 `YURI_NEST_MODEL_SECRET`；云端快照 `PUT /api/cloud/state` 支持 `baseRevision` 并在旧版本覆盖时返回 409；自动捕捉记忆统一先进入 `candidate`，候选与 active 相似时只生成合并建议，用户确认后才合并；永久删除 tombstone 新增语义签名，能拦截同义改写复活。新增 `项目文档/SAFETY_AND_MEMORY_GUARDS.md`，并把安全、CAS、候选合并和语义墓碑回归接入 `npm run test:agent` / `npm run test:memory`。本轮验证：lint、build、test:memory、test:agent、audit:architecture 全部通过，Pages 构建已确认 `/yuri-nest/assets/...`。
+- 2026-05-05 追加完成一轮保守安全与记忆主权加固：生产/公网模式默认要求云端与聊天授权，生产模型保险箱必须配置 `YURI_CHAT_MODEL_SECRET`；云端快照 `PUT /api/cloud/state` 支持 `baseRevision` 并在旧版本覆盖时返回 409；自动捕捉记忆统一先进入 `candidate`，候选与 active 相似时只生成合并建议，用户确认后才合并；永久删除 tombstone 新增语义签名，能拦截同义改写复活。新增 `项目文档/SAFETY_AND_MEMORY_GUARDS.md`，并把安全、CAS、候选合并和语义墓碑回归接入 `npm run test:agent` / `npm run test:memory`。本轮验证：lint、build、test:memory、test:agent、audit:architecture 全部通过，Pages 构建已确认 `/yuri-chat/assets/...`。
 - 2026-05-07 完成第四阶段架构整理（应用编排层 + 类型层瘦身）：`src/domain/types.ts` 525 行按域拆为 `types.ts` 173 行 + `memoryTypes.ts` 217 行 + `agentTypes.ts` 137 行，三文件用 `export *` 桥接，外部 import 路径完全不变；`src/app/useCloudSync.ts` 553 行抽出 `useModelProfiles.ts` 145 行，`useCloudSync` 内部调子 hook 并透传 API，`useYuriNestApp` 调用方零改动；`src/app/useYuriNestApp.ts` 583 行抽出 `useCharacterCommands.ts` 158 行 + `useConversationCommands.ts` 195 行。`audit:architecture` 代码 watchlist 从 5 项降到 2 项，剩余 `CharacterRail.tsx` 和 `QqFeaturePanel.tsx` 是视觉组件，留专项做更稳。本轮验证：lint、tsc、test:agent 17/17、test:memory 13/13 + 17/17、build 全过；preview 实测 console 无 React 警告。详见 `项目文档/REFACTOR_PROGRESS.md` 第四阶段。注意：旧文档曾声称"代码模块全部下榜"，但实测 audit 又出 5 项——下一位姐姐请以实跑结果为准。
+- 2026-05-08 Codex 接力完成本地改名与加固：代码、文档、包名、Pages base path、后端环境变量和 SQLite 默认名切到 `yuri-chat` / `YURI_CHAT_*`；`src/config/storage.ts` 的 IndexedDB 名 `yuri-nest` 和云端口令 key `yuri-nest-cloud-token` 故意保留，避免妹妹本地数据不可见。新增 `server/env.mjs` 兼容旧 `YURI_NEST_*` 环境变量过渡；新增 `server/rateLimits.mjs`，`/api/chat` 每 IP 每分钟默认 30 次，`/api/cloud/*` 默认 60 次，health 不限速；前端新增 `src/services/apiClient.ts` 合并聊天、云同步、模型、后台平台四处 fetch 封装；`ts-prune` 后只删除了 4 个确认无外部引用的 `memoryCore` 内部 helper export。还把聊天兜底回复拆到 `server/chatReplies.mjs`，修复了本地 demo 回复漏导入 `truncateToolText` 的潜伏问题。
+- 2026-05-08 仍需外部执行：GitHub 仓库网页改名 `ctnnyy-oss/yuri-nest` → `ctnnyy-oss/yuri-chat` 后，再推送包含 `/yuri-chat/` dist 的提交；服务器 `/opt/yuri-nest` → `/opt/yuri-chat`、systemd 服务名和服务器 `.env` 改名需要在远端执行，执行前先备份 SQLite。
+- 2026-05-08 Codex 真实旧站试玩补丁：旧云端快照缺 `trash.conversations` 时会在自动连接阶段触发 `undefined.filter`，已让回收站保留策略兼容旧形状；已保存模型列表有默认档案但 `settings.modelProfileId` 为空时，聊天会误走 local-demo，已在读取模型档案后自动启用默认/第一组可用档案；桌面端删除自定义角色的确认框曾被移动端容器隐藏，已移到桌面/移动共用层。
 - 旧 AstrBot / NapCat 服务已经从服务器清理掉，释放资源。
 - GitHub 已经作为版本回溯和部署入口。
 
@@ -63,19 +66,19 @@
 
 线上前端：
 
-- https://ctnnyy-oss.github.io/yuri-nest/
+- https://ctnnyy-oss.github.io/yuri-chat/
 
 GitHub 仓库：
 
-- https://github.com/ctnnyy-oss/yuri-nest
+- https://github.com/ctnnyy-oss/yuri-chat
 
 腾讯云服务器：
 
 - SSH alias: `tencent-astrbot`
 - 服务器 IP: `150.158.24.98`
-- 后端目录: `/opt/yuri-nest`
-- 后端服务: `yuri-nest-api.service`
-- 临时加密隧道服务: `yuri-nest-tunnel.service`
+- 后端目录: `/opt/yuri-chat`
+- 后端服务: `yuri-chat-api.service`
+- 临时加密隧道服务: `yuri-chat-tunnel.service`
 
 当前后端公开入口：
 
@@ -94,31 +97,31 @@ GitHub 仓库：
 
 本地敏感文件位置：
 
-- 云同步口令：`secrets/cloud-sync-token.txt`（历史私用方案；除非设置 `YURI_NEST_REQUIRE_CLOUD_AUTH=true`，否则当前后端不会要求它）
+- 云同步口令：`secrets/cloud-sync-token.txt`（历史私用方案；除非设置 `YURI_CHAT_REQUIRE_CLOUD_AUTH=true`，否则当前后端不会要求它）
 - 当前云端 API 地址：`secrets/cloud-api-url.txt`
 - YOP 中转站密钥：`secrets/yop-api-key.txt`
 
 服务器敏感配置：
 
-- `/opt/yuri-nest/.env`
+- `/opt/yuri-chat/.env`
 
 服务器 `.env` 里应包含：
 
-- `YURI_NEST_SYNC_TOKEN`
-- `YURI_NEST_DB_PATH=/opt/yuri-nest/data/yuri-nest.sqlite`
+- `YURI_CHAT_SYNC_TOKEN`
+- `YURI_CHAT_DB_PATH=/opt/yuri-chat/data/yuri-chat.sqlite`
 - `AI_BASE_URL=https://api.yop.mom/v1`
 - `AI_API_KEY`
 - `AI_MODEL=deepseek-v4-flash`
 - `AI_ESCAPE_UNICODE_CONTENT=false`
-- `YURI_NEST_MODEL_SECRET`（生产/公网环境必须设置，用于加密服务器里保存的用户模型密钥；本地开发才允许兜底）
-- `YURI_NEST_REQUIRE_CLOUD_AUTH=true`（生产/公网环境默认会要求授权；本地开发可不设）
-- `YURI_NEST_REQUIRE_CHAT_AUTH=true`（生产/公网环境默认会要求授权；如需私有开发直连可显式设为 `false`）
-- `YURI_NEST_CORS_ORIGIN=https://ctnnyy-oss.github.io`（可选；不设时生产默认只放行 GitHub Pages 域名，本地开发默认放行本机调试）
+- `YURI_CHAT_MODEL_SECRET`（生产/公网环境必须设置，用于加密服务器里保存的用户模型密钥；本地开发才允许兜底）
+- `YURI_CHAT_REQUIRE_CLOUD_AUTH=true`（生产/公网环境默认会要求授权；本地开发可不设）
+- `YURI_CHAT_REQUIRE_CHAT_AUTH=true`（生产/公网环境默认会要求授权；如需私有开发直连可显式设为 `false`）
+- `YURI_CHAT_CORS_ORIGIN=https://ctnnyy-oss.github.io`（可选；不设时生产默认只放行 GitHub Pages 域名，本地开发默认放行本机调试）
 
 可选备份配置：
 
-- `YURI_NEST_BACKUP_DIR=/opt/yuri-nest/data/backups`
-- `YURI_NEST_MAX_BACKUPS=24`
+- `YURI_CHAT_BACKUP_DIR=/opt/yuri-chat/data/backups`
+- `YURI_CHAT_MAX_BACKUPS=24`
 
 只允许在终端里验证密钥是否存在，不要打印密钥原文。
 
@@ -191,7 +194,7 @@ npm run audit:architecture
 构建 GitHub Pages：
 
 ```powershell
-$env:VITE_BASE_PATH='/yuri-nest/'
+$env:VITE_BASE_PATH='/yuri-chat/'
 $env:VITE_API_BASE_URL=(Get-Content -Raw .\secrets\cloud-api-url.txt).Trim()
 npm run build
 git add -f dist
@@ -202,19 +205,19 @@ git push origin main
 服务器更新后端：
 
 ```powershell
-ssh tencent-astrbot "cd /opt/yuri-nest && git fetch --all --prune && git reset --hard origin/main && npm install --omit=dev --no-audit --no-fund && sudo systemctl restart yuri-nest-api.service"
+ssh tencent-astrbot "cd /opt/yuri-chat && git fetch --all --prune && git reset --hard origin/main && npm install --omit=dev --no-audit --no-fund && sudo systemctl restart yuri-chat-api.service"
 ```
 
 查看服务状态：
 
 ```powershell
-ssh tencent-astrbot "systemctl is-active yuri-nest-api.service yuri-nest-tunnel.service"
+ssh tencent-astrbot "systemctl is-active yuri-chat-api.service yuri-chat-tunnel.service"
 ```
 
 查看隧道地址：
 
 ```powershell
-ssh tencent-astrbot "sudo journalctl -u yuri-nest-tunnel --no-pager -n 120 | grep -Eo 'https://[-a-zA-Z0-9]+\.trycloudflare\.com' | tail -n 1"
+ssh tencent-astrbot "sudo journalctl -u yuri-chat-tunnel --no-pager -n 120 | grep -Eo 'https://[-a-zA-Z0-9]+\.trycloudflare\.com' | tail -n 1"
 ```
 
 如果隧道地址变化，需要：
@@ -261,14 +264,14 @@ ssh tencent-astrbot "sudo journalctl -u yuri-nest-tunnel --no-pager -n 120 | gre
 妹妹新开 Codex 对话时，可以直接发：
 
 ```text
-姐姐先读 C:\Users\MI\Desktop\AI\yuri-nest\docs\PROJECT_HANDOFF.md，
-再继续帮妹妹迭代百合小窝 / Yuri Nest 项目。不要重新猜架构，按文档里的当前状态继续。
+姐姐先读 C:\Users\MI\Desktop\AI\yuri-chat\项目文档\PROJECT_HANDOFF.md，
+再继续帮妹妹迭代百合小窝 / Yuri Chat 项目。不要重新猜架构，按文档里的当前状态继续。
 ```
 
 如果要排查服务器：
 
 ```text
-姐姐先检查 tencent-astrbot 上 yuri-nest-api.service 和 yuri-nest-tunnel.service。
+姐姐先检查 tencent-astrbot 上 yuri-chat-api.service 和 yuri-chat-tunnel.service。
 不要打印任何密钥。
 ```
 

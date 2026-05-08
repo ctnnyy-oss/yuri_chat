@@ -1,8 +1,8 @@
-# 百合小窝 / Yuri Nest 架构笔记
+# 百合小窝 / Yuri Chat 架构笔记
 
 ## 目标
 
-百合小窝 / Yuri Nest 不是一次性网页，而是长期迭代的百合聊天陪伴底座。第一版先保证可运行、可聊天、可保存记忆，后续再扩展 Live2D、语音、PWA、角色市场、世界树编辑器、RAG 和多端伴随能力。
+百合小窝 / Yuri Chat 不是一次性网页，而是长期迭代的百合聊天陪伴底座。第一版先保证可运行、可聊天、可保存记忆，后续再扩展 Live2D、语音、PWA、角色市场、世界树编辑器、RAG 和多端伴随能力。
 
 ## 分层
 
@@ -46,7 +46,7 @@
 - 默认能离线体验。没有 API Key 时走本地演示回复，方便快速验证 UI 和流程。
 - 记忆系统先做可解释版本：最近消息是短期记忆，人工/规则沉淀为长期记忆，关键词触发世界树。每条长期记忆都保留类型、可信度、来源、调用记录和版本记录，避免黑箱记忆。
 - 每个新能力都作为模块接入，避免把所有逻辑塞进聊天页面。
-- 品牌名、技术路径和存储 key 分开管理，但当前主技术名已经统一为 `yuri-nest`，避免后续部署和文档继续分裂。
+- 品牌名、技术路径和存储 key 分开管理，但当前主技术名已经统一为 `yuri-chat`，避免后续部署和文档继续分裂。
 - 旧数据升级只能走 `migrations.ts`，不要在界面组件里临时判断旧字段；这样妹妹本机、云端快照和未来多设备同步都能复用同一条升级路径。
 - 超过 500 行的文件默认进入“需要继续拆分观察区”。当前 UI 入口、记忆视图、App 编排层、记忆引擎入口、Agent 工具/动作/工具函数/后台平台、ChatPhone 输入面板和 Agent 任务面板都已经拆完；剩余观察项见 `项目文档/REFACTOR_PROGRESS.md`（目前只有两个大 CSS）。新增能力时按目录边界塞到对应子模块，不要回头堆到 facade。
 - `npm run audit:architecture` 会扫描 `src` 和 `server`，列出超过观察线的模块。这个命令只做提醒，不阻断构建；每次大功能前后都可以跑一遍，防止新能力又被塞回入口文件。
@@ -100,10 +100,10 @@
 
 ## 云端备份
 
-- 云端 SQLite 数据库默认来自 `YURI_NEST_DB_PATH`，备份目录默认是 `./data/backups`，服务器可用 `YURI_NEST_BACKUP_DIR` 覆盖。
+- 云端 SQLite 数据库默认来自 `YURI_CHAT_DB_PATH`，备份目录默认是 `./data/backups`，服务器可用 `YURI_CHAT_BACKUP_DIR` 覆盖。
 - 每次 `PUT /api/cloud/state` 覆盖云端快照前，如果已有旧快照，后端会先用 SQLite `VACUUM INTO` 生成一份一致性备份。
 - 云端备份接口都需要云同步口令：`GET /api/cloud/backups` 列表，`POST /api/cloud/backups` 手动创建，`GET /api/cloud/backups/:fileName` 下载。
-- `npm run backup:cloud-db` 可以在服务器上手动或定时运行，默认保留最近 24 份，可用 `YURI_NEST_MAX_BACKUPS` 调整。
+- `npm run backup:cloud-db` 可以在服务器上手动或定时运行，默认保留最近 24 份，可用 `YURI_CHAT_MAX_BACKUPS` 调整。
 
 ## 近期路线
 

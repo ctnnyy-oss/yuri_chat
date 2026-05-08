@@ -56,7 +56,7 @@
 
 ## 文档不在这里的一份
 
-- **`README.md`** 在项目根目录（`yuri-nest/README.md`，不是这里的 `项目文档/README.md`）—— 项目门面，给 GitHub 来访者看的。
+- **`README.md`** 在项目根目录（`yuri-chat/README.md`，不是这里的 `项目文档/README.md`）—— 项目门面，给 GitHub 来访者看的。
 
 ## 这个文件夹里还有一份特殊的
 

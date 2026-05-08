@@ -1,5 +1,6 @@
 import type { ModelProfileInput, ModelProfileSummary, ModelProviderKind } from '../domain/types'
 import { getCloudApiBaseUrl } from './cloudSync'
+import { apiFetch, isStaticPreviewHost } from './apiClient'
 
 export interface ModelProviderPreset {
   id: string
@@ -227,60 +228,17 @@ async function modelFetch(path: string, token: string, init: RequestInit = {}): 
   if (!apiBaseUrl && isStaticPreviewHost()) {
     throw new Error('线上静态版还没有连接模型后端，不能直接拉取模型列表。需要配置云端后端，或在本机预览里使用。')
   }
-  const headers = new Headers(init.headers)
-  if (token.trim()) headers.set('Authorization', `Bearer ${token.trim()}`)
-
-  const controller = new AbortController()
-  const timeoutId = window.setTimeout(() => controller.abort(), 30_000)
-  let response: Response
-  try {
-    response = await fetch(`${apiBaseUrl}${path}`, {
-      ...init,
-      headers,
-      signal: init.signal ?? controller.signal,
-    })
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('模型配置请求超时（30 秒），请检查网络或稍后再试', { cause: error })
-    }
-    throw error
-  } finally {
-    window.clearTimeout(timeoutId)
-  }
-
-  if (!response.ok) {
-    const detail = await readModelError(response)
-    throw new Error(formatModelError(response.status, detail))
-  }
-
-  return response
+  return apiFetch(path, {
+    ...init,
+    token,
+    timeoutMs: 30_000,
+    timeoutMessage: '模型配置请求超时（30 秒），请检查网络或稍后再试',
+    errorFormatter: formatModelError,
+  })
 }
 
 function getModelApiBaseUrl(): string {
   return getCloudApiBaseUrl()
-}
-
-function isStaticPreviewHost(): boolean {
-  if (typeof window === 'undefined') return false
-  return window.location.hostname.endsWith('github.io') && !getCloudApiBaseUrl()
-}
-
-function looksLikeHtml(value: string): boolean {
-  const sample = value.trim().slice(0, 200).toLowerCase()
-  return sample.startsWith('<!doctype html') || sample.startsWith('<html') || sample.includes('<title>site not found')
-}
-
-async function readModelError(response: Response): Promise<string> {
-  const detail = await response.text()
-  if (!detail) return ''
-  if (looksLikeHtml(detail)) return ''
-
-  try {
-    const parsed = JSON.parse(detail) as { error?: string; message?: string }
-    return parsed.error || parsed.message || detail
-  } catch {
-    return detail
-  }
 }
 
 function formatModelError(status: number, detail: string): string {

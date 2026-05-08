@@ -184,7 +184,7 @@ export function createLongTermMemory(input: {
 
 // ============ 记忆版本 ============
 
-export function appendMemoryRevision(memory: LongTermMemory, reason: string, editor: MemoryOrigin): LongTermMemory {
+function appendMemoryRevision(memory: LongTermMemory, reason: string, editor: MemoryOrigin): LongTermMemory {
   const normalized = normalizeMemory(memory)
   const revision = createMemoryRevision(normalized, reason, editor)
 
@@ -277,7 +277,7 @@ export function mergeBody(primary: string, incoming: string): string {
   return `${cleanPrimary}\n补充：${cleanIncoming}`.slice(0, 720)
 }
 
-export function mergeSources(a: MemorySource[], b: MemorySource[]): MemorySource[] {
+function mergeSources(a: MemorySource[], b: MemorySource[]): MemorySource[] {
   const seen = new Set<string>()
   return [...a, ...b].filter((source) => {
     const key = source.messageId ?? source.excerpt
@@ -292,7 +292,7 @@ export function maxSensitivity(a: MemorySensitivity, b: MemorySensitivity): Memo
   return order[Math.max(order.indexOf(a), order.indexOf(b))]
 }
 
-export function mergeMemoryLayer(a: MemoryLayer, b: MemoryLayer): MemoryLayer {
+function mergeMemoryLayer(a: MemoryLayer, b: MemoryLayer): MemoryLayer {
   const order: MemoryLayer[] = ['working', 'episode', 'stable']
   return order[Math.max(order.indexOf(a), order.indexOf(b))]
 }
@@ -331,7 +331,7 @@ export function hasOppositePreference(first: LongTermMemory, second: LongTermMem
   )
 }
 
-export function getPolarity(text: string): 'positive' | 'negative' | 'neutral' {
+function getPolarity(text: string): 'positive' | 'negative' | 'neutral' {
   const negative = /(不喜欢|讨厌|不要|别|关闭|禁止|不想|不需要|不希望|取消)/.test(text)
   const positive = /(喜欢|需要|希望|开启|保留|默认|必须|应该|想要)/.test(text)
   if (negative && !positive) return 'negative'

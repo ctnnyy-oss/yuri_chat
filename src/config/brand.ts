@@ -1,8 +1,8 @@
 export const brand = {
   nameZh: '百合小窝',
-  nameEn: 'Yuri Nest',
-  fullName: '百合小窝 / Yuri Nest',
-  versionLabel: 'Yuri Nest 0.1',
-  defaultProjectId: 'yuri-nest',
-  exportPrefix: 'yuri-nest',
+  nameEn: 'Yuri Chat',
+  fullName: '百合小窝 / Yuri Chat',
+  versionLabel: 'Yuri Chat 0.1',
+  defaultProjectId: 'yuri-chat',
+  exportPrefix: 'yuri-chat',
 }

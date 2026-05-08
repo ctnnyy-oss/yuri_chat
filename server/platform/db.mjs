@@ -3,13 +3,14 @@
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { readEnv } from '../env.mjs'
 
 let platformDatabase
 
 export function getPlatformDatabase() {
   if (platformDatabase) return platformDatabase
 
-  const databasePath = resolve(process.env.YURI_NEST_DB_PATH || './data/yuri-nest.sqlite')
+  const databasePath = resolve(readEnv('YURI_CHAT_DB_PATH') || './data/yuri-chat.sqlite')
   mkdirSync(dirname(databasePath), { recursive: true })
   platformDatabase = new DatabaseSync(databasePath)
   platformDatabase.exec(`

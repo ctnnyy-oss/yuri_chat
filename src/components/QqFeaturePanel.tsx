@@ -508,17 +508,17 @@ export function QqFeaturePanel({
             </section>
           </div>
         )}
-        {pendingDeleteRole && (
-          <MobileConfirmDialog
-            danger
-            title="删除角色"
-            message={`会删除「${pendingDeleteRole.name}」这个角色，并一起清掉她的聊天记录。这个操作不能从聊天列表恢复。`}
-            confirmLabel="删除角色"
-            onCancel={() => setPendingDeleteRole(null)}
-            onConfirm={confirmDeleteRole}
-          />
-        )}
       </section>
+      {pendingDeleteRole && (
+        <MobileConfirmDialog
+          danger
+          title="删除角色"
+          message={`会删除「${pendingDeleteRole.name}」这个角色，并一起清掉她的聊天记录。这个操作不能从聊天列表恢复。`}
+          confirmLabel="删除角色"
+          onCancel={() => setPendingDeleteRole(null)}
+          onConfirm={confirmDeleteRole}
+        />
+      )}
     </main>
   )
 }

@@ -1,6 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto'
 import { isProductionRuntime } from './auth.mjs'
 import { getCloudDatabase } from './cloudStore.mjs'
+import { readEnv } from './env.mjs'
 import { getBaseUrl, getModel, stripTrailingSlash } from './modelProvider.mjs'
 
 export const serverEnvProfileId = 'server-env'
@@ -12,8 +13,8 @@ export function hasApiKey() {
 }
 
 export function getModelSecretConfigurationIssue() {
-  if (isProductionRuntime() && !process.env.YURI_NEST_MODEL_SECRET) {
-    return '生产环境需要配置 YURI_NEST_MODEL_SECRET，才能安全使用服务器模型保险箱。'
+  if (isProductionRuntime() && !readEnv('YURI_CHAT_MODEL_SECRET')) {
+    return '生产环境需要配置 YURI_CHAT_MODEL_SECRET，才能安全使用服务器模型保险箱。'
   }
   return null
 }
@@ -318,10 +319,10 @@ function getModelSecretKey() {
   if (configurationIssue) throw new Error(configurationIssue)
 
   const material =
-    process.env.YURI_NEST_MODEL_SECRET ||
-    process.env.YURI_NEST_SYNC_TOKEN ||
+    readEnv('YURI_CHAT_MODEL_SECRET') ||
+    readEnv('YURI_CHAT_SYNC_TOKEN') ||
     process.env.AI_API_KEY ||
     process.env.OPENAI_API_KEY ||
-    'local-yuri-nest-development-secret'
+    'local-yuri-chat-development-secret'
   return createHash('sha256').update(material).digest()
 }

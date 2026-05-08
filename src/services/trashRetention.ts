@@ -24,17 +24,26 @@ export function applyTrashRetention(state: AppState, now = new Date()): AppState
   if (days === null) return state
 
   const cutoff = now.getTime() - days * 24 * 60 * 60 * 1000
-  const memories = state.trash.memories.filter((memory) => new Date(memory.deletedAt).getTime() >= cutoff)
-  const expiredMemories = state.trash.memories.filter((memory) => new Date(memory.deletedAt).getTime() < cutoff)
-  const worldNodes = state.trash.worldNodes.filter((node) => new Date(node.deletedAt).getTime() >= cutoff)
-  const conversations = state.trash.conversations.filter(
+  const trashMemories = Array.isArray(state.trash?.memories) ? state.trash.memories : []
+  const trashWorldNodes = Array.isArray(state.trash?.worldNodes) ? state.trash.worldNodes : []
+  const trashConversations = Array.isArray(state.trash?.conversations) ? state.trash.conversations : []
+  const hasLegacyTrashShape =
+    !Array.isArray(state.trash?.memories) ||
+    !Array.isArray(state.trash?.worldNodes) ||
+    !Array.isArray(state.trash?.conversations)
+
+  const memories = trashMemories.filter((memory) => new Date(memory.deletedAt).getTime() >= cutoff)
+  const expiredMemories = trashMemories.filter((memory) => new Date(memory.deletedAt).getTime() < cutoff)
+  const worldNodes = trashWorldNodes.filter((node) => new Date(node.deletedAt).getTime() >= cutoff)
+  const conversations = trashConversations.filter(
     (conversation) => new Date(conversation.deletedAt).getTime() >= cutoff,
   )
 
   if (
-    memories.length === state.trash.memories.length &&
-    worldNodes.length === state.trash.worldNodes.length &&
-    conversations.length === state.trash.conversations.length
+    !hasLegacyTrashShape &&
+    memories.length === trashMemories.length &&
+    worldNodes.length === trashWorldNodes.length &&
+    conversations.length === trashConversations.length
   ) {
     return state
   }

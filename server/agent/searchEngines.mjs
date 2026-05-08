@@ -83,7 +83,7 @@ async function fetchYahooHtmlResults(query) {
   url.searchParams.set('p', query)
 
   const html = await fetchTextWithTimeout(url, SEARCH_TIMEOUT_MS, {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36 YuriNestAgent/0.1',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36 YuriChatAgent/0.1',
     Accept: 'text/html,application/xhtml+xml,application/xml;q=0.8,*/*;q=0.5',
   })
 
@@ -95,7 +95,7 @@ async function fetchSoHtmlResults(query) {
   url.searchParams.set('q', query)
 
   const html = await fetchTextWithTimeout(url, SEARCH_TIMEOUT_MS, {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36 YuriNestAgent/0.1',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36 YuriChatAgent/0.1',
     Accept: 'text/html,application/xhtml+xml,application/xml;q=0.8,*/*;q=0.5',
   })
 
@@ -113,7 +113,7 @@ async function fetchBingHtmlResults(query) {
   }
 
   const html = await fetchTextWithTimeout(url, SEARCH_TIMEOUT_MS, {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36 YuriNestAgent/0.1',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36 YuriChatAgent/0.1',
     Accept: 'text/html,application/xhtml+xml,application/xml;q=0.8,*/*;q=0.5',
   })
 
@@ -125,7 +125,7 @@ async function fetchDuckDuckGoHtmlResults(query) {
   url.searchParams.set('q', query)
 
   const html = await fetchTextWithTimeout(url, SEARCH_TIMEOUT_MS, {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36 YuriNestAgent/0.1',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36 YuriChatAgent/0.1',
     Accept: 'text/html,application/xhtml+xml,application/xml;q=0.8,*/*;q=0.5',
   })
 

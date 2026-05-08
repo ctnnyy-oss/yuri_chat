@@ -1,65 +1,32 @@
 import type { AppSettings, AssistantReplyResult, PromptBundle } from '../domain/types'
 import { getSavedCloudToken } from './cloudSync'
+import { ApiResponseError, apiFetch, isStaticPreviewHost } from './apiClient'
 
 export async function requestAssistantReply(bundle: PromptBundle, settings: AppSettings): Promise<AssistantReplyResult> {
   let response: Response
-  const apiBaseUrl = getApiBaseUrl()
-
-  const controller = new AbortController()
-  const timeoutId = window.setTimeout(() => controller.abort(), 90_000)
   try {
-    response = await fetch(`${apiBaseUrl}/api/chat`, {
+    response = await apiFetch('/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...getChatAuthHeaders(),
       },
       body: JSON.stringify({ bundle, settings }),
-      signal: controller.signal,
+      token: getSavedCloudToken(),
+      timeoutMs: 90_000,
+      timeoutMessage: '聊天请求超时（90 秒）：模型响应太慢，请稍后再试或换一组模型配置。',
+      errorFormatter: formatChatError,
     })
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('聊天请求超时（90 秒）：模型响应太慢，请稍后再试或换一组模型配置。', { cause: error })
+    if (isStaticPreviewHost() && (!(error instanceof ApiResponseError) || error.status === 404)) {
+      return { reply: createBrowserDemoReply(bundle) }
     }
-    if (isStaticPreviewHost()) return { reply: createBrowserDemoReply(bundle) }
     throw error
-  } finally {
-    window.clearTimeout(timeoutId)
-  }
-
-  if (!response.ok) {
-    if (response.status === 404 && isStaticPreviewHost()) return { reply: createBrowserDemoReply(bundle) }
-    const detail = await readChatError(response)
-    throw new Error(formatChatError(response.status, detail))
   }
 
   const data = await response.json()
   return {
     reply: String(data.reply ?? ''),
     agent: data.agent,
-  }
-}
-
-function getApiBaseUrl(): string {
-  const configuredUrl = import.meta.env.VITE_API_BASE_URL
-  if (!configuredUrl) return ''
-  return stripTrailingSlash(configuredUrl)
-}
-
-function getChatAuthHeaders(): Record<string, string> {
-  const token = getSavedCloudToken()
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
-async function readChatError(response: Response): Promise<string> {
-  const detail = await response.text()
-  if (!detail) return ''
-
-  try {
-    const parsed = JSON.parse(detail) as { error?: string; message?: string }
-    return parsed.error || parsed.message || detail
-  } catch {
-    return detail
   }
 }
 
@@ -77,11 +44,6 @@ function formatChatError(status: number, detail: string): string {
   return `${status} 聊天请求失败。${suffix}`
 }
 
-function isStaticPreviewHost(): boolean {
-  if (typeof window === 'undefined') return false
-  return window.location.hostname.endsWith('github.io') && !getApiBaseUrl()
-}
-
 function createBrowserDemoReply(bundle: PromptBundle): string {
   const lastUserMessage = [...bundle.messages].reverse().find((message) => message.role === 'user')
   const memoryHint = bundle.contextBlocks
@@ -95,8 +57,4 @@ function createBrowserDemoReply(bundle: PromptBundle): string {
     memoryHint ? `本轮准备调用的记忆：${memoryHint}` : '这轮没有命中长期记忆。',
     '要让手机也真正调用模型，需要把云服务器配置成安全后端，再用 VITE_API_BASE_URL 指向它。',
   ].join('\n\n')
-}
-
-function stripTrailingSlash(value: string): string {
-  return value.replace(/\/+$/, '')
 }

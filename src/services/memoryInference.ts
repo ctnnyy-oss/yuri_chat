@@ -67,7 +67,7 @@ export function inferMemoryKind(memory: LongTermMemory): MemoryKind {
   if (/(禁忌|边界|不要提|别提|雷点)/.test(text)) return 'taboo'
   if (/(安全|保护|底线|红线)/.test(text)) return 'safety'
   if (/(记住|别忘|以后|下次|默认|一直|长期|规则|不要|必须|应该)/.test(text)) return 'preference'
-  if (/(百合帝国|项目|架构|应用|产品|百合小窝|Yuri Nest|小手机|世界树|记忆系统)/i.test(text)) return 'project'
+  if (/(百合帝国|项目|架构|应用|产品|百合小窝|Yuri Chat|小手机|世界树|记忆系统)/i.test(text)) return 'project'
   if (/(关系|感情|喜欢.*人|讨厌.*人|朋友|家人|同事)/.test(text)) return 'relationship'
   return memory.kind || 'event'
 }
@@ -96,7 +96,7 @@ export function classifyMemory(
     return { kind: 'preference', confidence: 0.84, sensitivity, status: getAutoMemoryStatus('preference', sensitivity, 'candidate') }
   }
 
-  if (/(百合帝国|项目|架构|应用|产品|百合小窝|Yuri Nest|小手机|世界树|记忆系统)/i.test(content)) {
+  if (/(百合帝国|项目|架构|应用|产品|百合小窝|Yuri Chat|小手机|世界树|记忆系统)/i.test(content)) {
     return { kind: 'project', confidence: 0.85, sensitivity: 'low', status: 'active' }
   }
 
