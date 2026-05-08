@@ -50,6 +50,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
   const cloudTokenRef = useRef(cloudToken)
   const autoPushInFlightRef = useRef(false)
   const lastAutoPushSignatureRef = useRef('')
+  const getCloudTokenSnapshot = useCallback(() => cloudTokenRef.current, [])
 
   useEffect(() => {
     cloudBusyRef.current = cloudBusy
@@ -60,7 +61,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
   const modelProfilesHook = useModelProfiles({
     setState,
     setNotice,
-    getCloudToken: () => cloudTokenRef.current,
+    getCloudToken: getCloudTokenSnapshot,
   })
   const {
     refreshModelProfileList,
