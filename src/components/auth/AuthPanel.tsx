@@ -47,7 +47,7 @@ export function AuthPanel({
       setLocalMessage('邮箱格式不太对。')
       return
     }
-    if (cleanedPassword.length < 8) {
+    if (isRegister && cleanedPassword.length < 8) {
       setLocalMessage('密码至少 8 位，别太短啦。')
       return
     }
@@ -176,7 +176,7 @@ export function AuthPanel({
             <input
               autoComplete={isRegister ? 'new-password' : 'current-password'}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="至少 8 位"
+              placeholder={isRegister ? '至少 8 位' : '输入登录密码'}
               type="password"
               value={password}
             />

@@ -237,6 +237,83 @@ export async function resendEmailVerification(input, requestMeta = {}) {
   return sendAccountVerification(userRecord, requestMeta)
 }
 
+export async function bootstrapVerifiedAdminAccount(input) {
+  initializeAccountStore()
+  const email = normalizeEmail(input?.email)
+  const emailKey = getEmailKey(email)
+  const username = normalizeUsername(input?.username || input?.displayName || email.split('@')[0])
+  const usernameKey = getUsernameKey(username)
+  const displayName = normalizeDisplayName(input?.displayName, username)
+  const password = String(input?.password || '')
+
+  validateUsername(username)
+  validateEmail(email)
+  if (!password) throw createPublicError('请填写初始化管理员密码。')
+
+  const database = getCloudDatabase()
+  const now = new Date().toISOString()
+  const passwordHash = await bcrypt.hash(password, getBcryptCost())
+  let publicUser
+  let created = false
+
+  database.exec('BEGIN IMMEDIATE')
+  try {
+    const existingUser = readUserByEmailKey(emailKey)
+    if (existingUser) {
+      database
+        .prepare(
+          `UPDATE users
+           SET username = ?, username_key = ?, email = ?, email_key = ?,
+               email_verified_at = COALESCE(email_verified_at, ?),
+               display_name = ?, password_hash = ?, role = 'admin', updated_at = ?
+           WHERE id = ?`,
+        )
+        .run(username, usernameKey, email, emailKey, now, displayName, passwordHash, now, existingUser.id)
+      publicUser = toPublicUser({
+        ...existingUser,
+        username,
+        usernameKey,
+        email,
+        emailKey,
+        emailVerifiedAt: existingUser.emailVerifiedAt || now,
+        displayName,
+        role: 'admin',
+        updatedAt: now,
+      })
+    } else {
+      created = true
+      const user = {
+        id: randomUUID(),
+        username,
+        usernameKey,
+        email,
+        emailKey,
+        emailVerifiedAt: now,
+        displayName,
+        role: 'admin',
+        createdAt: now,
+        updatedAt: now,
+      }
+      database
+        .prepare(
+          `INSERT INTO users
+            (id, username, username_key, email, email_key, email_verified_at, display_name, password_hash, role, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'admin', ?, ?)`,
+        )
+        .run(user.id, user.username, user.usernameKey, user.email, user.emailKey, user.emailVerifiedAt, user.displayName, passwordHash, now, now)
+      publicUser = toPublicUser(user)
+    }
+    database.prepare('DELETE FROM email_verification_codes WHERE email_key = ?').run(emailKey)
+    database.exec('COMMIT')
+  } catch (error) {
+    database.exec('ROLLBACK')
+    throw error
+  }
+
+  claimLegacyCloudDataForUser(publicUser.id)
+  return { created, user: publicUser }
+}
+
 export function verifySessionToken(token) {
   initializeAccountStore()
   const cleanedToken = String(token || '').trim()

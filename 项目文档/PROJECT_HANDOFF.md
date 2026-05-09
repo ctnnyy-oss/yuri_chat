@@ -345,3 +345,11 @@ YURI_CHAT_BLOCKED_EMAIL_DOMAINS=
 ```
 
 现在没有域名也能先用普通 SMTP 邮箱做验证；后续买域名后，把 `YURI_CHAT_EMAIL_FROM` 换成自有域名邮箱，并按发信服务商要求配置 SPF/DKIM/DMARC 即可，不需要重做账号系统。
+
+如果开发者本人需要先跳过邮箱收信步骤，可以在服务器本地执行一次管理员初始化脚本。这个脚本只在命令行可用，不提供公开网页入口；执行前会建议先备份 SQLite，执行后会把指定邮箱标记为已验证 `admin`，并接管旧 `legacy-user` 数据：
+
+```powershell
+npm run account:bootstrap-admin -- --email "妹妹自己的邮箱" --username "林慕溪" --display-name "林慕溪" --password "临时密码"
+```
+
+生产/公网环境不要长期使用 `123456` 之类弱密码；如果只是本机临时内测，才可以显式加 `--allow-weak-password`。
