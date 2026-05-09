@@ -59,7 +59,7 @@
 - 2026-05-05 追加完成一轮保守安全与记忆主权加固：生产/公网模式默认要求云端与聊天授权，生产模型保险箱必须配置 `YURI_CHAT_MODEL_SECRET`；云端快照 `PUT /api/cloud/state` 支持 `baseRevision` 并在旧版本覆盖时返回 409；自动捕捉记忆统一先进入 `candidate`，候选与 active 相似时只生成合并建议，用户确认后才合并；永久删除 tombstone 新增语义签名，能拦截同义改写复活。新增 `项目文档/SAFETY_AND_MEMORY_GUARDS.md`，并把安全、CAS、候选合并和语义墓碑回归接入 `npm run test:agent` / `npm run test:memory`。本轮验证：lint、build、test:memory、test:agent、audit:architecture 全部通过，Pages 构建已确认 `/yuri-chat/assets/...`。
 - 2026-05-07 完成第四阶段架构整理（应用编排层 + 类型层瘦身）：`src/domain/types.ts` 525 行按域拆为 `types.ts` 173 行 + `memoryTypes.ts` 217 行 + `agentTypes.ts` 137 行，三文件用 `export *` 桥接，外部 import 路径完全不变；`src/app/useCloudSync.ts` 553 行抽出 `useModelProfiles.ts` 145 行，`useCloudSync` 内部调子 hook 并透传 API，`useYuriNestApp` 调用方零改动；`src/app/useYuriNestApp.ts` 583 行抽出 `useCharacterCommands.ts` 158 行 + `useConversationCommands.ts` 195 行。`audit:architecture` 代码 watchlist 从 5 项降到 2 项，剩余 `CharacterRail.tsx` 和 `QqFeaturePanel.tsx` 是视觉组件，留专项做更稳。本轮验证：lint、tsc、test:agent 17/17、test:memory 13/13 + 17/17、build 全过；preview 实测 console 无 React 警告。详见 `项目文档/REFACTOR_PROGRESS.md` 第四阶段。注意：旧文档曾声称"代码模块全部下榜"，但实测 audit 又出 5 项——下一位姐姐请以实跑结果为准。
 - 2026-05-08 Codex 接力完成本地改名与加固：代码、文档、包名、Pages base path、后端环境变量和 SQLite 默认名切到 `yuri-chat` / `YURI_CHAT_*`；`src/config/storage.ts` 的 IndexedDB 名 `yuri-nest` 和云端口令 key `yuri-nest-cloud-token` 故意保留，避免妹妹本地数据不可见。新增 `server/env.mjs` 兼容旧 `YURI_NEST_*` 环境变量过渡；新增 `server/rateLimits.mjs`，`/api/chat` 每 IP 每分钟默认 30 次，`/api/cloud/*` 默认 60 次，health 不限速；前端新增 `src/services/apiClient.ts` 合并聊天、云同步、模型、后台平台四处 fetch 封装；`ts-prune` 后只删除了 4 个确认无外部引用的 `memoryCore` 内部 helper export。还把聊天兜底回复拆到 `server/chatReplies.mjs`，修复了本地 demo 回复漏导入 `truncateToolText` 的潜伏问题。
-- 2026-05-08 仍需外部执行：GitHub 仓库网页改名 `ctnnyy-oss/yuri-nest` → `ctnnyy-oss/yuri-chat` 后，再推送包含 `/yuri-chat/` dist 的提交；服务器 `/opt/yuri-nest` → `/opt/yuri-chat`、systemd 服务名和服务器 `.env` 改名需要在远端执行，执行前先备份 SQLite。
+- 2026-05-09 运维实况：GitHub 仓库和 Pages 已经是 `ctnnyy-oss/yuri-chat` / `/yuri-chat/`；腾讯云服务器目录和 systemd 服务仍沿用旧名 `/opt/yuri-nest`、`yuri-nest-api.service`、`yuri-nest-tunnel.service`。日常部署先按旧名执行，等专门迁移窗口再改远端目录、服务名和 `.env` 路径，执行前先备份 SQLite。
 - 2026-05-08 Codex 真实旧站试玩补丁：旧云端快照缺 `trash.conversations` 时会在自动连接阶段触发 `undefined.filter`，已让回收站保留策略兼容旧形状；已保存模型列表有默认档案但 `settings.modelProfileId` 为空时，聊天会误走 local-demo，已在读取模型档案后自动启用默认/第一组可用档案；桌面端删除自定义角色的确认框曾被移动端容器隐藏，已移到桌面/移动共用层。
 - 旧 AstrBot / NapCat 服务已经从服务器清理掉，释放资源。
 - GitHub 已经作为版本回溯和部署入口。
@@ -78,9 +78,9 @@ GitHub 仓库：
 
 - SSH alias: `tencent-astrbot`
 - 服务器 IP: `150.158.24.98`
-- 后端目录: `/opt/yuri-chat`
-- 后端服务: `yuri-chat-api.service`
-- 临时加密隧道服务: `yuri-chat-tunnel.service`
+- 后端目录: `/opt/yuri-nest`（当前服务器真实路径；代码仓库已改名为 `yuri-chat`）
+- 后端服务: `yuri-nest-api.service`
+- 临时加密隧道服务: `yuri-nest-tunnel.service`
 
 当前后端公开入口：
 
@@ -105,12 +105,12 @@ GitHub 仓库：
 
 服务器敏感配置：
 
-- `/opt/yuri-chat/.env`
+- `/opt/yuri-nest/.env`
 
 服务器 `.env` 里应包含：
 
 - `YURI_CHAT_SYNC_TOKEN`
-- `YURI_CHAT_DB_PATH=/opt/yuri-chat/data/yuri-chat.sqlite`
+- `YURI_CHAT_DB_PATH=/opt/yuri-nest/data/yuri-chat.sqlite`
 - `AI_BASE_URL=https://api.yop.mom/v1`
 - `AI_API_KEY`
 - `AI_MODEL=deepseek-v4-flash`
@@ -122,7 +122,7 @@ GitHub 仓库：
 
 可选备份配置：
 
-- `YURI_CHAT_BACKUP_DIR=/opt/yuri-chat/data/backups`
+- `YURI_CHAT_BACKUP_DIR=/opt/yuri-nest/data/backups`
 - `YURI_CHAT_MAX_BACKUPS=24`
 
 只允许在终端里验证密钥是否存在，不要打印密钥原文。
@@ -207,19 +207,19 @@ git push origin main
 服务器更新后端：
 
 ```powershell
-ssh tencent-astrbot "cd /opt/yuri-chat && git fetch --all --prune && git reset --hard origin/main && npm install --omit=dev --no-audit --no-fund && sudo systemctl restart yuri-chat-api.service"
+ssh tencent-astrbot "cd /opt/yuri-nest && git fetch --all --prune && git merge --ff-only origin/main && npm install --omit=dev --no-audit --no-fund && sudo systemctl restart yuri-nest-api.service"
 ```
 
 查看服务状态：
 
 ```powershell
-ssh tencent-astrbot "systemctl is-active yuri-chat-api.service yuri-chat-tunnel.service"
+ssh tencent-astrbot "systemctl is-active yuri-nest-api.service yuri-nest-tunnel.service"
 ```
 
 查看隧道地址：
 
 ```powershell
-ssh tencent-astrbot "sudo journalctl -u yuri-chat-tunnel --no-pager -n 120 | grep -Eo 'https://[-a-zA-Z0-9]+\.trycloudflare\.com' | tail -n 1"
+ssh tencent-astrbot "sudo journalctl -u yuri-nest-tunnel --no-pager -n 120 | grep -Eo 'https://[-a-zA-Z0-9]+\.trycloudflare\.com' | tail -n 1"
 ```
 
 如果隧道地址变化，需要：
@@ -273,7 +273,7 @@ ssh tencent-astrbot "sudo journalctl -u yuri-chat-tunnel --no-pager -n 120 | gre
 如果要排查服务器：
 
 ```text
-姐姐先检查 tencent-astrbot 上 yuri-chat-api.service 和 yuri-chat-tunnel.service。
+姐姐先检查 tencent-astrbot 上 yuri-nest-api.service 和 yuri-nest-tunnel.service。
 不要打印任何密钥。
 ```
 
@@ -307,10 +307,10 @@ YURI_CHAT_RATELIMIT_AUTH=20
 服务器上线建议步骤：
 
 ```powershell
-ssh tencent-astrbot "cd /opt/yuri-chat && cp data/yuri-chat.sqlite data/yuri-chat-before-account-$(date +%Y%m%d-%H%M%S).sqlite"
-ssh tencent-astrbot "cd /opt/yuri-chat && git fetch --all --prune && git reset --hard origin/main && npm install --omit=dev --no-audit --no-fund"
-ssh tencent-astrbot "cd /opt/yuri-chat && printf '\nYURI_CHAT_AUTH_SECRET=%s\nYURI_CHAT_BCRYPT_COST=11\nYURI_CHAT_RATELIMIT_AUTH=20\n' \"$(openssl rand -hex 32)\" | sudo tee -a /opt/yuri-chat/.env >/dev/null"
-ssh tencent-astrbot "sudo systemctl restart yuri-chat-api.service"
+ssh tencent-astrbot "cd /opt/yuri-nest && cp data/yuri-chat.sqlite data/yuri-chat-before-account-$(date +%Y%m%d-%H%M%S).sqlite"
+ssh tencent-astrbot "cd /opt/yuri-nest && git fetch --all --prune && git merge --ff-only origin/main && npm install --omit=dev --no-audit --no-fund"
+ssh tencent-astrbot "cd /opt/yuri-nest && printf '\nYURI_CHAT_AUTH_SECRET=%s\nYURI_CHAT_BCRYPT_COST=11\nYURI_CHAT_RATELIMIT_AUTH=20\n' \"$(openssl rand -hex 32)\" | sudo tee -a /opt/yuri-nest/.env >/dev/null"
+ssh tencent-astrbot "sudo systemctl restart yuri-nest-api.service"
 ```
 
 上线后第一次打开网页，注册并验证妹妹自己的邮箱即可；如果服务器已有旧全局数据，第一位完成邮箱验证的账号会自动接管它。管理员账号可以继续下载/创建整库云端备份，普通账号不能下载整库 SQLite，避免多用户数据泄漏。
