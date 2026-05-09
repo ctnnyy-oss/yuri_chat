@@ -238,7 +238,7 @@ ssh tencent-astrbot "sudo journalctl -u yuri-chat-tunnel --no-pager -n 120 | gre
 - 已有轻量账号系统，但还没有改密、忘记密码、用户资料页或管理员后台；公开分享前还要补正式运维流程。
 - 云同步已经按账号隔离，但仍是整个 AppState 快照，不是细粒度多用户同步；事件账本已经为后续细粒度同步打地基，但还没有做多端冲突合并。
 - 服务器 SQLite 已有覆盖前自动备份和手动下载入口，但还没有正式的跨机异地备份。
-- 模型密钥保险箱已按 user_id 隔离；`server-env` 仍是所有登录用户共享的服务器兜底档案。
+- 模型密钥保险箱已按 user_id 隔离；`server-env` 默认仅管理员和旧云端口令入口可用，普通账号需要自带 API Key。
 
 中期建议：
 
@@ -292,7 +292,7 @@ ssh tencent-astrbot "sudo journalctl -u yuri-chat-tunnel --no-pager -n 120 | gre
 - 后端新增 `users` 与 `user_sessions` 表；密码使用 `bcryptjs` hash，session 使用服务端 opaque token，不走 URL 参数。
 - `app_snapshots` 与 `model_profiles` 新增 `user_id`，云端快照、角色/对话/记忆/世界树、模型保险箱按当前登录账号隔离。
 - 第一位注册用户自动成为 `admin`，并自动接管旧 `legacy-user` 全局云端快照与模型档案；后续用户会得到自己的空数据空间。
-- `server-env` 模型档案仍是所有登录用户可见的兜底配置，但用户自己保存的模型档案互相隔离。
+- `server-env` 模型档案最初是所有登录用户可见的兜底配置；2026-05-09 起默认改为管理员/旧云端口令入口专用，普通用户自带模型档案互相隔离。
 - 前端新增注册/登录页、当前账号指示和退出登录；本地 IndexedDB 也按账号 key 保存，避免同一浏览器切账号时把 A 的本地数据推到 B。
 - 旧 `YURI_CHAT_REQUIRE_CLOUD_AUTH` / `YURI_CHAT_SYNC_TOKEN` 逻辑仍保留：如果生产环境短期需要旧口令回滚，旧前端请求仍可作为 `legacy-user` 管理员入口；日常新前端默认走账号 session。
 
@@ -313,4 +313,35 @@ ssh tencent-astrbot "cd /opt/yuri-chat && printf '\nYURI_CHAT_AUTH_SECRET=%s\nYU
 ssh tencent-astrbot "sudo systemctl restart yuri-chat-api.service"
 ```
 
-上线后第一次打开网页，注册妹妹自己的账号即可；如果服务器已有旧全局数据，第一位注册账号会自动接管它。管理员账号可以继续下载/创建整库云端备份，普通账号不能下载整库 SQLite，避免多用户数据泄漏。
+上线后第一次打开网页，注册并验证妹妹自己的邮箱即可；如果服务器已有旧全局数据，第一位完成邮箱验证的账号会自动接管它。管理员账号可以继续下载/创建整库云端备份，普通账号不能下载整库 SQLite，避免多用户数据泄漏。
+
+## 2026-05-09：邮箱验证与普通用户模型隔离
+
+本轮把账号系统从“用户名 + 密码”升级为“用户名 + 邮箱 + 密码 + 邮箱验证码”：
+
+- `users` 表新增 `email`、`email_key`、`email_verified_at`；新增 `email_verification_codes` 表保存邮箱验证码哈希、过期时间和试错次数。
+- 注册后不直接登录，必须先输入邮箱收到的 6 位验证码；验证码默认 15 分钟过期，最多试错 6 次。
+- 第一位完成邮箱验证的用户自动成为 `admin`，并接管旧 `legacy-user` 数据；只注册但不验证的账号不会抢走管理员位置。
+- 登录未验证账号时会自动重发验证码并进入验证页。
+- 开发环境没有配置邮箱服务时，会把验证码打印到后端日志，并在前端显示“本地测试验证码”；生产/公网模式必须配置 SMTP 或 Resend，否则注册/重发验证码会拒绝。
+- 普通账号默认不能使用 `server-env` 服务器模型配置，必须在模型页保存自己的 API Key；管理员和旧云端口令入口仍可用服务器默认配置。确实想给所有用户开放时才设置 `YURI_CHAT_ALLOW_SERVER_ENV_FOR_USERS=true`。
+
+新增环境变量：
+
+```env
+YURI_CHAT_EMAIL_PROVIDER=log|smtp|resend
+YURI_CHAT_EMAIL_FROM="Yuri Chat <noreply@example.com>"
+YURI_CHAT_EMAIL_CODE_TTL_MINUTES=15
+YURI_CHAT_EMAIL_DEV_CODES=false
+YURI_CHAT_SMTP_HOST=
+YURI_CHAT_SMTP_PORT=587
+YURI_CHAT_SMTP_SECURE=false
+YURI_CHAT_SMTP_USER=
+YURI_CHAT_SMTP_PASS=
+YURI_CHAT_RESEND_API_KEY=
+YURI_CHAT_ALLOWED_EMAIL_DOMAINS=
+YURI_CHAT_BLOCKED_EMAIL_DOMAINS=
+YURI_CHAT_ALLOW_SERVER_ENV_FOR_USERS=false
+```
+
+现在没有域名也能先用普通 SMTP 邮箱做验证；后续买域名后，把 `YURI_CHAT_EMAIL_FROM` 换成自有域名邮箱，并按发信服务商要求配置 SPF/DKIM/DMARC 即可，不需要重做账号系统。

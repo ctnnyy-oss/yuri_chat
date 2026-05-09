@@ -1,10 +1,13 @@
-import { createHmac, randomBytes, randomUUID } from 'node:crypto'
+import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { claimLegacyCloudDataForUser, getCloudDatabase, legacyUserId } from './cloudStore.mjs'
+import { getEmailDeliveryConfigurationIssue, sendVerificationEmail } from './emailDelivery.mjs'
+import { getEmailKey, getEmailValidationError, normalizeEmail } from './emailValidation.mjs'
 import { readBooleanEnv, readEnv } from './env.mjs'
 
 const sessionDurationMs = 1000 * 60 * 60 * 24 * 30
 const usernamePattern = /^[\p{L}\p{N}_\-.\u4e00-\u9fa5]{2,32}$/u
+const verificationCodeAttempts = 6
 
 export function initializeAccountStore() {
   const database = getCloudDatabase()
@@ -13,6 +16,9 @@ export function initializeAccountStore() {
       id TEXT PRIMARY KEY,
       username TEXT NOT NULL,
       username_key TEXT NOT NULL UNIQUE,
+      email TEXT,
+      email_key TEXT,
+      email_verified_at TEXT,
       display_name TEXT NOT NULL,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'user',
@@ -30,16 +36,36 @@ export function initializeAccountStore() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS email_verification_codes (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      email_key TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      consumed_at TEXT,
+      user_agent TEXT,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_email_verification_codes_user_id ON email_verification_codes(user_id, expires_at);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_key ON users(email_key) WHERE email_key IS NOT NULL;
   `)
   ensureColumn(database, 'users', 'role', "TEXT NOT NULL DEFAULT 'user'")
+  ensureColumn(database, 'users', 'email', 'TEXT')
+  ensureColumn(database, 'users', 'email_key', 'TEXT')
+  ensureColumn(database, 'users', 'email_verified_at', 'TEXT')
 }
 
 export function getAuthStartupHints() {
   const hints = []
   const issue = getAuthSecretConfigurationIssue()
   if (issue) hints.push(issue)
+  const emailIssue = getEmailDeliveryConfigurationIssue()
+  if (emailIssue) hints.push(emailIssue)
   return hints
 }
 
@@ -56,15 +82,21 @@ export async function registerAccount(input, requestMeta = {}) {
   if (configurationIssue) throw createPublicError(configurationIssue, 503)
   const username = normalizeUsername(input?.username)
   const usernameKey = getUsernameKey(username)
+  const email = normalizeEmail(input?.email)
+  const emailKey = getEmailKey(email)
   const password = String(input?.password || '')
   const displayName = normalizeDisplayName(input?.displayName, username)
 
   validateUsername(username)
+  validateEmail(email)
   validatePassword(password)
+  validateEmailDeliveryConfigured()
 
   const database = getCloudDatabase()
   const existing = database.prepare('SELECT id FROM users WHERE username_key = ?').get(usernameKey)
   if (existing) throw createPublicError('这个用户名已经被占用啦，换一个试试。', 409)
+  const existingEmail = database.prepare('SELECT id FROM users WHERE email_key = ?').get(emailKey)
+  if (existingEmail) throw createPublicError('这个邮箱已经注册过啦，直接登录就好。', 409)
 
   const now = new Date().toISOString()
   const passwordHash = await bcrypt.hash(password, getBcryptCost())
@@ -74,29 +106,32 @@ export async function registerAccount(input, requestMeta = {}) {
   try {
     const freshExisting = database.prepare('SELECT id FROM users WHERE username_key = ?').get(usernameKey)
     if (freshExisting) throw createPublicError('这个用户名已经被占用啦，换一个试试。', 409)
+    const freshExistingEmail = database.prepare('SELECT id FROM users WHERE email_key = ?').get(emailKey)
+    if (freshExistingEmail) throw createPublicError('这个邮箱已经注册过啦，直接登录就好。', 409)
 
     user = {
       id: randomUUID(),
       username,
       usernameKey,
+      email,
+      emailKey,
       displayName,
-      role: countUsers(database) === 0 ? 'admin' : 'user',
+      role: 'user',
     }
     database
       .prepare(
-        `INSERT INTO users (id, username, username_key, display_name, password_hash, role, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO users
+          (id, username, username_key, email, email_key, email_verified_at, display_name, password_hash, role, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
       )
-      .run(user.id, user.username, user.usernameKey, user.displayName, passwordHash, user.role, now, now)
+      .run(user.id, user.username, user.usernameKey, user.email, user.emailKey, user.displayName, passwordHash, user.role, now, now)
     database.exec('COMMIT')
   } catch (error) {
     database.exec('ROLLBACK')
     throw error
   }
 
-  if (user.role === 'admin') claimLegacyCloudDataForUser(user.id)
-
-  return createSessionPayload(toPublicUser(user), requestMeta)
+  return sendAccountVerification(user, requestMeta)
 }
 
 export async function loginAccount(input, requestMeta = {}) {
@@ -111,7 +146,97 @@ export async function loginAccount(input, requestMeta = {}) {
     throw createPublicError('用户名或密码不对。', 401)
   }
 
+  if (userRecord.emailKey && !userRecord.emailVerifiedAt) {
+    validateEmailDeliveryConfigured()
+    return sendAccountVerification(userRecord, requestMeta)
+  }
+
   return createSessionPayload(toPublicUser(userRecord), requestMeta)
+}
+
+export async function verifyEmailCode(input, requestMeta = {}) {
+  initializeAccountStore()
+  const configurationIssue = getAuthSecretConfigurationIssue()
+  if (configurationIssue) throw createPublicError(configurationIssue, 503)
+  const emailKey = getEmailKey(normalizeEmail(input?.email))
+  const code = normalizeVerificationCode(input?.code)
+  if (!emailKey || !code) throw createPublicError('请填写邮箱和验证码。')
+
+  const database = getCloudDatabase()
+  const userRecord = readUserByEmailKey(emailKey)
+  if (!userRecord) throw createPublicError('没有找到这个邮箱对应的账号。', 404)
+  if (userRecord.emailVerifiedAt) return createSessionPayload(toPublicUser(userRecord), requestMeta)
+
+  const verification = database
+    .prepare(
+      `SELECT id, user_id AS userId, email_key AS emailKey, code_hash AS codeHash, attempts, expires_at AS expiresAt
+       FROM email_verification_codes
+       WHERE user_id = ? AND email_key = ? AND consumed_at IS NULL
+       ORDER BY created_at DESC
+       LIMIT 1`,
+    )
+    .get(userRecord.id, emailKey)
+  if (!verification) throw createPublicError('验证码已经失效，请重新发送。')
+  if (new Date(verification.expiresAt).getTime() <= Date.now()) {
+    throw createPublicError('验证码已经过期，请重新发送。')
+  }
+  if (Number(verification.attempts) >= verificationCodeAttempts) {
+    throw createPublicError('验证码试错次数太多啦，请重新发送。', 429)
+  }
+  if (!isSameHash(verification.codeHash, hashVerificationCode(userRecord.id, emailKey, code))) {
+    database
+      .prepare('UPDATE email_verification_codes SET attempts = attempts + 1 WHERE id = ?')
+      .run(verification.id)
+    throw createPublicError('验证码不对，再检查一下邮箱里的 6 位数字。', 401)
+  }
+
+  const verifiedAt = new Date().toISOString()
+  let becameAdmin = false
+  let publicUser
+  database.exec('BEGIN IMMEDIATE')
+  try {
+    const freshUser = readUserByEmailKey(emailKey)
+    if (!freshUser) throw createPublicError('没有找到这个邮箱对应的账号。', 404)
+    const verifiedUserCount = Number(
+      database.prepare('SELECT COUNT(*) AS count FROM users WHERE email_verified_at IS NOT NULL OR email_key IS NULL').get()?.count ?? 0,
+    )
+    const nextRole = verifiedUserCount === 0 ? 'admin' : freshUser.role
+    becameAdmin = nextRole === 'admin' && freshUser.role !== 'admin'
+    database
+      .prepare('UPDATE users SET email_verified_at = ?, role = ?, updated_at = ? WHERE id = ?')
+      .run(verifiedAt, nextRole, verifiedAt, freshUser.id)
+    database
+      .prepare('UPDATE email_verification_codes SET consumed_at = ? WHERE id = ?')
+      .run(verifiedAt, verification.id)
+    database.exec('COMMIT')
+    publicUser = toPublicUser({ ...freshUser, role: nextRole, emailVerifiedAt: verifiedAt, updatedAt: verifiedAt })
+  } catch (error) {
+    database.exec('ROLLBACK')
+    throw error
+  }
+
+  if (becameAdmin) claimLegacyCloudDataForUser(publicUser.id)
+  return createSessionPayload(publicUser, requestMeta)
+}
+
+export async function resendEmailVerification(input, requestMeta = {}) {
+  initializeAccountStore()
+  const configurationIssue = getAuthSecretConfigurationIssue()
+  if (configurationIssue) throw createPublicError(configurationIssue, 503)
+  validateEmailDeliveryConfigured()
+  const email = normalizeEmail(input?.email)
+  const emailKey = getEmailKey(email)
+  validateEmail(email)
+  const userRecord = readUserByEmailKey(emailKey)
+  if (!userRecord) throw createPublicError('没有找到这个邮箱对应的账号。', 404)
+  if (userRecord.emailVerifiedAt) {
+    return {
+      email: userRecord.email,
+      emailVerified: true,
+      requiresEmailVerification: false,
+    }
+  }
+  return sendAccountVerification(userRecord, requestMeta)
 }
 
 export function verifySessionToken(token) {
@@ -127,6 +252,9 @@ export function verifySessionToken(token) {
         s.expires_at AS expiresAt,
         u.id,
         u.username,
+        u.email,
+        u.email_key AS emailKey,
+        u.email_verified_at AS emailVerifiedAt,
         u.display_name AS displayName,
         u.role,
         u.created_at AS createdAt,
@@ -162,6 +290,8 @@ export function getLegacyAuthUser() {
   return {
     id: legacyUserId,
     username: 'legacy',
+    email: '',
+    emailVerifiedAt: new Date(0).toISOString(),
     displayName: '旧云端口令',
     role: 'admin',
     createdAt: new Date(0).toISOString(),
@@ -173,6 +303,8 @@ export function toPublicUser(record) {
   return {
     id: String(record.id),
     username: String(record.username),
+    email: String(record.email ?? ''),
+    emailVerifiedAt: record.emailVerifiedAt ?? record.email_verified_at ?? null,
     displayName: String(record.displayName ?? record.display_name ?? record.username),
     role: record.role === 'admin' ? 'admin' : 'user',
     createdAt: String(record.createdAt ?? record.created_at ?? ''),
@@ -207,10 +339,47 @@ function createSessionPayload(user, requestMeta = {}) {
   return { token, user, expiresAt }
 }
 
+async function sendAccountVerification(user, requestMeta = {}) {
+  const code = createVerificationCode()
+  const now = new Date()
+  const expiresAt = new Date(now.getTime() + getVerificationCodeTtlMs()).toISOString()
+  const emailKey = user.emailKey ?? getEmailKey(user.email)
+  getCloudDatabase()
+    .prepare(
+      `INSERT INTO email_verification_codes
+        (id, user_id, email_key, code_hash, attempts, created_at, expires_at, consumed_at, user_agent)
+       VALUES (?, ?, ?, ?, 0, ?, ?, NULL, ?)`,
+    )
+    .run(
+      randomUUID(),
+      user.id,
+      emailKey,
+      hashVerificationCode(user.id, emailKey, code),
+      now.toISOString(),
+      expiresAt,
+      String(requestMeta.userAgent || '').slice(0, 240),
+    )
+  const delivery = await sendVerificationEmail({
+    to: user.email,
+    code,
+    username: user.displayName ?? user.username,
+    expiresAt,
+  })
+
+  return {
+    email: user.email,
+    verificationExpiresAt: expiresAt,
+    requiresEmailVerification: true,
+    devVerificationCode: delivery.devCode,
+    user: toPublicUser(user),
+  }
+}
+
 function readUserByUsernameKey(usernameKey) {
   const row = getCloudDatabase()
     .prepare(
       `SELECT id, username, username_key AS usernameKey, display_name AS displayName, password_hash AS passwordHash,
+              email, email_key AS emailKey, email_verified_at AS emailVerifiedAt,
               role, created_at AS createdAt, updated_at AS updatedAt
        FROM users
        WHERE username_key = ?`,
@@ -219,8 +388,17 @@ function readUserByUsernameKey(usernameKey) {
   return row ?? null
 }
 
-function countUsers(database = getCloudDatabase()) {
-  return Number(database.prepare('SELECT COUNT(*) AS count FROM users').get()?.count ?? 0)
+function readUserByEmailKey(emailKey) {
+  const row = getCloudDatabase()
+    .prepare(
+      `SELECT id, username, username_key AS usernameKey, display_name AS displayName, password_hash AS passwordHash,
+              email, email_key AS emailKey, email_verified_at AS emailVerifiedAt,
+              role, created_at AS createdAt, updated_at AS updatedAt
+       FROM users
+       WHERE email_key = ?`,
+    )
+    .get(emailKey)
+  return row ?? null
 }
 
 function hashSessionToken(token) {
@@ -264,6 +442,40 @@ function validateUsername(username) {
 function validatePassword(password) {
   if (password.length < 8) throw createPublicError('密码至少需要 8 位。')
   if (password.length > 128) throw createPublicError('密码太长啦，最多 128 位。')
+}
+
+function validateEmail(email) {
+  const issue = getEmailValidationError(email)
+  if (issue) throw createPublicError(issue)
+}
+
+function validateEmailDeliveryConfigured() {
+  const emailIssue = getEmailDeliveryConfigurationIssue()
+  if (emailIssue) throw createPublicError(emailIssue, 503)
+}
+
+function createVerificationCode() {
+  return String(randomBytes(4).readUInt32BE(0) % 1_000_000).padStart(6, '0')
+}
+
+function normalizeVerificationCode(value) {
+  return String(value || '').replace(/\D/g, '').slice(0, 6)
+}
+
+function hashVerificationCode(userId, emailKey, code) {
+  return createHmac('sha256', getAuthSecret()).update(`${userId}:${emailKey}:${code}`).digest('hex')
+}
+
+function isSameHash(left, right) {
+  const leftBuffer = Buffer.from(String(left))
+  const rightBuffer = Buffer.from(String(right))
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer)
+}
+
+function getVerificationCodeTtlMs() {
+  const minutes = Number(readEnv('YURI_CHAT_EMAIL_CODE_TTL_MINUTES'))
+  const safeMinutes = Number.isFinite(minutes) && minutes >= 5 && minutes <= 60 ? minutes : 15
+  return safeMinutes * 60 * 1000
 }
 
 function ensureColumn(database, tableName, columnName, definition) {

@@ -2,10 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   fetchCurrentAccount,
   getSavedSessionToken,
+  isEmailVerificationPending,
   loginAccount,
   logoutAccount,
   registerAccount,
+  resendAccountVerification,
   saveSessionToken,
+  verifyAccountEmail,
+  type EmailVerificationPendingPayload,
   type AccountUser,
 } from '../services/accountAuth'
 
@@ -17,6 +21,7 @@ export function useAccountSession() {
   const [user, setUser] = useState<AccountUser | null>(null)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [pendingVerification, setPendingVerification] = useState<EmailVerificationPendingPayload | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -56,9 +61,16 @@ export function useAccountSession() {
     setMessage('')
     try {
       const payload = await loginAccount(input)
+      if (isEmailVerificationPending(payload)) {
+        setPendingVerification(payload)
+        setMessage(payload.devVerificationCode ? `本地测试验证码：${payload.devVerificationCode}` : '验证码已经发到邮箱啦。')
+        setStatus('signed-out')
+        return
+      }
       saveSessionToken(payload.token)
       setToken(payload.token)
       setUser(payload.user)
+      setPendingVerification(null)
       setStatus('signed-in')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '登录失败。')
@@ -67,14 +79,21 @@ export function useAccountSession() {
     }
   }, [])
 
-  const signUp = useCallback(async (input: { username: string; password: string; displayName?: string }) => {
+  const signUp = useCallback(async (input: { username: string; email: string; password: string; displayName?: string }) => {
     setBusy(true)
     setMessage('')
     try {
       const payload = await registerAccount(input)
+      if (isEmailVerificationPending(payload)) {
+        setPendingVerification(payload)
+        setMessage(payload.devVerificationCode ? `本地测试验证码：${payload.devVerificationCode}` : '验证码已经发到邮箱啦。')
+        setStatus('signed-out')
+        return
+      }
       saveSessionToken(payload.token)
       setToken(payload.token)
       setUser(payload.user)
+      setPendingVerification(null)
       setStatus('signed-in')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '注册失败。')
@@ -83,11 +102,48 @@ export function useAccountSession() {
     }
   }, [])
 
+  const verifyEmail = useCallback(async (input: { email: string; code: string }) => {
+    setBusy(true)
+    setMessage('')
+    try {
+      const payload = await verifyAccountEmail(input)
+      saveSessionToken(payload.token)
+      setToken(payload.token)
+      setUser(payload.user)
+      setPendingVerification(null)
+      setStatus('signed-in')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '邮箱验证失败。')
+    } finally {
+      setBusy(false)
+    }
+  }, [])
+
+  const resendVerification = useCallback(async (email: string) => {
+    setBusy(true)
+    setMessage('')
+    try {
+      const payload = await resendAccountVerification({ email })
+      setPendingVerification(payload)
+      setMessage(payload.devVerificationCode ? `本地测试验证码：${payload.devVerificationCode}` : '新的验证码已经发到邮箱啦。')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '验证码发送失败。')
+    } finally {
+      setBusy(false)
+    }
+  }, [])
+
+  const cancelVerification = useCallback(() => {
+    setPendingVerification(null)
+    setMessage('')
+  }, [])
+
   const signOut = useCallback(async () => {
     const currentToken = token
     saveSessionToken('')
     setToken('')
     setUser(null)
+    setPendingVerification(null)
     setStatus('signed-out')
     setMessage('')
     try {
@@ -100,12 +156,16 @@ export function useAccountSession() {
   return {
     busy,
     message,
+    pendingVerification,
     status,
     token,
     user,
     setMessage,
+    cancelVerification,
+    resendVerification,
     signIn,
     signOut,
     signUp,
+    verifyEmail,
   }
 }

@@ -118,6 +118,29 @@
   font-weight: 700;
 }
 
+.auth-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.auth-inline-actions button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(216, 91, 138, 0.2);
+  border-radius: 8px;
+  color: #8f4865;
+  background: rgba(216, 91, 138, 0.08);
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-inline-actions button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .desktop-account-badge {
   min-height: 34px;
   padding: 4px 8px 4px 10px;

@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto'
 import { isProductionRuntime } from './auth.mjs'
-import { getCloudDatabase, normalizeDataUserId } from './cloudStore.mjs'
-import { readEnv } from './env.mjs'
+import { getCloudDatabase, legacyUserId, normalizeDataUserId } from './cloudStore.mjs'
+import { readBooleanEnv, readEnv } from './env.mjs'
 import { getBaseUrl, getModel, stripTrailingSlash } from './modelProvider.mjs'
 
 export const serverEnvProfileId = 'server-env'
@@ -19,8 +19,9 @@ export function getModelSecretConfigurationIssue() {
   return null
 }
 
-export function listModelProfiles(userId) {
-  return [getServerEnvProfileSummary(userId), ...listStoredModelProfiles(userId)]
+export function listModelProfiles(account) {
+  const profiles = listStoredModelProfiles(getAccountUserId(account))
+  return canUseServerEnvProfile(account) ? [getServerEnvProfileSummary(account), ...profiles] : profiles
 }
 
 export function upsertModelProfile(input, userId) {
@@ -78,15 +79,15 @@ export function deleteModelProfile(profileId, userId) {
   return result.changes > 0
 }
 
-export function resolveRuntimeProfileForChat(settings, userId) {
-  const dataUserId = normalizeDataUserId(userId)
+export function resolveRuntimeProfileForChat(settings, account) {
+  const dataUserId = normalizeDataUserId(getAccountUserId(account))
   const selectedProfileId = settings?.modelProfileId
   if (selectedProfileId && selectedProfileId !== serverEnvProfileId) {
     return storedProfileToRuntime(readStoredModelProfile(selectedProfileId, dataUserId))
   }
 
   if (selectedProfileId === serverEnvProfileId) {
-    return resolveServerEnvProfile(settings, dataUserId)
+    return resolveServerEnvProfile(settings, account)
   }
 
   const defaultStoredProfile = readDefaultStoredModelProfile(dataUserId)
@@ -97,8 +98,8 @@ export function resolveRuntimeProfileForChat(settings, userId) {
   return null
 }
 
-export function resolveRuntimeProfileForTest(input, userId) {
-  const dataUserId = normalizeDataUserId(userId)
+export function resolveRuntimeProfileForTest(input, account) {
+  const dataUserId = normalizeDataUserId(getAccountUserId(account))
   if (input.profile) {
     const normalized = normalizeModelProfileInput(input.profile)
     return {
@@ -112,14 +113,14 @@ export function resolveRuntimeProfileForTest(input, userId) {
   }
 
   if (input.profileId === serverEnvProfileId) {
-    return resolveRuntimeProfileForChat({ modelProfileId: serverEnvProfileId, model: process.env.AI_MODEL }, dataUserId)
+    return resolveRuntimeProfileForChat({ modelProfileId: serverEnvProfileId, model: process.env.AI_MODEL }, account)
   }
 
   return storedProfileToRuntime(readStoredModelProfile(input.profileId, dataUserId))
 }
 
-export function resolveRuntimeProfileForModelCatalog(input, userId) {
-  const dataUserId = normalizeDataUserId(userId)
+export function resolveRuntimeProfileForModelCatalog(input, account) {
+  const dataUserId = normalizeDataUserId(getAccountUserId(account))
   if (input.profile) {
     const normalized = normalizeModelProfileInput(input.profile, { requireModel: false })
     return {
@@ -133,7 +134,7 @@ export function resolveRuntimeProfileForModelCatalog(input, userId) {
   }
 
   if (input.profileId === serverEnvProfileId) {
-    return resolveRuntimeProfileForChat({ modelProfileId: serverEnvProfileId, model: process.env.AI_MODEL }, dataUserId)
+    return resolveRuntimeProfileForChat({ modelProfileId: serverEnvProfileId, model: process.env.AI_MODEL }, account)
   }
 
   return storedProfileToRuntime(readStoredModelProfile(input.profileId, dataUserId))
@@ -265,7 +266,7 @@ function toModelProfileSummary(row) {
   }
 }
 
-function getServerEnvProfileSummary(userId) {
+function getServerEnvProfileSummary(account) {
   const now = new Date(0).toISOString()
   return {
     id: serverEnvProfileId,
@@ -275,13 +276,14 @@ function getServerEnvProfileSummary(userId) {
     model: process.env.AI_MODEL || process.env.OPENAI_MODEL || 'deepseek-v4-flash',
     hasApiKey: hasApiKey(),
     enabled: true,
-    isDefault: !readDefaultStoredModelProfile(userId),
+    isDefault: !readDefaultStoredModelProfile(getAccountUserId(account)),
     createdAt: now,
     updatedAt: now,
   }
 }
 
-function resolveServerEnvProfile(settings, _userId) {
+function resolveServerEnvProfile(settings, account) {
+  if (!canUseServerEnvProfile(account)) throw new Error('普通账号需要在模型页保存自己的 API Key，不能使用服务器默认模型。')
   if (!hasApiKey()) return null
 
   return {
@@ -292,6 +294,17 @@ function resolveServerEnvProfile(settings, _userId) {
     model: getModel(settings),
     apiKey: process.env.AI_API_KEY || process.env.OPENAI_API_KEY,
   }
+}
+
+function getAccountUserId(account) {
+  if (account && typeof account === 'object') return account.id
+  return account
+}
+
+function canUseServerEnvProfile(account) {
+  if (readBooleanEnv('YURI_CHAT_ALLOW_SERVER_ENV_FOR_USERS') === true) return true
+  if (!account || typeof account !== 'object') return true
+  return account.role === 'admin' || account.id === legacyUserId
 }
 
 function storedProfileToRuntime(profile) {

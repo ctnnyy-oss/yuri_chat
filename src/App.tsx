@@ -36,8 +36,12 @@ function App() {
       <AuthPanel
         busy={account.busy}
         message={account.message}
+        onCancelVerification={account.cancelVerification}
         onLogin={account.signIn}
         onRegister={account.signUp}
+        onResendVerification={account.resendVerification}
+        onVerifyEmail={account.verifyEmail}
+        pendingVerification={account.pendingVerification}
         status={account.status}
       />
     )

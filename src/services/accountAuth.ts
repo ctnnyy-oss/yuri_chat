@@ -4,6 +4,8 @@ import { apiFetch } from './apiClient'
 export interface AccountUser {
   id: string
   username: string
+  email: string
+  emailVerifiedAt: string | null
   displayName: string
   role: 'admin' | 'user'
   createdAt: string
@@ -14,6 +16,20 @@ export interface AccountSessionPayload {
   token: string
   user: AccountUser
   expiresAt: string
+}
+
+export interface EmailVerificationPendingPayload {
+  requiresEmailVerification: true
+  email: string
+  verificationExpiresAt: string
+  devVerificationCode?: string
+  user?: AccountUser
+}
+
+export type AccountAuthPayload = AccountSessionPayload | EmailVerificationPendingPayload
+
+export function isEmailVerificationPending(payload: AccountAuthPayload): payload is EmailVerificationPendingPayload {
+  return 'requiresEmailVerification' in payload && payload.requiresEmailVerification === true
 }
 
 export function getSavedSessionToken(): string {
@@ -48,9 +64,10 @@ export async function fetchCurrentAccount(token: string): Promise<AccountUser | 
 
 export async function registerAccount(input: {
   username: string
+  email: string
   password: string
   displayName?: string
-}): Promise<AccountSessionPayload> {
+}): Promise<AccountAuthPayload> {
   const response = await apiFetch('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -61,8 +78,30 @@ export async function registerAccount(input: {
   return response.json()
 }
 
-export async function loginAccount(input: { username: string; password: string }): Promise<AccountSessionPayload> {
+export async function loginAccount(input: { username: string; password: string }): Promise<AccountAuthPayload> {
   const response = await apiFetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+    timeoutMs: 30_000,
+    errorFormatter: formatAuthError,
+  })
+  return response.json()
+}
+
+export async function verifyAccountEmail(input: { email: string; code: string }): Promise<AccountSessionPayload> {
+  const response = await apiFetch('/api/auth/verify-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+    timeoutMs: 30_000,
+    errorFormatter: formatAuthError,
+  })
+  return response.json()
+}
+
+export async function resendAccountVerification(input: { email: string }): Promise<EmailVerificationPendingPayload> {
+  const response = await apiFetch('/api/auth/resend-verification', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -84,6 +123,7 @@ export async function logoutAccount(token: string): Promise<void> {
 
 function formatAuthError(status: number, detail: string): string {
   if (status === 401) return detail || '账号或密码不对。'
+  if (status === 403) return detail || '邮箱还没有验证。'
   if (status === 409) return detail || '这个用户名已经被占用啦。'
   if (status === 429) return '账号请求太频繁啦，稍等一分钟再试。'
   if (status >= 500) return detail || '账号服务暂时没有接住。'

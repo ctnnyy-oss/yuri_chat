@@ -61,6 +61,8 @@ import {
   initializeAccountStore,
   loginAccount,
   registerAccount,
+  resendEmailVerification,
+  verifyEmailCode,
 } from './userAccounts.mjs'
 
 dotenv.config({ path: '.env.local' })
@@ -109,6 +111,28 @@ app.post('/api/auth/login', async (request, response) => {
     })
   } catch (error) {
     response.status(error?.status || 401).json({ error: error instanceof Error ? error.message : '登录失败。' })
+  }
+})
+
+app.post('/api/auth/verify-email', async (request, response) => {
+  try {
+    response.json({
+      ok: true,
+      ...(await verifyEmailCode(request.body ?? {}, { userAgent: request.get('user-agent') })),
+    })
+  } catch (error) {
+    response.status(error?.status || 400).json({ error: error instanceof Error ? error.message : '邮箱验证失败。' })
+  }
+})
+
+app.post('/api/auth/resend-verification', async (request, response) => {
+  try {
+    response.json({
+      ok: true,
+      ...(await resendEmailVerification(request.body ?? {}, { userAgent: request.get('user-agent') })),
+    })
+  } catch (error) {
+    response.status(error?.status || 400).json({ error: error instanceof Error ? error.message : '验证码发送失败。' })
   }
 })
 
@@ -205,7 +229,7 @@ app.put('/api/cloud/state', requireAccountAuth, (request, response) => {
 app.get('/api/model/profiles', requireAccountAuth, (request, response) => {
   response.json({
     ok: true,
-    profiles: listModelProfiles(request.user.id),
+    profiles: listModelProfiles(request.user),
   })
 })
 
@@ -215,7 +239,7 @@ app.post('/api/model/profiles', requireAccountAuth, (request, response) => {
     response.json({
       ok: true,
       profile,
-      profiles: listModelProfiles(request.user.id),
+      profiles: listModelProfiles(request.user),
     })
   } catch (error) {
     response.status(400).json({ error: error instanceof Error ? error.message : '模型配置保存失败' })
@@ -231,13 +255,13 @@ app.delete('/api/model/profiles/:profileId', requireAccountAuth, (request, respo
 
   response.json({
     ok: true,
-    profiles: listModelProfiles(request.user.id),
+    profiles: listModelProfiles(request.user),
   })
 })
 
 app.post('/api/model/test', requireAccountAuth, async (request, response) => {
   try {
-    const runtimeProfile = resolveRuntimeProfileForTest(request.body ?? {}, request.user.id)
+    const runtimeProfile = resolveRuntimeProfileForTest(request.body ?? {}, request.user)
     if (!runtimeProfile.apiKey) {
       response.status(400).json({ error: '这个模型配置还没有保存密钥' })
       return
@@ -259,7 +283,7 @@ app.post('/api/model/test', requireAccountAuth, async (request, response) => {
 
 app.post('/api/model/models', requireAccountAuth, async (request, response) => {
   try {
-    const runtimeProfile = resolveRuntimeProfileForModelCatalog(request.body ?? {}, request.user.id)
+    const runtimeProfile = resolveRuntimeProfileForModelCatalog(request.body ?? {}, request.user)
     if (!runtimeProfile.apiKey) {
       response.status(400).json({ error: '拉取模型列表需要先填写或保存 API Key' })
       return
@@ -273,7 +297,7 @@ app.post('/api/model/models', requireAccountAuth, async (request, response) => {
 
 app.post('/api/model/embeddings', requireAccountAuth, async (request, response) => {
   try {
-    const runtimeProfile = resolveRuntimeProfileForModelCatalog(request.body ?? {}, request.user.id)
+    const runtimeProfile = resolveRuntimeProfileForModelCatalog(request.body ?? {}, request.user)
     if (!runtimeProfile.apiKey) {
       response.status(400).json({ error: '生成 embedding 需要先填写或保存 API Key' })
       return
@@ -375,7 +399,7 @@ app.post('/api/chat', requireAccountAuth, chatRateLimiter, async (request, respo
   const agentBundle = agentRun.bundle
   let runtimeProfile
   try {
-    runtimeProfile = resolveRuntimeProfileForChat(settings, request.user.id)
+    runtimeProfile = resolveRuntimeProfileForChat(settings, request.user)
   } catch (error) {
     response.status(formatModelConfigErrorStatus(error)).json({
       error: error instanceof Error ? error.message : '模型配置暂时不可用',
