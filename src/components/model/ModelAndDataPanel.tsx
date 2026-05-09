@@ -67,6 +67,7 @@ interface ModelAndDataPanelProps {
   modelProfileBusy: boolean
   cloudSyncConfigured: boolean
   cloudToken: string
+  usesAccountSession?: boolean
   cloudStatus?: string
   onSaveModelProfile: (profile: ModelProfileInput) => Promise<void>
   onDeleteModelProfile: (profileId: string) => Promise<void>
@@ -82,6 +83,7 @@ export function ModelAndDataPanel({
   modelProfileBusy,
   cloudSyncConfigured,
   cloudToken,
+  usesAccountSession = false,
   cloudStatus,
   onSaveModelProfile,
   onDeleteModelProfile,
@@ -99,6 +101,7 @@ export function ModelAndDataPanel({
     onTestModelProfile,
   })
   const modelBackendHint = cloudSyncConfigured ? '云端模型后端' : '本机 /api 模型后端'
+  const showLegacyCloudToken = cloudSyncConfigured && !usesAccountSession
   const [cloudTokenDraft, setCloudTokenDraft] = useState('')
   const [diagnostics, setDiagnostics] = useState<DiagnosticItem[]>(initialDiagnostics)
   const [diagnosticBusy, setDiagnosticBusy] = useState(false)
@@ -152,9 +155,9 @@ export function ModelAndDataPanel({
     }
 
     if (!token) {
-      publish('cloud', 'fail', '先填写云端口令，再运行巡检。')
-      publish('profiles', 'warn', '缺少口令，暂时不能读取模型档案。')
-      publish('model', 'warn', '缺少口令，暂时不能测试模型。')
+      publish('cloud', 'fail', usesAccountSession ? '当前账号授权失效，请退出后重新登录。' : '先填写旧云端口令，再运行巡检。')
+      publish('profiles', 'warn', usesAccountSession ? '账号授权失效，暂时不能读取模型档案。' : '缺少旧口令，暂时不能读取模型档案。')
+      publish('model', 'warn', usesAccountSession ? '账号授权失效，暂时不能测试模型。' : '缺少旧口令，暂时不能测试模型。')
       setDiagnosticBusy(false)
       return
     }
@@ -219,7 +222,7 @@ export function ModelAndDataPanel({
       />
 
       <section className="settings-stack model-settings-stack model-connect-stack">
-        {cloudSyncConfigured && (
+        {showLegacyCloudToken && (
           <section className="settings-section model-auth-section">
             <div className="settings-section-title">
               <span>云端口令</span>

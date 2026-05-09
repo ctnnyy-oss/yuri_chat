@@ -175,7 +175,7 @@ function formatChatFailure(error: unknown): string {
   const message = rawMessage.replace(/\s+/g, ' ').trim()
 
   if (/401|授权|登录|口令|token/i.test(message)) {
-    return `需要授权：请先确认云端口令，或检查模型中转站的 API Key。${message}`
+    return `需要授权：请重新登录，或检查模型中转站的 API Key。${message}`
   }
   if (/400|参数|格式|invalid|bad request/i.test(message)) {
     return `请求格式有问题：模型名、接口格式或上下文可能不被上游接受。${message}`
@@ -201,6 +201,7 @@ async function prepareExternalEmbeddingContext(
   recallMode: boolean,
 ): Promise<{ state: AppState; embeddingModel?: string; embeddingQueryVector?: number[] }> {
   if (!recallMode || !isCloudSyncConfigured()) return { state }
+  if (!state.settings.modelProfileId) return { state }
 
   const memories = state.memories
     .filter((memory) => memory.status === 'active' && memory.mentionPolicy !== 'silent' && memory.sensitivity !== 'critical')
@@ -211,7 +212,7 @@ async function prepareExternalEmbeddingContext(
   try {
     const result = await withTimeout(
       requestModelEmbeddings(getSavedCloudToken(), {
-        profileId: state.settings.modelProfileId || 'server-env',
+        profileId: state.settings.modelProfileId,
         texts: [...memories.map(getMemoryEmbeddingInput), query],
       }),
       3_500,

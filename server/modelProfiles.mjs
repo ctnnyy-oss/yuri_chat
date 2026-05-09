@@ -1,8 +1,8 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto'
 import { isProductionRuntime } from './auth.mjs'
-import { getCloudDatabase, legacyUserId, normalizeDataUserId } from './cloudStore.mjs'
-import { readBooleanEnv, readEnv } from './env.mjs'
-import { getBaseUrl, getModel, stripTrailingSlash } from './modelProvider.mjs'
+import { getCloudDatabase, normalizeDataUserId } from './cloudStore.mjs'
+import { readEnv } from './env.mjs'
+import { stripTrailingSlash } from './modelProvider.mjs'
 
 export const serverEnvProfileId = 'server-env'
 
@@ -20,8 +20,7 @@ export function getModelSecretConfigurationIssue() {
 }
 
 export function listModelProfiles(account) {
-  const profiles = listStoredModelProfiles(getAccountUserId(account))
-  return canUseServerEnvProfile(account) ? [getServerEnvProfileSummary(account), ...profiles] : profiles
+  return listStoredModelProfiles(getAccountUserId(account))
 }
 
 export function upsertModelProfile(input, userId) {
@@ -87,7 +86,7 @@ export function resolveRuntimeProfileForChat(settings, account) {
   }
 
   if (selectedProfileId === serverEnvProfileId) {
-    return resolveServerEnvProfile(settings, account)
+    throw new Error('请先在模型页保存自己的 API Key。每个账号只使用自己的模型档案。')
   }
 
   const defaultStoredProfile = readDefaultStoredModelProfile(dataUserId)
@@ -113,7 +112,7 @@ export function resolveRuntimeProfileForTest(input, account) {
   }
 
   if (input.profileId === serverEnvProfileId) {
-    return resolveRuntimeProfileForChat({ modelProfileId: serverEnvProfileId, model: process.env.AI_MODEL }, account)
+    throw new Error('请先在模型页保存自己的 API Key。每个账号只使用自己的模型档案。')
   }
 
   return storedProfileToRuntime(readStoredModelProfile(input.profileId, dataUserId))
@@ -134,7 +133,7 @@ export function resolveRuntimeProfileForModelCatalog(input, account) {
   }
 
   if (input.profileId === serverEnvProfileId) {
-    return resolveRuntimeProfileForChat({ modelProfileId: serverEnvProfileId, model: process.env.AI_MODEL }, account)
+    throw new Error('请先在模型页保存自己的 API Key。每个账号只使用自己的模型档案。')
   }
 
   return storedProfileToRuntime(readStoredModelProfile(input.profileId, dataUserId))
@@ -266,45 +265,9 @@ function toModelProfileSummary(row) {
   }
 }
 
-function getServerEnvProfileSummary(account) {
-  const now = new Date(0).toISOString()
-  return {
-    id: serverEnvProfileId,
-    name: '服务器默认配置',
-    kind: 'openai-compatible',
-    baseUrl: getBaseUrl(),
-    model: process.env.AI_MODEL || process.env.OPENAI_MODEL || 'deepseek-v4-flash',
-    hasApiKey: hasApiKey(),
-    enabled: true,
-    isDefault: !readDefaultStoredModelProfile(getAccountUserId(account)),
-    createdAt: now,
-    updatedAt: now,
-  }
-}
-
-function resolveServerEnvProfile(settings, account) {
-  if (!canUseServerEnvProfile(account)) throw new Error('普通账号需要在模型页保存自己的 API Key，不能使用服务器默认模型。')
-  if (!hasApiKey()) return null
-
-  return {
-    id: serverEnvProfileId,
-    name: '服务器默认配置',
-    kind: 'openai-compatible',
-    baseUrl: getBaseUrl(),
-    model: getModel(settings),
-    apiKey: process.env.AI_API_KEY || process.env.OPENAI_API_KEY,
-  }
-}
-
 function getAccountUserId(account) {
   if (account && typeof account === 'object') return account.id
   return account
-}
-
-function canUseServerEnvProfile(account) {
-  if (readBooleanEnv('YURI_CHAT_ALLOW_SERVER_ENV_FOR_USERS') === true) return true
-  if (!account || typeof account !== 'object') return true
-  return account.role === 'admin' || account.id === legacyUserId
 }
 
 function storedProfileToRuntime(profile) {

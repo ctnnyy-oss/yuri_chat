@@ -44,7 +44,9 @@ export function useModelProfiles({ setState, setNotice, getCloudToken }: UseMode
       const fallbackProfile = pickFallbackProfile(profiles)
       if (fallbackProfile) {
         setState((currentState) => {
-          if (currentState.settings.modelProfileId) return currentState
+          if (currentState.settings.modelProfileId && profiles.some((profile) => profile.id === currentState.settings.modelProfileId)) {
+            return currentState
+          }
           return {
             ...currentState,
             settings: normalizeTrashRetentionSettings({
@@ -103,7 +105,7 @@ export function useModelProfiles({ setState, setNotice, getCloudToken }: UseMode
           currentState.settings.modelProfileId === profileId
             ? normalizeTrashRetentionSettings({
                 ...currentState.settings,
-                modelProfileId: fallbackProfile?.id ?? 'server-env',
+                modelProfileId: fallbackProfile?.id ?? '',
                 model: fallbackProfile?.model ?? currentState.settings.model,
               })
             : currentState.settings,

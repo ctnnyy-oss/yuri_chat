@@ -31,23 +31,23 @@ npm run dev
 
 ## 接入模型
 
-复制 `.env.local.example` 为 `.env.local`，可以先填入服务器默认模型服务：
+复制 `.env.local.example` 为 `.env.local`，先配置本地后端和云端地址；模型 API Key 现在由每个账号在网页「模型」页保存：
 
 ```env
-AI_API_KEY=你的密钥
-AI_BASE_URL=http://127.0.0.1:18788/v1
-AI_MODEL=deepseek-v4-flash
-AI_MAX_TOKENS=4096
-AI_ESCAPE_UNICODE_CONTENT=false
+YURI_CHAT_AUTH_SECRET=本地随便填一串，生产用 openssl rand -hex 32 生成
+YURI_CHAT_MODEL_SECRET=本地随便填一串，生产必须固定保存
+YURI_CHAT_EMAIL_PROVIDER=log
+YURI_CHAT_API_PORT=8787
+VITE_API_BASE_URL=
 ```
 
-当前按妹妹单人使用处理：前端直接连接服务器，聊天、记忆、设置和模型配置会自动同步到云端。模型 API Key 保存在服务器模型保险箱，不保存在浏览器里。
+登录后，聊天、记忆、设置和模型配置会按账号同步到云端。每个账号只使用自己保存的模型档案；模型 API Key 保存在服务器模型保险箱，不保存在浏览器里。
 
-没有填写密钥时，应用会使用本地兜底回复，方便先验证界面、角色和记忆流程。公开给多用户使用前，需要升级为注册/登录系统，让每个用户拥有独立聊天、记忆、云端数据和模型密钥空间。
+没有保存模型档案时，聊天会走本地兜底回复，方便先验证界面、角色和记忆流程。
 
 ## 云端同步
 
-前端公开页面不保存 API Key。云端同步走后端服务；当前单人使用阶段默认直连服务器，不要求登录或口令。
+前端公开页面不保存 API Key。云端同步走后端服务；当前主流程使用账号登录后的 session 自动授权，不再要求用户手动填写云端口令。
 
 敏感配置不要提交到 GitHub：
 
@@ -55,7 +55,7 @@ AI_ESCAPE_UNICODE_CONTENT=false
 - `.env.local`
 - 服务器 `/opt/yuri-chat/.env`
 
-本地开发阶段仍然默认免口令直连，方便妹妹调试。生产/公网模式会默认要求 `YURI_CHAT_SYNC_TOKEN`，聊天授权开启时 `/api/chat` 也会走同一口令校验；模型保险箱在生产环境需要 `YURI_CHAT_MODEL_SECRET` 保护服务器保存的模型密钥。
+旧版 `YURI_CHAT_REQUIRE_CLOUD_AUTH` / `YURI_CHAT_SYNC_TOKEN` 仍保留为短期回滚入口；账号系统正常使用时走 session。模型保险箱在生产环境需要 `YURI_CHAT_MODEL_SECRET` 保护服务器保存的模型密钥。
 
 公网部署还默认启用接口限流：`YURI_CHAT_RATELIMIT_CHAT` 控制 `/api/chat` 每 IP 每分钟次数（默认 30），`YURI_CHAT_RATELIMIT_CLOUD` 控制 `/api/cloud/*`（默认 60）。两个 health 接口不走限流，方便监控和前端启动检查。
 

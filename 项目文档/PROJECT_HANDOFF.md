@@ -45,10 +45,10 @@
 - 模型与数据页已升级为左右两列：左侧管理模型连接和生成参数，右侧管理云端同步、本机保险箱和文件进出。
 - 服务器已新增模型密钥保险箱：可保存多组模型供应商配置；前端只展示“已保存密钥”，不回传密钥原文。
 - 模型适配已支持三类接口：OpenAI-compatible（国内外中转/官方兼容接口）、Anthropic 官方 messages、Google Gemini generateContent。
-- 当前单人使用阶段，聊天、云端同步、备份和模型保险箱默认直连服务器，不要求登录或口令；以后公开多人版再开启登录/授权。
+- 当前主流程已接入账号登录；聊天、云端同步、备份和模型保险箱按登录账号隔离，日常不再要求用户手动填写云端口令。
 - 模型错误提示已做一轮中文化：能把 invalid_model、密钥错误、额度限制、上游 5xx 等情况转成可操作提示。
-- 2026-05-02 追加修正：妹妹确认当前先按单人使用处理，云端同步、备份、模型配置和聊天全部默认直连服务器并自动同步；云端口令不再作为日常门禁。
-- 2026-05-08 现状修正（Claude 姐姐试玩补丁）：线上腾讯云后端实际开启了 `YURI_CHAT_REQUIRE_CLOUD_AUTH=true`，妹妹首次在线上前端使用时**必须**先在「模型 → 云端口令」填入 `secrets/cloud-sync-token.txt` 里的口令，之后本地浏览器才能拉云端状态。本地 `npm run dev` 模式仍然默认免口令。下一位姐姐如果要恢复"日常免口令"体验，需要在服务器 `/opt/yuri-chat/.env` 里关掉 `YURI_CHAT_REQUIRE_CLOUD_AUTH`，并重启 `yuri-chat-api.service`。
+- 2026-05-02 历史修正：当时先按单人使用处理，云端口令不作为日常门禁；账号系统上线后，日常入口改为账号 session。
+- 2026-05-08 历史修正（Claude 姐姐试玩补丁）：账号系统上线前，线上腾讯云后端曾开启 `YURI_CHAT_REQUIRE_CLOUD_AUTH=true` 并需要手动填旧云端口令。现在旧开关仅作为短期回滚入口；正常新前端走账号 session。
 - 2026-05-08 Claude 姐姐试玩补丁（UI/数据安全）：1）`src/styles/buttons.css` 把 `.chat-file-input` 隐藏样式提到全局（之前关在 mobile media query 里，桌面会暴露 3 个原生「选择文件」按钮）；同时新增 `:disabled` 视觉态，让禁用按钮真的看起来禁用；2）`ModelProfileEditor` 的「保存并启用」加 `secondary-action` class，从浅粉变成粉色填充渐变 primary 风格，避免被误认为禁用导致妹妹从未真的把模型档案存进保险箱；3）`SavedModelProfiles` 与 `TrashGardenPanel` 的 5 处 `window.confirm` 全部换成 `MobileConfirmDialog` 网页内弹窗，与项目粉嫩风格统一并解决自动化测试卡住问题；4）`useCharacterCommands.handleDeleteCharacter` 删除自定义角色时，把对话挪到 `trash.conversations`（带 `deletedAt / characterName / character`），30 天内可在回收花园恢复，不再硬删；5）`QqFeaturePanel` 桌面/移动两套 section 现在通过 `useIsMobileViewport` hook + `inert` + `aria-hidden` 在不可见侧完全隔离，避免 a11y 工具与自动化误选到隐藏副本。剩余 TODO：`useBackupRestore.ts`（3 处）和 `useCloudSync.ts`（1 处）里的 `window.confirm` 还没改，需要把 hook 暴露为「pendingAction state + confirm function」让调用方渲染 dialog，下一轮再做。
 - 2026-05-02 线上排查发现 YOP 旧模型 `deepseek/deepseek-v4-pro-free` 返回“无可用渠道”，已把默认模型切到实测可用的 `deepseek-v4-flash`；`deepseek-v4-pro` 也可用，但不要默认切到妹妹曾经明确想避免的 `Go/deepseek-v4-pro`。
 - 2026-05-03 已新增第一阶段轻量 Agent：后端 `server/agentTools.mjs` 会在 `/api/chat` 前执行白名单工具，包括当前北京时间、Open-Meteo 公开天气、用户提供的公开网页链接摘录、最近对话工作台、能力边界说明；还新增动作回传，用户明确要求时可更新当前聊天角色名称/头像字、创建网页内提醒、把内容写入候选记忆。
@@ -238,7 +238,7 @@ ssh tencent-astrbot "sudo journalctl -u yuri-chat-tunnel --no-pager -n 120 | gre
 - 已有轻量账号系统，但还没有改密、忘记密码、用户资料页或管理员后台；公开分享前还要补正式运维流程。
 - 云同步已经按账号隔离，但仍是整个 AppState 快照，不是细粒度多用户同步；事件账本已经为后续细粒度同步打地基，但还没有做多端冲突合并。
 - 服务器 SQLite 已有覆盖前自动备份和手动下载入口，但还没有正式的跨机异地备份。
-- 模型密钥保险箱已按 user_id 隔离；`server-env` 默认仅管理员和旧云端口令入口可用，普通账号需要自带 API Key。
+- 模型密钥保险箱已按 user_id 隔离；默认不再暴露 `server-env` 服务器兜底模型，所有账号都只使用自己保存的模型档案。
 
 中期建议：
 
@@ -292,7 +292,7 @@ ssh tencent-astrbot "sudo journalctl -u yuri-chat-tunnel --no-pager -n 120 | gre
 - 后端新增 `users` 与 `user_sessions` 表；密码使用 `bcryptjs` hash，session 使用服务端 opaque token，不走 URL 参数。
 - `app_snapshots` 与 `model_profiles` 新增 `user_id`，云端快照、角色/对话/记忆/世界树、模型保险箱按当前登录账号隔离。
 - 第一位注册用户自动成为 `admin`，并自动接管旧 `legacy-user` 全局云端快照与模型档案；后续用户会得到自己的空数据空间。
-- `server-env` 模型档案最初是所有登录用户可见的兜底配置；2026-05-09 起默认改为管理员/旧云端口令入口专用，普通用户自带模型档案互相隔离。
+- `server-env` 模型档案最初是所有登录用户可见的兜底配置；2026-05-09 起不再暴露给前端，所有用户都需要保存自己的模型档案，模型密钥按账号隔离。
 - 前端新增注册/登录页、当前账号指示和退出登录；本地 IndexedDB 也按账号 key 保存，避免同一浏览器切账号时把 A 的本地数据推到 B。
 - 旧 `YURI_CHAT_REQUIRE_CLOUD_AUTH` / `YURI_CHAT_SYNC_TOKEN` 逻辑仍保留：如果生产环境短期需要旧口令回滚，旧前端请求仍可作为 `legacy-user` 管理员入口；日常新前端默认走账号 session。
 
@@ -317,14 +317,15 @@ ssh tencent-astrbot "sudo systemctl restart yuri-chat-api.service"
 
 ## 2026-05-09：邮箱验证与普通用户模型隔离
 
-本轮把账号系统从“用户名 + 密码”升级为“用户名 + 邮箱 + 密码 + 邮箱验证码”：
+本轮把账号系统从“用户名 + 密码”升级为“邮箱唯一身份 + 昵称 + 密码 + 邮箱验证码”：
 
 - `users` 表新增 `email`、`email_key`、`email_verified_at`；新增 `email_verification_codes` 表保存邮箱验证码哈希、过期时间和试错次数。
+- 邮箱是登录与账号隔离的唯一身份，一个邮箱只能注册一个账号；昵称只用于显示，可以重复。
 - 注册后不直接登录，必须先输入邮箱收到的 6 位验证码；验证码默认 15 分钟过期，最多试错 6 次。
 - 第一位完成邮箱验证的用户自动成为 `admin`，并接管旧 `legacy-user` 数据；只注册但不验证的账号不会抢走管理员位置。
 - 登录未验证账号时会自动重发验证码并进入验证页。
 - 开发环境没有配置邮箱服务时，会把验证码打印到后端日志，并在前端显示“本地测试验证码”；生产/公网模式必须配置 SMTP 或 Resend，否则注册/重发验证码会拒绝。
-- 普通账号默认不能使用 `server-env` 服务器模型配置，必须在模型页保存自己的 API Key；管理员和旧云端口令入口仍可用服务器默认配置。确实想给所有用户开放时才设置 `YURI_CHAT_ALLOW_SERVER_ENV_FOR_USERS=true`。
+- 默认不再给任何普通页面展示 `server-env` 服务器模型配置；每个账号必须在模型页保存自己的 API Key，后续登录同一账号即可复用自己的云端模型档案。
 
 新增环境变量：
 
@@ -341,7 +342,6 @@ YURI_CHAT_SMTP_PASS=
 YURI_CHAT_RESEND_API_KEY=
 YURI_CHAT_ALLOWED_EMAIL_DOMAINS=
 YURI_CHAT_BLOCKED_EMAIL_DOMAINS=
-YURI_CHAT_ALLOW_SERVER_ENV_FOR_USERS=false
 ```
 
 现在没有域名也能先用普通 SMTP 邮箱做验证；后续买域名后，把 `YURI_CHAT_EMAIL_FROM` 换成自有域名邮箱，并按发信服务商要求配置 SPF/DKIM/DMARC 即可，不需要重做账号系统。

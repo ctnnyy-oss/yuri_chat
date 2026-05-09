@@ -28,7 +28,7 @@
 - `server/auth.mjs`：云端同步与模型代理的授权判断、中间件和 token 比对，避免认证逻辑散落在路由入口。
 - `server/cloudStore.mjs`：SQLite 云端快照、备份列表、备份裁剪和状态形状校验。
 - `server/modelProvider.mjs`：模型供应商适配层，集中处理 OpenAI-compatible、Anthropic 和 Gemini 的请求、模型列表、错误翻译和兼容编码。
-- `server/modelProfiles.mjs`：模型保险箱的配置读写、服务器默认配置摘要、运行时配置解析和 API Key 加密解密；前端不接触密钥原文。
+- `server/modelProfiles.mjs`：账号模型保险箱的配置读写、运行时 profile 解析和 API Key 加密解密；前端不接触密钥原文，也不展示服务器默认模型。
 - `server/agentTools.mjs`：Agent 编排入口，只负责按顺序调度工具检测、工具执行、动作检测和上下文块组装。
 - `server/agent/toolDetectors.mjs`：判断本轮应该启用哪些白名单工具、风险闸门和收尾检查。
 - `server/agent/helpers/text.mjs`：只做基础文本规范化、截断和文本统计，不把用户吐槽或口误擅自改写成产品意图。

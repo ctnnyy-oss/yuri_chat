@@ -361,6 +361,7 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
           cloudStatus={cloudStatus}
           cloudSyncConfigured={cloudSyncConfigured}
           cloudToken={cloudToken}
+          usesAccountSession={Boolean(authToken)}
           localBackups={localBackups}
           memories={state.memories}
           memoryEmbeddings={state.memoryEmbeddings}

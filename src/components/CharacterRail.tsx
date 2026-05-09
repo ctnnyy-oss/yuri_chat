@@ -70,7 +70,7 @@ const featureRowsByView: Partial<Record<AppView, AppPaneRow[]>> = {
   ],
   settings: [
     { title: '外观与输入', text: '主题、字号、回车发送', icon: Settings, view: 'settings', active: true },
-    { title: '数据同步', text: '云端口令、导入导出、备份', icon: SlidersHorizontal, view: 'settings' },
+    { title: '数据同步', text: '账号云端、导入导出、备份', icon: SlidersHorizontal, view: 'settings' },
     { title: '保留策略', text: '回收站保存天数和清理规则', icon: ListTodo, view: 'settings' },
     { title: '关于应用', text: 'Yuri Chat 的基础信息', icon: Brain, view: 'settings' },
   ],

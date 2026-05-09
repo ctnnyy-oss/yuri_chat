@@ -85,6 +85,7 @@ interface MemoryPanelProps {
   cloudBackups: CloudBackupSummary[]
   cloudSyncConfigured: boolean
   cloudToken: string
+  usesAccountSession?: boolean
   onConnectCloud: () => void
   onPullCloud: () => void
   onPushCloud: () => void
@@ -141,6 +142,7 @@ export function MemoryPanel({
   cloudBackups,
   cloudSyncConfigured,
   cloudToken,
+  usesAccountSession = false,
   onConnectCloud,
   onPullCloud,
   onPushCloud,
@@ -366,6 +368,7 @@ export function MemoryPanel({
         <ModelAndDataPanel
           cloudSyncConfigured={cloudSyncConfigured}
           cloudToken={cloudToken}
+          usesAccountSession={usesAccountSession}
           cloudStatus={cloudStatus}
           modelProfileBusy={modelProfileBusy}
           modelProfileStatus={modelProfileStatus}

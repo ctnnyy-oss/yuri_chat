@@ -8,7 +8,7 @@ interface AuthPanelProps {
   message: string
   pendingVerification: EmailVerificationPendingPayload | null
   status: 'checking' | 'signed-out' | 'signed-in'
-  onLogin: (input: { username: string; password: string }) => Promise<void>
+  onLogin: (input: { email: string; password: string }) => Promise<void>
   onRegister: (input: { username: string; email: string; password: string; displayName?: string }) => Promise<void>
   onVerifyEmail: (input: { email: string; code: string }) => Promise<void>
   onResendVerification: (email: string) => Promise<void>
@@ -27,9 +27,8 @@ export function AuthPanel({
   onCancelVerification,
 }: AuthPanelProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login')
-  const [username, setUsername] = useState('妹妹')
   const [email, setEmail] = useState('')
-  const [displayName, setDisplayName] = useState('妹妹')
+  const [nickname, setNickname] = useState('妹妹')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [localMessage, setLocalMessage] = useState('')
@@ -38,10 +37,14 @@ export function AuthPanel({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLocalMessage('')
-    const cleanedUsername = username.trim()
+    const cleanedEmail = email.trim()
     const cleanedPassword = password.trim()
-    if (!cleanedUsername || !cleanedPassword) {
-      setLocalMessage('先填用户名和密码，姐姐才能开门。')
+    if (!cleanedEmail || !cleanedPassword) {
+      setLocalMessage('先填邮箱和密码，姐姐才能开门。')
+      return
+    }
+    if (!cleanedEmail.includes('@')) {
+      setLocalMessage('邮箱格式不太对。')
       return
     }
     if (cleanedPassword.length < 8) {
@@ -50,15 +53,15 @@ export function AuthPanel({
     }
 
     if (isRegister) {
-      const cleanedEmail = email.trim()
-      if (!cleanedEmail || !cleanedEmail.includes('@')) {
-        setLocalMessage('邮箱也要填好，之后要收验证码。')
+      const cleanedNickname = nickname.trim()
+      if (!cleanedNickname) {
+        setLocalMessage('昵称也要填一下，可以和别人重复。')
         return
       }
-      await onRegister({ username: cleanedUsername, email: cleanedEmail, password: cleanedPassword, displayName: displayName.trim() })
+      await onRegister({ username: cleanedNickname, email: cleanedEmail, password: cleanedPassword, displayName: cleanedNickname })
       return
     }
-    await onLogin({ username: cleanedUsername, password: cleanedPassword })
+    await onLogin({ email: cleanedEmail, password: cleanedPassword })
   }
 
   async function handleVerifySubmit(event: FormEvent<HTMLFormElement>) {
@@ -146,36 +149,24 @@ export function AuthPanel({
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
-            <span>用户名</span>
+            <span>邮箱</span>
             <input
-              autoComplete="username"
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="妹妹"
-              value={username}
+              autoComplete="email"
+              inputMode="email"
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="用来登录和接收验证码"
+              value={email}
             />
           </label>
-
-          {isRegister && (
-            <label>
-              <span>邮箱</span>
-              <input
-                autoComplete="email"
-                inputMode="email"
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="用来接收验证码"
-                value={email}
-              />
-            </label>
-          )}
 
           {isRegister && (
             <label>
               <span>昵称</span>
               <input
                 autoComplete="nickname"
-                onChange={(event) => setDisplayName(event.target.value)}
-                placeholder="显示在小窝顶部"
-                value={displayName}
+                onChange={(event) => setNickname(event.target.value)}
+                placeholder="显示在小窝顶部，可以重复"
+                value={nickname}
               />
             </label>
           )}

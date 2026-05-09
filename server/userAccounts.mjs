@@ -15,7 +15,7 @@ export function initializeAccountStore() {
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       username TEXT NOT NULL,
-      username_key TEXT NOT NULL UNIQUE,
+      username_key TEXT NOT NULL,
       email TEXT,
       email_key TEXT,
       email_verified_at TEXT,
@@ -52,12 +52,13 @@ export function initializeAccountStore() {
     CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
     CREATE INDEX IF NOT EXISTS idx_email_verification_codes_user_id ON email_verification_codes(user_id, expires_at);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_key ON users(email_key) WHERE email_key IS NOT NULL;
   `)
   ensureColumn(database, 'users', 'role', "TEXT NOT NULL DEFAULT 'user'")
   ensureColumn(database, 'users', 'email', 'TEXT')
   ensureColumn(database, 'users', 'email_key', 'TEXT')
   ensureColumn(database, 'users', 'email_verified_at', 'TEXT')
+  migrateUsersTableSchema(database)
+  database.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_key ON users(email_key) WHERE email_key IS NOT NULL')
 }
 
 export function getAuthStartupHints() {
@@ -93,8 +94,6 @@ export async function registerAccount(input, requestMeta = {}) {
   validateEmailDeliveryConfigured()
 
   const database = getCloudDatabase()
-  const existing = database.prepare('SELECT id FROM users WHERE username_key = ?').get(usernameKey)
-  if (existing) throw createPublicError('这个用户名已经被占用啦，换一个试试。', 409)
   const existingEmail = database.prepare('SELECT id FROM users WHERE email_key = ?').get(emailKey)
   if (existingEmail) throw createPublicError('这个邮箱已经注册过啦，直接登录就好。', 409)
 
@@ -104,8 +103,6 @@ export async function registerAccount(input, requestMeta = {}) {
 
   database.exec('BEGIN IMMEDIATE')
   try {
-    const freshExisting = database.prepare('SELECT id FROM users WHERE username_key = ?').get(usernameKey)
-    if (freshExisting) throw createPublicError('这个用户名已经被占用啦，换一个试试。', 409)
     const freshExistingEmail = database.prepare('SELECT id FROM users WHERE email_key = ?').get(emailKey)
     if (freshExistingEmail) throw createPublicError('这个邮箱已经注册过啦，直接登录就好。', 409)
 
@@ -138,12 +135,13 @@ export async function loginAccount(input, requestMeta = {}) {
   initializeAccountStore()
   const configurationIssue = getAuthSecretConfigurationIssue()
   if (configurationIssue) throw createPublicError(configurationIssue, 503)
-  const usernameKey = getUsernameKey(normalizeUsername(input?.username))
+  const email = normalizeEmail(input?.email ?? input?.username)
+  const emailKey = getEmailKey(email)
   const password = String(input?.password || '')
-  const userRecord = readUserByUsernameKey(usernameKey)
+  const userRecord = readUserByEmailKey(emailKey)
 
   if (!userRecord || !(await bcrypt.compare(password, userRecord.passwordHash))) {
-    throw createPublicError('用户名或密码不对。', 401)
+    throw createPublicError('邮箱或密码不对。', 401)
   }
 
   if (userRecord.emailKey && !userRecord.emailVerifiedAt) {
@@ -375,19 +373,6 @@ async function sendAccountVerification(user, requestMeta = {}) {
   }
 }
 
-function readUserByUsernameKey(usernameKey) {
-  const row = getCloudDatabase()
-    .prepare(
-      `SELECT id, username, username_key AS usernameKey, display_name AS displayName, password_hash AS passwordHash,
-              email, email_key AS emailKey, email_verified_at AS emailVerifiedAt,
-              role, created_at AS createdAt, updated_at AS updatedAt
-       FROM users
-       WHERE username_key = ?`,
-    )
-    .get(usernameKey)
-  return row ?? null
-}
-
 function readUserByEmailKey(emailKey) {
   const row = getCloudDatabase()
     .prepare(
@@ -435,7 +420,7 @@ function getUsernameKey(username) {
 
 function validateUsername(username) {
   if (!usernamePattern.test(username)) {
-    throw createPublicError('用户名需要 2-32 个字符，可用中文、字母、数字、下划线、短横线或点。')
+    throw createPublicError('昵称需要 2-32 个字符，可用中文、字母、数字、下划线、短横线或点。')
   }
 }
 
@@ -482,6 +467,48 @@ function ensureColumn(database, tableName, columnName, definition) {
   const columns = database.prepare(`PRAGMA table_info(${tableName})`).all()
   if (columns.some((column) => column.name === columnName)) return
   database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`)
+}
+
+function migrateUsersTableSchema(database) {
+  const table = database.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'").get()
+  if (!/username_key\s+TEXT\s+NOT NULL\s+UNIQUE/i.test(String(table?.sql || ''))) return
+
+  const legacyAlterTable = Number(database.prepare('PRAGMA legacy_alter_table').get()?.legacy_alter_table ?? 0)
+  database.exec('PRAGMA foreign_keys = OFF')
+  database.exec('PRAGMA legacy_alter_table = ON')
+  database.exec('BEGIN IMMEDIATE')
+  try {
+    database.exec('ALTER TABLE users RENAME TO users_unique_username_backup')
+    database.exec(`
+      CREATE TABLE users (
+        id TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        username_key TEXT NOT NULL,
+        email TEXT,
+        email_key TEXT,
+        email_verified_at TEXT,
+        display_name TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'user',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `)
+    database.exec(`
+      INSERT INTO users
+        (id, username, username_key, email, email_key, email_verified_at, display_name, password_hash, role, created_at, updated_at)
+      SELECT id, username, username_key, email, email_key, email_verified_at, display_name, password_hash, role, created_at, updated_at
+      FROM users_unique_username_backup
+    `)
+    database.exec('DROP TABLE users_unique_username_backup')
+    database.exec('COMMIT')
+  } catch (error) {
+    database.exec('ROLLBACK')
+    throw error
+  } finally {
+    database.exec(`PRAGMA legacy_alter_table = ${legacyAlterTable ? 'ON' : 'OFF'}`)
+    database.exec('PRAGMA foreign_keys = ON')
+  }
 }
 
 function isProductionLikeRuntime() {

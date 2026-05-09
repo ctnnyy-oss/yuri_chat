@@ -56,7 +56,7 @@ export function useAccountSession() {
     }
   }, [token])
 
-  const signIn = useCallback(async (input: { username: string; password: string }) => {
+  const signIn = useCallback(async (input: { email: string; password: string }) => {
     setBusy(true)
     setMessage('')
     try {

@@ -78,7 +78,7 @@ export async function registerAccount(input: {
   return response.json()
 }
 
-export async function loginAccount(input: { username: string; password: string }): Promise<AccountAuthPayload> {
+export async function loginAccount(input: { email: string; password: string }): Promise<AccountAuthPayload> {
   const response = await apiFetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -122,9 +122,9 @@ export async function logoutAccount(token: string): Promise<void> {
 }
 
 function formatAuthError(status: number, detail: string): string {
-  if (status === 401) return detail || '账号或密码不对。'
+  if (status === 401) return detail || '邮箱或密码不对。'
   if (status === 403) return detail || '邮箱还没有验证。'
-  if (status === 409) return detail || '这个用户名已经被占用啦。'
+  if (status === 409) return detail || '这个邮箱已经注册过啦。'
   if (status === 429) return '账号请求太频繁啦，稍等一分钟再试。'
   if (status >= 500) return detail || '账号服务暂时没有接住。'
   return detail || `账号请求失败：${status}`
