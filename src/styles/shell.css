@@ -215,6 +215,31 @@
 .detail-workspace > .workspace-title { margin-bottom: var(--space-lg); }
 .detail-workspace > .detail-actions  { margin-bottom: var(--space-md); }
 
+.app-shell.compact-mode .detail-workspace {
+  padding: clamp(20px, 2vw, 34px) clamp(22px, 2.4vw, 48px) 60px;
+}
+
+.app-shell.compact-mode .detail-workspace > .workspace-title,
+.app-shell.compact-mode .detail-workspace > .detail-actions,
+.app-shell.compact-mode .detail-workspace > .memory-insight,
+.app-shell.compact-mode .detail-workspace > .space-overview,
+.app-shell.compact-mode .detail-workspace > .memory-guardian,
+.app-shell.compact-mode .detail-workspace > .core-cp-section,
+.app-shell.compact-mode .detail-workspace > .candidate-review,
+.app-shell.compact-mode .detail-workspace > .memory-diagnostics,
+.app-shell.compact-mode .detail-workspace > .panel-stack,
+.app-shell.compact-mode .detail-workspace > .settings-stack {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+@media (max-width: 760px) {
+  .app-shell.compact-mode .detail-workspace {
+    padding: 20px 22px calc(96px + env(safe-area-inset-bottom));
+  }
+}
+
 .chat-workspace {
   animation: workspace-fade-in var(--duration-slow) var(--ease-out) both;
 }

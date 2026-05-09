@@ -271,9 +271,44 @@
   align-items: start;
 }
 
+.app-shell.compact-mode .settings-stack,
+.app-shell.compact-mode .model-settings-stack {
+  max-width: none;
+}
+
+.app-shell.compact-mode .model-layout {
+  grid-template-columns: minmax(540px, 1.08fr) minmax(460px, 0.92fr);
+  align-items: stretch;
+}
+
+.app-shell.compact-mode .model-layout > .settings-section {
+  height: 100%;
+}
+
+@media (min-width: 1180px) {
+  .app-shell.compact-mode .settings-stack:not(.model-settings-stack) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .app-shell.compact-mode .settings-stack:not(.model-settings-stack) > .settings-section:nth-child(5),
+  .app-shell.compact-mode .settings-stack:not(.model-settings-stack) > .settings-section:nth-child(6) {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 980px) {
   .model-layout {
     grid-template-columns: 1fr;
+  }
+
+  .app-shell.compact-mode .model-layout {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .app-shell.compact-mode .model-layout > .settings-section {
+    height: auto;
   }
 }
 
