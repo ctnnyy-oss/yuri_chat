@@ -355,7 +355,7 @@
 
 .model-warning {
   display: block;
-  border: 1px solid rgba(255, 158, 196, 0.32);
+  border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
   background: var(--middle-active, var(--pink-100));
   color: var(--pink-700);
@@ -432,7 +432,7 @@
   background: var(--grad-pink);
   color: #fff;
   box-shadow:
-    0 8px 20px rgba(255, 124, 174, 0.28),
+    0 8px 20px color-mix(in srgb, var(--rose) 26%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
@@ -590,7 +590,7 @@
   height: 30px;
   appearance: none;
   border-radius: var(--radius-full);
-  background: rgba(180, 138, 158, 0.32);
+  background: color-mix(in srgb, var(--rose) 28%, var(--panel-soft));
   position: relative;
   cursor: pointer;
   flex: 0 0 auto;
@@ -608,7 +608,7 @@
   height: 24px;
   border-radius: var(--radius-full);
   background: #fff;
-  box-shadow: 0 2px 6px rgba(168, 92, 124, 0.22);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--rose) 24%, transparent);
   transition: transform var(--duration-normal) var(--ease-spring);
 }
 
@@ -639,7 +639,7 @@
   border: 3px solid #fff;
   border-radius: var(--radius-full);
   background: var(--grad-pink);
-  box-shadow: 0 4px 12px rgba(255, 124, 174, 0.34);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--rose) 30%, transparent);
   transition: transform var(--duration-fast) var(--ease-spring);
 }
 
@@ -653,7 +653,7 @@
   border: 3px solid #fff;
   border-radius: var(--radius-full);
   background: var(--grad-pink);
-  box-shadow: 0 4px 12px rgba(255, 124, 174, 0.34);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--rose) 30%, transparent);
 }
 
 .number-control input {
@@ -839,14 +839,14 @@
   color: #fff;
   font-weight: 800;
   box-shadow:
-    0 8px 20px rgba(255, 124, 174, 0.32),
+    0 8px 20px color-mix(in srgb, var(--rose) 30%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 .settings-actions button:first-child:not(.danger-button):hover {
   filter: brightness(1.04);
   box-shadow:
-    0 12px 26px rgba(255, 124, 174, 0.42),
+    0 12px 26px color-mix(in srgb, var(--rose) 38%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
@@ -887,12 +887,12 @@
 
 .danger-button {
   color: var(--pink-700);
-  border-color: rgba(255, 124, 174, 0.32);
+  border-color: var(--line-soft);
 }
 
 .danger-button:hover {
   background: var(--middle-active, var(--pink-100));
-  border-color: rgba(255, 124, 174, 0.45);
+  border-color: var(--line);
   color: var(--pink-700);
 }
 

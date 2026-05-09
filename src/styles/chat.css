@@ -367,7 +367,7 @@
 }
 
 .agent-decision-high {
-  border-color: rgba(255, 124, 174, 0.5);
+  border-color: var(--line);
   background: var(--pink-50);
 }
 
