@@ -139,7 +139,8 @@
   color: var(--pink-700);
 }
 
-.chat-file-input {
+.chat-file-input,
+.visually-hidden-file {
   display: none;
 }
 
