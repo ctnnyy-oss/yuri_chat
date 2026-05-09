@@ -4,17 +4,11 @@ import {
   Camera,
   ChevronLeft,
   Image,
-  Menu,
   Mic,
-  MonitorUp,
-  MoreHorizontal,
   Paperclip,
-  Phone,
   Plus,
-  PlusCircle,
   Send,
   Smile,
-  Video,
 } from 'lucide-react'
 import type {
   AppSettings,
@@ -28,8 +22,6 @@ import { buildMessageMemoryTrace } from '../services/memoryTrace'
 import { MessageBubble } from './MessageBubble'
 import { MobileStatusBar } from './chat/MobileStatusBar'
 import { ChatToolPanels } from './chat/ChatToolPanels'
-import { ChatInfoDrawer } from './chat/ChatInfoDrawer'
-import { chatSettingRows } from './chat/data'
 
 interface ChatPhoneProps {
   character: CharacterCard
@@ -46,13 +38,11 @@ interface ChatPhoneProps {
   onBackToList?: () => void
   onSelectCharacter: (characterId: string) => void
   onMemoryFeedback: (memoryId: string, action: MemoryFeedbackAction) => void
-  onClearConversation: (characterId: string) => void
-  onDeleteCharacter: (characterId: string) => boolean
   onSend: () => void
   onShellAction?: (message: string) => void
 }
 
-type ToolPanel = 'emoji' | 'sticker' | 'more' | 'info' | 'settings' | null
+type ToolPanel = 'emoji' | 'sticker' | 'more' | null
 
 type BrowserSpeechRecognition = {
   lang: string
@@ -85,16 +75,18 @@ export function ChatPhone({
   onBackToList,
   onSelectCharacter,
   onMemoryFeedback,
-  onClearConversation,
-  onDeleteCharacter,
   onSend,
   onShellAction,
 }: ChatPhoneProps) {
   const [activePanel, setActivePanel] = useState<ToolPanel>(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [cameraError, setCameraError] = useState('')
   const messageListRef = useRef<HTMLDivElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraStreamRef = useRef<MediaStream | null>(null)
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
   const traceByAssistantMessageId = useMemo(() => {
     return new Map(
@@ -103,8 +95,6 @@ export function ChatPhone({
         .map((log) => [log.assistantMessageId as string, buildMessageMemoryTrace(log, memories)]),
     )
   }, [memories, memoryUsageLogs])
-  const settingRows = chatSettingRows
-
   function togglePanel(panel: Exclude<ToolPanel, null>) {
     setActivePanel((current) => (current === panel ? null : panel))
   }
@@ -126,6 +116,73 @@ export function ChatPhone({
     const prefix = draft.trim() ? '\n' : ''
     onDraftChange(`${draft}${prefix}【${label}：${file.name}】`)
     onShellAction?.(`${label}已放进输入框，可以补一句说明再发送`)
+  }
+
+  function stopCameraStream() {
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop())
+    cameraStreamRef.current = null
+  }
+
+  function closeCameraCapture() {
+    stopCameraStream()
+    setCameraOpen(false)
+    setCameraError('')
+  }
+
+  async function openCameraCapture() {
+    setActivePanel(null)
+    setCameraError('')
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      cameraInputRef.current?.click()
+      return
+    }
+
+    try {
+      stopCameraStream()
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      })
+      cameraStreamRef.current = stream
+      setCameraOpen(true)
+    } catch {
+      onShellAction?.('摄像头没有接通，先为妹妹打开系统拍摄入口')
+      cameraInputRef.current?.click()
+    }
+  }
+
+  function captureCameraFrame() {
+    const video = videoRef.current
+    if (!video || video.readyState < 2) {
+      setCameraError('摄像头还在启动，稍等一下再拍')
+      return
+    }
+
+    const canvas = document.createElement('canvas')
+    const width = video.videoWidth || 1280
+    const height = video.videoHeight || 720
+    canvas.width = width
+    canvas.height = height
+    canvas.getContext('2d')?.drawImage(video, 0, 0, width, height)
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          setCameraError('这次拍摄没有生成图片，再试一次')
+          return
+        }
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+        const file = new File([blob], `拍摄-${stamp}.jpg`, { type: 'image/jpeg' })
+        appendAttachmentLabel('拍摄', file)
+        closeCameraCapture()
+      },
+      'image/jpeg',
+      0.92,
+    )
   }
 
   function startVoiceInput() {
@@ -166,16 +223,21 @@ export function ChatPhone({
     })
   }, [messages, isSending, systemAlert])
 
+  useEffect(() => {
+    if (!cameraOpen || !videoRef.current || !cameraStreamRef.current) return
+    videoRef.current.srcObject = cameraStreamRef.current
+    void videoRef.current.play().catch(() => setCameraError('摄像头预览没有启动，请检查浏览器权限'))
+  }, [cameraOpen])
+
+  useEffect(() => {
+    return () => stopCameraStream()
+  }, [])
+
   return (
     <main className="workspace chat-workspace">
       <MobileStatusBar />
       <header
         className="chat-topbar"
-        onClick={(event) => {
-          const actionButton = (event.target as HTMLElement).closest('.chat-topbar-actions button')
-          if (!actionButton || actionButton.classList.contains('mobile-menu-button')) return
-          onShellAction?.('通话、视频和协作入口已保留，后续接入实时模型能力')
-        }}
         style={{ '--avatar-accent': character.accent } as CSSProperties}
       >
         <button aria-label="返回消息" className="mobile-chat-back" onClick={onBackToList} type="button">
@@ -199,32 +261,6 @@ export function ChatPhone({
               </option>
             ))}
           </select>
-        </div>
-        <div className="chat-topbar-actions" aria-label="聊天工具">
-          <button aria-label="语音通话" title="语音通话" type="button">
-            <Phone size={20} />
-          </button>
-          <button aria-label="视频通话" title="视频通话" type="button">
-            <Video size={20} />
-          </button>
-          <button aria-label="屏幕分享" title="屏幕分享" type="button">
-            <MonitorUp size={20} />
-          </button>
-          <button aria-label="发起协作" title="发起协作" type="button">
-            <PlusCircle size={21} />
-          </button>
-          <button aria-label="更多" title="更多" type="button">
-            <MoreHorizontal size={22} />
-          </button>
-          <button
-            aria-label="聊天信息"
-            className="mobile-menu-button"
-            onClick={() => togglePanel('info')}
-            title="聊天信息"
-            type="button"
-          >
-            <Menu size={30} />
-          </button>
         </div>
       </header>
 
@@ -267,20 +303,6 @@ export function ChatPhone({
         </div>
       </div>
 
-      {(activePanel === 'info' || activePanel === 'settings') && (
-        <ChatInfoDrawer
-          panel={activePanel}
-          character={character}
-          characters={characters}
-          settingRows={settingRows}
-          onClose={() => setActivePanel(null)}
-          onOpenSettings={() => setActivePanel('settings')}
-          onBackToInfo={() => setActivePanel('info')}
-          onClearConversation={onClearConversation}
-          onDeleteCharacter={onDeleteCharacter}
-        />
-      )}
-
       <form
         className={`composer ${activePanel ? 'with-tool-panel' : ''}`}
         onSubmit={(event) => {
@@ -313,7 +335,7 @@ export function ChatPhone({
             }}
             onChange={(event) => onDraftChange(event.target.value)}
             onFocus={() => {
-              if (activePanel !== 'info' && activePanel !== 'settings') setActivePanel(null)
+              if (activePanel) setActivePanel(null)
             }}
             placeholder=""
             rows={1}
@@ -340,7 +362,7 @@ export function ChatPhone({
           <button
             aria-label="拍摄"
             className="composer-tool"
-            onClick={() => cameraInputRef.current?.click()}
+            onClick={openCameraCapture}
             title="拍摄"
             type="button"
           >
@@ -380,7 +402,7 @@ export function ChatPhone({
             panel={activePanel}
             draft={draft}
             onDraftChange={onDraftChange}
-            onOpenCamera={() => cameraInputRef.current?.click()}
+            onOpenCamera={openCameraCapture}
             onOpenFile={() => fileInputRef.current?.click()}
             onOpenGallery={() => galleryInputRef.current?.click()}
             onShellAction={onShellAction}
@@ -416,6 +438,18 @@ export function ChatPhone({
           ref={fileInputRef}
           type="file"
         />
+        {cameraOpen && (
+          <div className="camera-capture-layer" role="dialog" aria-label="拍摄照片">
+            <section className="camera-capture-panel">
+              <video ref={videoRef} playsInline muted />
+              {cameraError && <p>{cameraError}</p>}
+              <div>
+                <button onClick={closeCameraCapture} type="button">取消</button>
+                <button onClick={captureCameraFrame} type="button">拍摄</button>
+              </div>
+            </section>
+          </div>
+        )}
       </form>
     </main>
   )

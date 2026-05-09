@@ -29,6 +29,7 @@ interface CharacterRailProps {
   onViewChange: (view: AppView) => void
   onSelect: (characterId: string) => void
   onOpenGroupChat?: (group: { name: string; text: string; memberIds?: string[] }) => void
+  onCreateRoleRequest?: () => void
   onShellAction?: (message: string) => void
 }
 
@@ -121,6 +122,7 @@ export function CharacterRail({
   conversations,
   activeView,
   onShellAction,
+  onCreateRoleRequest,
   onOpenGroupChat,
   onViewChange,
   onSelect,
@@ -135,6 +137,7 @@ export function CharacterRail({
   const query = queryState.view === activeView ? queryState.value : ''
   const normalizedQuery = query.trim().toLowerCase()
   const activeCharacter = characters.find((character) => character.id === activeCharacterId) ?? characters[0]
+  const compactManagementView = activeView === 'model' || activeView === 'memory' || activeView === 'settings' || activeView === 'trash'
   const roleCharacters = useMemo(() => characters.filter((character) => !isGroupCharacter(character)), [characters])
   const groupCharacters = useMemo(() => characters.filter(isGroupCharacter), [characters])
   const visibleChannelRows = useMemo(() => channelRows.filter(() => false), [])
@@ -307,7 +310,7 @@ export function CharacterRail({
   }
 
   return (
-    <aside className="left-panel">
+    <aside className={`left-panel ${compactManagementView ? 'left-panel-compact' : ''}`}>
       <div className="qq-icon-rail">
         <button
           aria-label={brand.nameZh}
@@ -343,6 +346,7 @@ export function CharacterRail({
         <div className="qq-rail-spacer" />
       </div>
 
+      {!compactManagementView && (
       <section className={`conversation-pane ${groupCreatorOpen ? 'with-group-creator' : ''}`} aria-label="QQ 侧边内容">
         <div className="conversation-search-row">
           <label className="conversation-search">
@@ -359,7 +363,7 @@ export function CharacterRail({
             className="conversation-add-button"
             onClick={() => {
               if (activeView === 'role') {
-                onShellAction?.('请使用右侧「新增角色」创建角色')
+                onCreateRoleRequest?.()
                 return
               }
               if (activeView === 'chat') {
@@ -473,10 +477,6 @@ export function CharacterRail({
 
         {activeView === 'role' && (
           <div className="qq-contact-pane qq-contact-pane-simple">
-            <div className="qq-role-actions">
-              <button onClick={() => onShellAction?.('添加角色入口已占位，后续可创建姐姐、恋人或自定义角色')} type="button">添加角色</button>
-              <button onClick={() => onShellAction?.('导入人设入口已占位，后续可粘贴设定或导入文件')} type="button">导入人设</button>
-            </div>
             <div className="qq-contact-friends">
               {roleCharacters.map((character) => (
                 <button
@@ -560,6 +560,7 @@ export function CharacterRail({
           <span>{activeCharacter?.name ?? '沈朝歌'}</span>
         </footer>
       </section>
+      )}
     </aside>
   )
 }

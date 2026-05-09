@@ -11,7 +11,7 @@ import './styles/social.css'
 import './styles/tasks.css'
 import './styles/auth.css'
 import './styles/mobile.css'
-import { CloudSun, LogOut, Maximize2, Minus, PanelsTopLeft, ShieldCheck, X } from 'lucide-react'
+import { CloudSun, LogOut, ShieldCheck } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { useEffect, useState } from 'react'
 import { useAccountSession } from './app/useAccountSession'
@@ -65,6 +65,7 @@ interface AuthenticatedAppProps {
 
 function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) {
   const [mobileMessageListOpen, setMobileMessageListOpen] = useState(true)
+  const [roleCreateRequestId, setRoleCreateRequestId] = useState(0)
   const [shellTip, setShellTip] = useState('')
   const {
     activeView,
@@ -86,7 +87,6 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
     handleCreateCharacter,
     handleCreateCloudBackup,
     handleCreateLocalBackup,
-    handleClearConversation,
     handleDeleteLocalBackup,
     handleDeleteCharacter,
     handleDeleteConversation,
@@ -222,7 +222,14 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
   }, [])
 
   const showMobileBottomNav = activeView !== 'chat' || mobileMessageListOpen
-  const shellClassName = `app-shell ${activeView === 'chat' ? 'chat-mode' : 'feature-mode'}`
+  const compactFeatureViews = new Set(['model', 'memory', 'settings', 'trash'])
+  const shellClassName = [
+    'app-shell',
+    activeView === 'chat' ? 'chat-mode' : 'feature-mode',
+    compactFeatureViews.has(activeView) ? 'compact-mode' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
   const managementView = (
     activeView === 'model' ||
     activeView === 'memory' ||
@@ -249,29 +256,6 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
             <small>百合无限好</small>
           </span>
         </div>
-        <div
-          className="desktop-titlebar-status"
-          onClick={(event) => {
-            if ((event.target as HTMLElement).closest('button')) {
-              showShellTip('桌面窗口入口已占位，后续客户端版本再接入')
-            }
-          }}
-        >
-          <CloudSun size={18} />
-          <span>晴</span>
-          <button aria-label="布局" type="button">
-            <PanelsTopLeft size={16} />
-          </button>
-          <button aria-label="最小化" type="button">
-            <Minus size={16} />
-          </button>
-          <button aria-label="最大化" type="button">
-            <Maximize2 size={15} />
-          </button>
-          <button aria-label="关闭" type="button">
-            <X size={17} />
-          </button>
-        </div>
         <div className="desktop-account-badge" aria-label="当前账号">
           <ShieldCheck size={17} />
           <span>
@@ -291,6 +275,7 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
         conversations={state.conversations}
         onSelect={handleSelectCharacter}
         onOpenGroupChat={handleOpenGroupChat}
+        onCreateRoleRequest={() => setRoleCreateRequestId((current) => current + 1)}
         onShellAction={showShellTip}
         onViewChange={handleViewChange}
       />
@@ -326,8 +311,6 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
           onDraftChange={setDraft}
           onMemoryFeedback={handleMemoryFeedbackFromChat}
           onSelectCharacter={handleSelectCharacter}
-          onClearConversation={handleClearConversation}
-          onDeleteCharacter={handleDeleteCharacter}
           onSend={handleSend}
           onShellAction={showShellTip}
           settings={state.settings}
@@ -337,6 +320,7 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
           activeCharacterId={state.activeCharacterId}
           activeView={activeView}
           characters={state.characters}
+          createRequestId={roleCreateRequestId}
           key={state.activeCharacterId}
           onCreateCharacter={handleCreateCharacter}
           onDeleteCharacter={handleDeleteCharacter}

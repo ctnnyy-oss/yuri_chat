@@ -7,6 +7,10 @@
   overflow: hidden;
 }
 
+.left-panel-compact {
+  grid-template-columns: var(--desktop-rail-width, 82px);
+}
+
 .qq-icon-rail {
   position: relative;
   min-width: 0;

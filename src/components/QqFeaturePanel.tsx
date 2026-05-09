@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { MessageCircle, Plus, Save, Search, Trash2, UserRound, X } from 'lucide-react'
+import { MessageCircle, Plus, Save, Search, Trash2, X } from 'lucide-react'
 import type { CharacterCard } from '../domain/types'
 import { analyzePersonaImport } from '../services/personaImport'
 import type { AppView } from './CharacterRail'
@@ -9,6 +9,7 @@ interface QqFeaturePanelProps {
   activeView: AppView
   characters: CharacterCard[]
   activeCharacterId: string
+  createRequestId: number
   onCreateCharacter: (input: { name: string; relation: string; mood: string; persona: string }) => string
   onDeleteCharacter: (characterId: string) => boolean
   onUpdateCharacter: (input: { id: string; name: string; relation: string; mood: string; persona: string }) => boolean
@@ -99,6 +100,7 @@ function roleMatchesQuery(role: ManagedRole, query: string) {
 export function QqFeaturePanel({
   characters,
   activeCharacterId,
+  createRequestId,
   onCreateCharacter,
   onDeleteCharacter,
   onUpdateCharacter,
@@ -106,6 +108,7 @@ export function QqFeaturePanel({
   onShellAction,
 }: QqFeaturePanelProps) {
   const isMobile = useIsMobileViewport()
+  const lastCreateRequestRef = useRef(createRequestId)
   const roleLongPressTimerRef = useRef<number | null>(null)
   const roleLongPressTriggeredRef = useRef(false)
   const roleLongPressStartPointRef = useRef({ x: 0, y: 0 })
@@ -148,6 +151,12 @@ export function QqFeaturePanel({
     setRoleDraft(blankRoleDraft())
     setMobileEditorMode('create')
   }
+
+  useEffect(() => {
+    if (createRequestId === lastCreateRequestRef.current) return
+    lastCreateRequestRef.current = createRequestId
+    startCreateRole()
+  }, [createRequestId])
 
   function updateDraft(field: keyof RoleDraft, value: string) {
     setRoleDraft((draft) => ({ ...draft, [field]: value }))
@@ -283,18 +292,12 @@ export function QqFeaturePanel({
       >
         <header className="qq-desktop-feature-head">
           <strong>角色管理</strong>
-          <div>
-            <button onClick={startCreateRole} type="button">
-              <Plus size={18} />
-              新增角色
+          {selectedRole && (
+            <button onClick={() => onOpenChat(selectedRole.id)} type="button">
+              <MessageCircle size={18} />
+              打开聊天
             </button>
-            {selectedRole && (
-              <button onClick={() => onOpenChat(selectedRole.id)} type="button">
-                <UserRound size={18} />
-                打开聊天
-              </button>
-            )}
-          </div>
+          )}
         </header>
         <div className="role-manager-grid">
           <section className="role-detail" aria-label="角色详情">
@@ -353,14 +356,7 @@ export function QqFeaturePanel({
                   <Plus size={17} />
                   <span>创建角色</span>
                 </button>
-              ) : (
-                selectedRole && (
-                  <button onClick={() => onOpenChat(selectedRole.id)} type="button">
-                    <MessageCircle size={17} />
-                    <span>打开聊天</span>
-                  </button>
-                )
-              )}
+              ) : null}
               {canEditSelectedRole && (
                 <>
                   <button onClick={saveSelectedRole} type="button">

@@ -305,6 +305,15 @@
   .left-panel {
     grid-template-columns: var(--desktop-rail-width) minmax(0, 1fr);
   }
+
+  .app-shell.compact-mode {
+    --desktop-sidebar-width: var(--desktop-rail-width);
+    grid-template-columns: var(--desktop-rail-width) minmax(0, 1fr);
+  }
+
+  .app-shell.compact-mode .left-panel {
+    grid-template-columns: var(--desktop-rail-width);
+  }
 }
 
 /* ── 工作区标题 ── */
