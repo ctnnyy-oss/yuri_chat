@@ -1333,10 +1333,9 @@
   grid-column: 1 / -1;
   display: grid;
   gap: 7px;
-  border: 1px solid rgba(216, 91, 138, 0.18);
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(255, 244, 249, 0.96), rgba(246, 241, 255, 0.92));
+  background: linear-gradient(135deg, var(--feature-field, var(--pink-50)), var(--feature-card, var(--panel)));
   padding: 11px 12px;
 }
 
@@ -1348,7 +1347,7 @@
 }
 
 .persona-import-meter strong {
-  color: #2a1822;
+  color: var(--ink);
   font-size: 13px;
   font-weight: 800;
 }
@@ -1356,7 +1355,7 @@
 .persona-import-meter div span {
   min-width: 48px;
   border-radius: 999px;
-  background: #d85b8a;
+  background: var(--grad-bubble);
   color: #fff;
   font-size: 12px;
   font-weight: 800;
@@ -1367,13 +1366,13 @@
 .persona-import-meter p,
 .persona-import-meter small {
   margin: 0;
-  color: rgba(80, 50, 64, 0.72);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.55;
 }
 
 .persona-import-meter small {
-  color: #a44b76;
+  color: var(--pink-700);
 }
 
 .role-template-list {
