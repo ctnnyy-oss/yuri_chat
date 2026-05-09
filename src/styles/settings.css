@@ -250,6 +250,18 @@
   line-height: 1.65;
 }
 
+.model-action-notice {
+  margin: 0;
+  border: 1px solid rgba(184, 238, 216, 0.54);
+  border-radius: var(--radius-md);
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+  padding: 10px 14px;
+}
+
 /* ── 模型布局 (双栏) ── */
 
 .model-layout {
@@ -976,6 +988,12 @@
   background: var(--pink-50);
   border-color: var(--line);
   transform: translateY(-1px);
+}
+
+.backup-actions .model-active-button {
+  border-color: rgba(184, 238, 216, 0.58);
+  background: var(--mint-soft);
+  color: var(--mint-ink);
 }
 
 @media (max-width: 760px) {

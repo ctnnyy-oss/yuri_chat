@@ -2,6 +2,7 @@ import { KeyRound, PlugZap, RefreshCcw, Save } from 'lucide-react'
 import type { Dispatch, SetStateAction } from 'react'
 import type { ModelProfileInput, ModelProviderKind } from '../../domain/types'
 import { modelProviderPresets, type ModelCatalogItem } from '../../services/modelProfiles'
+import { isServerEnvProfileId } from './modelPanelUtils'
 
 interface ModelProfileEditorProps {
   canFetchCatalog: boolean
@@ -34,13 +35,15 @@ export function ModelProfileEditor({
   onDraftChange,
   selectedPresetId,
 }: ModelProfileEditorProps) {
+  const hasStoredApiKey = Boolean(draft.id && !isServerEnvProfileId(draft.id))
+
   function updateDraft(patch: Partial<ModelProfileInput>, options: { resetCatalog?: boolean } = {}) {
     if (options.resetCatalog) onResetCatalog()
     onDraftChange((currentDraft) => ({ ...currentDraft, ...patch }))
   }
 
   return (
-    <section className="settings-section model-column">
+    <section className="settings-section model-column model-profile-editor">
       <div className="settings-section-title">
         <KeyRound size={18} />
         <span>接入或更换模型</span>
@@ -73,10 +76,11 @@ export function ModelProfileEditor({
         <input
           autoComplete="off"
           onChange={(event) => updateDraft({ apiKey: event.target.value }, { resetCatalog: true })}
-          placeholder={draft.id ? '留空则继续使用已保存密钥' : '填入供应商或中转站密钥'}
+          placeholder={hasStoredApiKey ? '已保存密钥，留空继续沿用' : '填入供应商或中转站密钥'}
           type="password"
           value={draft.apiKey ?? ''}
         />
+        {hasStoredApiKey && <small>这组配置已有云端密钥。这里不会明文显示；要换密钥时再输入新的。</small>}
       </label>
 
       <label>

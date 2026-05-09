@@ -1,5 +1,5 @@
 import { Activity, AlertCircle, CheckCircle2, CircleDashed, SlidersHorizontal, XCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AppSettings, ModelProfileInput, ModelProfileSummary } from '../../domain/types'
 import { checkCloudHealth, saveCloudToken } from '../../services/cloudSync'
 import { listModelProfiles, testModelProfile, type ModelCatalogResult } from '../../services/modelProfiles'
@@ -105,7 +105,32 @@ export function ModelAndDataPanel({
   const [cloudTokenDraft, setCloudTokenDraft] = useState('')
   const [diagnostics, setDiagnostics] = useState<DiagnosticItem[]>(initialDiagnostics)
   const [diagnosticBusy, setDiagnosticBusy] = useState(false)
+  const [modelActionNotice, setModelActionNotice] = useState('')
+  const hydratedProfileKeyRef = useRef('')
   const diagnosticSummary = summarizeDiagnostics(diagnostics)
+
+  useEffect(() => {
+    if (!activeProfile) return
+    const profileKey = `${activeProfile.id}:${activeProfile.updatedAt}`
+    if (hydratedProfileKeyRef.current === profileKey) return
+
+    hydratedProfileKeyRef.current = profileKey
+    draftController.loadProfileIntoDraft(activeProfile)
+  }, [activeProfile, draftController])
+
+  useEffect(() => {
+    if (!modelActionNotice) return
+
+    const timer = window.setTimeout(() => setModelActionNotice(''), 2600)
+    return () => window.clearTimeout(timer)
+  }, [modelActionNotice])
+
+  function scrollModelFormIntoView() {
+    if (typeof document === 'undefined') return
+    window.requestAnimationFrame(() => {
+      document.querySelector('.model-profile-editor')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    })
+  }
 
   function handleUseProfile(profile: ModelProfileSummary) {
     onUpdateSettings({
@@ -113,6 +138,16 @@ export function ModelAndDataPanel({
       modelProfileId: profile.id,
       model: profile.model,
     })
+    draftController.loadProfileIntoDraft(profile)
+    hydratedProfileKeyRef.current = `${profile.id}:${profile.updatedAt}`
+    setModelActionNotice(`已切换到 ${profile.model}，上方表单已载入这组配置。`)
+    scrollModelFormIntoView()
+  }
+
+  function handleEditProfile(profile: ModelProfileSummary) {
+    draftController.loadProfileIntoDraft(profile)
+    setModelActionNotice(`已载入 ${profile.model}，可直接修改 URL、模型或替换密钥。`)
+    scrollModelFormIntoView()
   }
 
   function handleFetchActiveCatalog() {
@@ -252,6 +287,8 @@ export function ModelAndDataPanel({
           </section>
         )}
 
+        {modelActionNotice && <p className="model-action-notice">{modelActionNotice}</p>}
+
         <div className="model-layout">
           <ModelProfileEditor
             canFetchCatalog={draftController.canFetchCatalog}
@@ -274,7 +311,7 @@ export function ModelAndDataPanel({
               activeProfileId={settings.modelProfileId}
               modelProfiles={modelProfiles}
               onDeleteModelProfile={onDeleteModelProfile}
-              onEditProfile={draftController.loadProfileIntoDraft}
+              onEditProfile={handleEditProfile}
               onTestProfile={(profile) => void onTestModelProfile({ profileId: profile.id })}
               onUseProfile={handleUseProfile}
             />
