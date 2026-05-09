@@ -72,6 +72,7 @@ export interface ConversationState {
 
 export type AccentTheme =
   | 'sakura'
+  | 'white'
   | 'peach'
   | 'lavender'
   | 'mint'

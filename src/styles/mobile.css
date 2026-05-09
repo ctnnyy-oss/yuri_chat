@@ -2807,6 +2807,136 @@
   }
 }
 
+/* Final mobile shell correction: feature pages use one real viewport column and the same theme skin. */
+@media (max-width: 760px) {
+  .app-shell,
+  .app-shell.feature-mode,
+  .app-shell.chat-mode {
+    --desktop-sidebar-width: 100%;
+    width: 100vw;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    background: var(--canvas);
+  }
+
+  .workspace,
+  .detail-workspace {
+    grid-column: 1;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .detail-workspace {
+    padding: 14px 14px calc(104px + env(safe-area-inset-bottom));
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--rose) 14%, var(--panel-soft)),
+        color-mix(in srgb, var(--rose) 5%, var(--panel))
+      );
+  }
+
+  .detail-workspace > .workspace-title,
+  .detail-workspace > .detail-actions,
+  .detail-workspace > .memory-insight,
+  .detail-workspace > .space-overview,
+  .detail-workspace > .memory-guardian,
+  .detail-workspace > .core-cp-section,
+  .detail-workspace > .candidate-review,
+  .detail-workspace > .memory-diagnostics,
+  .detail-workspace > .panel-stack,
+  .detail-workspace > .settings-stack,
+  .detail-workspace > .empty-state {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .workspace-title {
+    min-width: 0;
+  }
+
+  .workspace-title > div:last-child {
+    min-width: 0;
+  }
+
+  .workspace-title p {
+    overflow-wrap: anywhere;
+  }
+
+  .qq-feature-workspace,
+  .mobile-feature-page,
+  .mobile-message-list {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--rose) 15%, var(--panel-soft)),
+        color-mix(in srgb, var(--rose) 5%, var(--panel))
+      );
+  }
+
+  .mobile-feature-header,
+  .mobile-feature-header.centered,
+  .mobile-message-thread-list,
+  .mobile-nav,
+  .composer {
+    background: color-mix(in srgb, var(--rose) 5%, var(--panel));
+  }
+
+  .mobile-nav {
+    border-top-color: var(--line-soft);
+  }
+
+  .mobile-message-search,
+  .mobile-feature-search {
+    background: color-mix(in srgb, var(--rose) 6%, var(--panel));
+  }
+
+  .chat-workspace,
+  .chat-workspace > .mobile-status-bar,
+  .chat-topbar {
+    background: color-mix(in srgb, var(--rose) 8%, var(--panel-soft));
+  }
+
+  .model-picker-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .model-picker-row button {
+    width: 100%;
+  }
+
+  .settings-stack {
+    padding-right: 0;
+  }
+
+  .theme-swatches {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .swatch-button {
+    min-width: 0;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 8px;
+  }
+
+  .swatch-dot {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+
+  .swatch-button > span:not(.swatch-dot) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 @media (min-width: 761px) {
   .app-confirm-backdrop {
     position: fixed;

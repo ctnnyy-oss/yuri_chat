@@ -21,15 +21,9 @@ import {
   getCloudBusyLabel,
 } from '../memory/memoryPanelUtils'
 
-const accentThemes: Array<{ id: AccentTheme; label: string; color: string }> = [
+const accentThemes: Array<{ id: Extract<AccentTheme, 'sakura' | 'white'>; label: string; color: string }> = [
   { id: 'sakura', label: '樱花粉', color: '#ffabcc' },
-  { id: 'berry', label: '草莓莓', color: '#e23d72' },
-  { id: 'peach', label: '蜜桃奶', color: '#ffa172' },
-  { id: 'lavender', label: '奶油紫', color: '#a886f0' },
-  { id: 'mint', label: '薄荷奶', color: '#6cc69b' },
-  { id: 'sky', label: '晴空蓝', color: '#6ca5f5' },
-  { id: 'mono', label: '黑白简约', color: '#3d3d45' },
-  { id: 'midnight', label: '深夜紫', color: '#221b30' },
+  { id: 'white', label: '月白', color: '#ffffff' },
 ]
 
 interface SettingsPanelProps {
@@ -150,25 +144,27 @@ export function SettingsPanel({
                 <span>{theme.label}</span>
               </button>
             ))}
+            <label
+              aria-label="自定义主题色"
+              className={`swatch-button swatch-button-custom ${settings.accentTheme === 'custom' ? 'active' : ''}`}
+              onClick={() => onUpdateSettings({ ...settings, accentTheme: 'custom' })}
+            >
+              <span className="swatch-dot" style={{ background: settings.customAccentColor || '#ffabcc' }} />
+              <span>自定义</span>
+              <input
+                aria-label="自定义主题主色"
+                onChange={(event) =>
+                  onUpdateSettings({
+                    ...settings,
+                    accentTheme: 'custom',
+                    customAccentColor: event.target.value,
+                  })
+                }
+                type="color"
+                value={settings.customAccentColor || '#ffabcc'}
+              />
+            </label>
           </div>
-          <label className={`custom-color-control ${settings.accentTheme === 'custom' ? 'active' : ''}`}>
-            <span>
-              <strong>自定义主色</strong>
-              <small>选一个妹妹喜欢的颜色，界面会跟着整套换色。</small>
-            </span>
-            <input
-              aria-label="自定义主题主色"
-              onChange={(event) =>
-                onUpdateSettings({
-                  ...settings,
-                  accentTheme: 'custom',
-                  customAccentColor: event.target.value,
-                })
-              }
-              type="color"
-              value={settings.customAccentColor || '#ffabcc'}
-            />
-          </label>
         </div>
 
         <div className="settings-section">

@@ -181,7 +181,12 @@
   flex-direction: column;
   padding: clamp(20px, 2.5vw, 36px);
   padding-bottom: 60px;
-  background: #fbfafb;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--rose) 22%, var(--panel-soft)),
+      color-mix(in srgb, var(--rose) 6%, var(--panel))
+    );
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
