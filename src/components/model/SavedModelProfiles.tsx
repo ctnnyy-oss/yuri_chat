@@ -22,6 +22,7 @@ export function SavedModelProfiles({
   onUseProfile,
 }: SavedModelProfilesProps) {
   const [pendingDeleteProfile, setPendingDeleteProfile] = useState<ModelProfileSummary | null>(null)
+  const [actionMessage, setActionMessage] = useState('')
 
   function confirmDeletePendingProfile() {
     if (!pendingDeleteProfile) return
@@ -30,12 +31,23 @@ export function SavedModelProfiles({
     void onDeleteModelProfile(profileId)
   }
 
+  function handleUseProfile(profile: ModelProfileSummary, isActive: boolean) {
+    setActionMessage(isActive ? `${profile.model} 已经是当前模型，上方配置已同步。` : `已切换到 ${profile.model}，上方配置已同步。`)
+    onUseProfile(profile)
+  }
+
+  function handleEditProfile(profile: ModelProfileSummary) {
+    setActionMessage(`已载入 ${profile.model}，可以在上方修改配置。`)
+    onEditProfile(profile)
+  }
+
   return (
     <>
       <div className="settings-section-title">
         <CheckCircle2 size={18} />
         <span>已保存模型</span>
       </div>
+      {actionMessage && <p className="model-action-notice" role="status">{actionMessage}</p>}
       <div className="model-profile-list">
         {modelProfiles.length === 0 ? (
           <small className="model-empty-note">还没有保存模型。先选平台或自定义，填 URL 和 API Key，模型列表出来后保存。</small>
@@ -66,10 +78,10 @@ export function SavedModelProfiles({
                   </dl>
                 </div>
                 <div className="backup-actions">
-                  <button className={isActive ? 'model-active-button' : ''} onClick={() => onUseProfile(profile)} type="button">
+                  <button className={isActive ? 'model-active-button' : ''} onClick={() => handleUseProfile(profile, isActive)} type="button">
                     {isActive ? '使用中' : '使用'}
                   </button>
-                  <button onClick={() => onEditProfile(profile)} type="button">
+                  <button onClick={() => handleEditProfile(profile)} type="button">
                     {isServerEnvProfileId(profile.id) ? '复制' : '编辑'}
                   </button>
                   <button disabled={!profile.hasApiKey} onClick={() => onTestProfile(profile)} type="button">
