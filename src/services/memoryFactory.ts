@@ -140,6 +140,7 @@ export function maybeCaptureMemory(
   const content = message.content.trim()
   const payload = extractMemoryPayload(content)
   const explicitMemoryCommand = hasExplicitMemoryCommand(content)
+  if (!explicitMemoryCommand && isTransientTaskInstruction(content)) return null
   const signal = explicitMemoryCommand
     ? classifyMemory(payload) ?? inferExplicitMemorySignal(payload)
     : classifyMemory(content)
@@ -316,6 +317,21 @@ export function extractMemoryPayload(content: string): string {
 
 function hasExplicitMemoryCommand(content: string): boolean {
   return /(?:记住|记一下|写进记忆|加入记忆|保存到记忆|别忘了?|帮我记住|请记住|顺手记住)/u.test(content)
+}
+
+function isTransientTaskInstruction(content: string): boolean {
+  const compact = content.replace(/\s+/g, '')
+  const durableSignal =
+    /(记住|记一下|写进记忆|加入记忆|保存到记忆|别忘了?|以后|今后|下次|默认|一直|长期|每次|规则是)/u.test(compact) ||
+    /(?:我|我的|妹妹).{0,12}(喜欢|不喜欢|讨厌|偏好|习惯|希望|想要|不想要|更喜欢|最喜欢)/u.test(compact)
+  if (durableSignal) return false
+
+  const taskSignal =
+    /(?:请|帮我|给我|麻烦|能不能|可以|想让你|要求|写完后|告诉我|列出|输出|回复|总结|整理|解释|分析|检查|优化|扩写|改写|翻译|生成|试玩|测试)/u.test(compact) ||
+    /(?:写成|扩成|改成|做成|变成|字以内|不要堆|尽量不要)/u.test(compact)
+  if (!taskSignal) return false
+
+  return /(?:这段|这条|这次|这一轮|这个|刚才|今天|现在|当前|上面|下面|第二个|第一个|写完后|字以内|不要堆|尽量不要)/u.test(compact)
 }
 
 function inferExplicitMemorySignal(payload: string): NonNullable<ReturnType<typeof classifyMemory>> {

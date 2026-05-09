@@ -461,6 +461,72 @@ if (!autoCaptureCandidateFirst || candidateRecallLeak) {
   console.log('PASS automatic captures stay candidate-first and out of prompt recall')
 }
 
+const transientWritingInstructionCapture = maybeCaptureMemory(
+  {
+    id: 'transient-writing-instruction',
+    role: 'user',
+    content:
+      '我想选第二个旧磁带。请你把它扩成一个 300 字以内的百合短篇开头，要求低 AI 味，不要堆“仿佛、微微、轻轻”，也尽量不要用“不是……是……”。写完后再告诉我一句话。',
+    createdAt: '2026-05-09T05:20:00.000Z',
+  },
+  {
+    id: 'conversation-transient-writing-instruction',
+    characterId: 'sister',
+    messages: [],
+    summary: '',
+    updatedAt: '2026-05-09T05:20:00.000Z',
+  },
+  {
+    id: 'sister',
+    name: '姐姐大人',
+    title: '测试角色',
+    subtitle: '测试角色',
+    avatar: '姐',
+    accent: '#ef9ac6',
+    relationship: '姐姐',
+    mood: '测试',
+    tags: ['测试'],
+    systemPrompt: '测试角色',
+    greeting: '测试角色',
+  },
+)
+const durableStyleRuleCapture = maybeCaptureMemory(
+  {
+    id: 'durable-style-rule',
+    role: 'user',
+    content: '以后写百合短篇时不要堆“仿佛、微微、轻轻”，也尽量少用“不是……是……”。',
+    createdAt: '2026-05-09T05:21:00.000Z',
+  },
+  {
+    id: 'conversation-durable-style-rule',
+    characterId: 'sister',
+    messages: [],
+    summary: '',
+    updatedAt: '2026-05-09T05:21:00.000Z',
+  },
+  {
+    id: 'sister',
+    name: '姐姐大人',
+    title: '测试角色',
+    subtitle: '测试角色',
+    avatar: '姐',
+    accent: '#ef9ac6',
+    relationship: '姐姐',
+    mood: '测试',
+    tags: ['测试'],
+    systemPrompt: '测试角色',
+    greeting: '测试角色',
+  },
+)
+if (transientWritingInstructionCapture || durableStyleRuleCapture?.status !== 'candidate') {
+  console.error('FAIL transient writing instructions are filtered while durable style rules still capture')
+  console.error(
+    `  transient=${transientWritingInstructionCapture?.title || 'none'}, durable=${durableStyleRuleCapture?.title || 'none'} / ${durableStyleRuleCapture?.status || 'none'}`,
+  )
+} else {
+  console.log('PASS transient writing instructions are filtered while durable style rules still capture')
+}
+
 const duplicateActive = memory({
   id: 'merge-target-default',
   title: '默认推进偏好',
