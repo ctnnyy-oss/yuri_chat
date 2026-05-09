@@ -337,6 +337,7 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
           activeCharacterId={state.activeCharacterId}
           activeView={activeView}
           characters={state.characters}
+          key={state.activeCharacterId}
           onCreateCharacter={handleCreateCharacter}
           onDeleteCharacter={handleDeleteCharacter}
           onUpdateCharacter={handleUpdateCharacter}

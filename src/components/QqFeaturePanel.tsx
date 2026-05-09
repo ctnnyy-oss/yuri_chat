@@ -119,7 +119,7 @@ export function QqFeaturePanel({
   const [query, setQuery] = useState('')
   const [mobileEditorMode, setMobileEditorMode] = useState<MobileEditorMode>('closed')
   const [pendingDeleteRole, setPendingDeleteRole] = useState<ManagedRole | null>(null)
-  const selectedRole = managedRoles.find((role) => role.id === selectedRoleId) ?? managedRoles[0]
+  const selectedRole = selectedRoleId ? managedRoles.find((role) => role.id === selectedRoleId) : undefined
   const canEditSelectedRole = selectedRole?.source === '自定义'
   const normalizedQuery = query.trim().toLowerCase()
   const visibleRoles = useMemo(
@@ -297,23 +297,6 @@ export function QqFeaturePanel({
           </div>
         </header>
         <div className="role-manager-grid">
-          <aside className="role-list" aria-label="角色列表">
-            {managedRoles.map((role) => (
-              <button
-                className={role.id === selectedRole?.id ? 'active' : ''}
-                key={role.id}
-                onClick={() => selectRole(role)}
-                type="button"
-              >
-                <span className="avatar" style={{ '--avatar-accent': role.accent } as CSSProperties}>{role.avatar}</span>
-                <span>
-                  <strong>{role.name}</strong>
-                  <small>{role.mood}</small>
-                </span>
-                <em>{role.source}</em>
-              </button>
-            ))}
-          </aside>
           <section className="role-detail" aria-label="角色详情">
             <div className="role-detail-head">
               <span className="avatar" style={{ '--avatar-accent': selectedRole?.accent ?? '#ef9ac6' } as CSSProperties}>
