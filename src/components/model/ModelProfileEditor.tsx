@@ -18,6 +18,7 @@ interface ModelProfileEditorProps {
   onTestDraft: () => void
   onDraftChange: Dispatch<SetStateAction<ModelProfileInput>>
   selectedPresetId: string
+  actionNotice?: string
 }
 
 export function ModelProfileEditor({
@@ -34,6 +35,7 @@ export function ModelProfileEditor({
   onTestDraft,
   onDraftChange,
   selectedPresetId,
+  actionNotice = '',
 }: ModelProfileEditorProps) {
   const hasStoredApiKey = Boolean(draft.id && !isServerEnvProfileId(draft.id))
 
@@ -48,6 +50,8 @@ export function ModelProfileEditor({
         <KeyRound size={18} />
         <span>接入或更换模型</span>
       </div>
+
+      {actionNotice && <p className="model-action-notice" role="status">{actionNotice}</p>}
 
       <label>
         <span>平台</span>

@@ -287,10 +287,9 @@ export function ModelAndDataPanel({
           </section>
         )}
 
-        {modelActionNotice && <p className="model-action-notice">{modelActionNotice}</p>}
-
         <div className="model-layout">
           <ModelProfileEditor
+            actionNotice={modelActionNotice}
             canFetchCatalog={draftController.canFetchCatalog}
             canUseDraft={draftController.canUseDraft}
             catalogStatus={draftController.catalogStatus}
