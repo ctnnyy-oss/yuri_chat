@@ -3,7 +3,7 @@
 .left-panel {
   height: 100%;
   display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
+  grid-template-columns: var(--desktop-rail-width, 82px) minmax(0, 1fr);
   overflow: hidden;
 }
 
