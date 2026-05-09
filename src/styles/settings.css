@@ -223,7 +223,12 @@
   min-width: 0;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-xl);
-  background: var(--feature-card, var(--panel));
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--rose) 7%, var(--feature-card, var(--panel))),
+      var(--feature-card, var(--panel))
+    );
   box-shadow: var(--shadow-sm);
   padding: 22px;
 }
@@ -278,11 +283,12 @@
 
 .app-shell.compact-mode .model-layout {
   grid-template-columns: minmax(540px, 1.08fr) minmax(460px, 0.92fr);
-  align-items: stretch;
+  align-items: start;
 }
 
 .app-shell.compact-mode .model-layout > .settings-section {
-  height: 100%;
+  height: auto;
+  min-height: 0;
 }
 
 @media (min-width: 1180px) {
@@ -316,7 +322,43 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-md);
+  align-content: start;
+  align-items: start;
   min-width: 0;
+}
+
+.model-saved-section {
+  align-self: start;
+  gap: 14px;
+}
+
+.model-saved-section .model-profile-list {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+  gap: var(--space-sm);
+}
+
+.model-saved-section .model-profile-item {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--rose) 12%, var(--feature-field, var(--panel))),
+      color-mix(in srgb, var(--rose) 4%, var(--feature-card, var(--panel)))
+    );
+  box-shadow: var(--shadow-xs);
+}
+
+.model-saved-section .model-profile-item.active {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--rose) 20%, var(--feature-field, var(--panel))),
+      color-mix(in srgb, var(--rose) 7%, var(--feature-card, var(--panel)))
+    );
 }
 
 .model-hero-section {

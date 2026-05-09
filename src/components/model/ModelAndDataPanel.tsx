@@ -305,7 +305,7 @@ export function ModelAndDataPanel({
             selectedPresetId={draftController.selectedPresetId}
           />
 
-          <section className="settings-section model-column">
+          <section className="settings-section model-column model-saved-section">
             <SavedModelProfiles
               activeProfileId={settings.modelProfileId}
               modelProfiles={modelProfiles}
