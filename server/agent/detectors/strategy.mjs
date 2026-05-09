@@ -1,7 +1,13 @@
 // Agent 编排策略：风控、流程路由、失败恢复、交接、任务队列、交付契约、回复质检
 
 import { truncateToolText, isMetaToolName, getAgentToolLabel } from '../utils.mjs'
-import { shouldUseContinuationDriverTool } from '../toolDetectors.mjs'
+import {
+  shouldUseContinuationDriverTool,
+  shouldUseDateMathTool,
+  shouldUseDeepResearchTool,
+  shouldUseSearchTool,
+  shouldUseWebPageTool,
+} from '../toolDetectors.mjs'
 import { analyzeAgentIntent } from './intent.mjs'
 
 export function inferRiskGateRisks(text, agent) {
@@ -315,7 +321,12 @@ export function buildResponseQualityChecks(text, agent) {
   const hasWaiting = agent.tools.some((tool) => tool.status === 'needs_input') || agent.actions.some((action) => action.requiresConfirmation)
   const hasFailure = agent.tools.some((tool) => tool.status === 'error')
   const hasDefault = agent.tools.some((tool) => tool.name === 'default_policy' || tool.name === 'autonomy_budget')
-  const hasEvidenceIntent = /官方|文档|搜索|查|研究|最新|新闻|价格|天气|几点|日期|多少|换算|字数|统计|证据|来源|引用/.test(text)
+  const hasEvidenceIntent =
+    shouldUseSearchTool(text) ||
+    shouldUseDeepResearchTool(text) ||
+    shouldUseWebPageTool(text) ||
+    shouldUseDateMathTool(text) ||
+    /天气|几点|日期|多少|换算|字数|统计|证据|来源|引用/.test(text)
   const hasEvidence = agent.tools.some((tool) => tool.name === 'evidence_audit')
   const hasRiskBlock = agent.tools.some((tool) => tool.name === 'risk_gate' && tool.status === 'needs_input')
 

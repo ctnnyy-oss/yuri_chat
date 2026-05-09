@@ -8,6 +8,7 @@ import {
   shouldRequireModelAuth,
 } from './auth.mjs'
 import { prepareAgentBundle } from './agentTools.mjs'
+import { shouldUseSearchTool, shouldUseTimeTool } from './agent/toolDetectors.mjs'
 import { CloudRevisionConflictError, closeCloudDatabaseForTests, readSnapshot, saveSnapshot } from './cloudStore.mjs'
 import { getModelSecretConfigurationIssue } from './modelProfiles.mjs'
 
@@ -62,6 +63,12 @@ const cases = [
     name: 'creative yuri request uses workflow and persona guard',
     bundle: simpleBundle('姐姐帮我写一个乖乖女和不良少女的百合剧情方案。'),
     includes: ['workflow_router', 'persona_guard', 'deliverable_contract', 'response_quality_gate'],
+  },
+  {
+    name: 'roleplay check does not trigger web search or clock',
+    bundle: simpleBundle('我是替林慕溪来试玩的 Codex 姐姐。你现在刚被创建出来，先用你的方式打个招呼，再帮我检查一下：如果妹妹今晚写百合卡住，你会怎么把她接住？'),
+    excludes: ['current_time', 'web_search', 'web_research', 'evidence_audit'],
+    decisionIntent: '创作协助',
   },
   {
     name: 'memory context uses memory bridge',
@@ -191,6 +198,7 @@ for (const testCase of cases) {
 }
 
 failed += runSecurityRegression()
+failed += runDetectorRegression()
 
 if (failed > 0) {
   console.error(`Agent/security eval failed: ${failed} check(s) failed`)
@@ -284,6 +292,34 @@ function runSecurityRegression() {
     }
     failedChecks += 1
     console.error(`FAIL security: ${check.name}`)
+  }
+  return failedChecks
+}
+
+function runDetectorRegression() {
+  const checks = [
+    {
+      name: '检查一下 stays local unless external lookup is explicit',
+      run: () => !shouldUseSearchTool('先用你的方式打个招呼，再帮我检查一下：如果妹妹今晚写百合卡住，你会怎么接住？'),
+    },
+    {
+      name: 'plain explicit 查一下 still uses search',
+      run: () => shouldUseSearchTool('姐姐查一下 YOP 中转站最新模型有哪些'),
+    },
+    {
+      name: 'tonight in creative phrasing does not require clock',
+      run: () => !shouldUseTimeTool('如果妹妹今晚写百合卡住，你会怎么把她接住？'),
+    },
+  ]
+
+  let failedChecks = 0
+  for (const check of checks) {
+    if (check.run()) {
+      console.log(`PASS detector: ${check.name}`)
+      continue
+    }
+    failedChecks += 1
+    console.error(`FAIL detector: ${check.name}`)
   }
   return failedChecks
 }

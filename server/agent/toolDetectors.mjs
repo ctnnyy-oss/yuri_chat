@@ -3,7 +3,7 @@
 import { hasUrl } from './utils.mjs'
 
 export function shouldUseTimeTool(text) {
-  return /几点|时间|日期|今天|今晚|明天|后天|昨天|星期|周几|早上|中午|下午|晚上|凌晨|现在|刚刚|一会儿/.test(text)
+  return /几点|当前时间|现在(?:几点|是什么时间|时间)|日期|今天(?:是)?(?:几号|周几|星期几)|明天(?:是)?(?:几号|周几|星期几)|后天(?:是)?(?:几号|周几|星期几)|昨天(?:是)?(?:几号|周几|星期几)|星期几|周几|刚刚(?:几点|多久)|一会儿/.test(text)
 }
 
 export function shouldUseDateMathTool(text) {
@@ -18,9 +18,9 @@ export function shouldUseWeatherTool(text) {
 
 export function shouldUseSearchTool(text) {
   if (hasUrl(text)) return false
-  return /搜索|搜一下|搜搜|查一下|查查|查找|帮我查|帮我搜|研究|网上|联网|资料|文档|官方|官网|教程|百科|新闻|热搜|最新|近况|榜单|价格|评测|推荐|谁是|是什么|有哪些|哪里买|怎么买/.test(
-    text,
-  )
+  const explicitSearch = /搜索|搜一下|搜搜|查找|查询|帮我查|帮我搜|研究|网上|联网|资料|文档|官方|官网|教程|百科|新闻|热搜|最新|近况|榜单|价格|评测|推荐|谁是|是什么|有哪些|哪里买|怎么买/.test(text)
+  const plainLookup = /(^|[^检])(?:查一下|查查)/.test(text)
+  return explicitSearch || plainLookup
 }
 
 export function shouldUseDeepResearchTool(text) {
