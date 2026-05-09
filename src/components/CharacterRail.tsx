@@ -343,7 +343,7 @@ export function CharacterRail({
         <div className="qq-rail-spacer" />
       </div>
 
-      <section className="conversation-pane" aria-label="QQ 侧边内容">
+      <section className={`conversation-pane ${groupCreatorOpen ? 'with-group-creator' : ''}`} aria-label="QQ 侧边内容">
         <div className="conversation-search-row">
           <label className="conversation-search">
             <Search size={18} />
