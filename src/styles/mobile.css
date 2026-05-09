@@ -58,7 +58,7 @@
   .detail-workspace {
     height: 100dvh;
     min-height: 0;
-    padding: 14px 14px calc(82px + env(safe-area-inset-bottom));
+    padding: 14px 14px calc(112px + env(safe-area-inset-bottom));
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
@@ -190,6 +190,27 @@
     width: 100%;
   }
 
+  .model-profile-meta {
+    gap: 7px;
+  }
+
+  .model-profile-meta div {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .model-profile-item .backup-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 7px;
+    width: 100%;
+  }
+
+  .model-profile-item .backup-actions button {
+    width: 100%;
+    min-width: 0;
+    padding: 5px 8px;
+  }
+
   .model-picker-row button {
     width: auto;
     white-space: nowrap;
@@ -291,12 +312,59 @@
   }
 
   .item-actions {
-    gap: 5px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
   }
 
   .mini-action {
+    justify-content: center;
+    min-width: 0;
+    min-height: 36px;
     font-size: 11.5px;
-    padding: 4px 11px;
+    padding: 5px 10px;
+    text-align: center;
+  }
+
+  .mini-action span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .candidate-card-head strong,
+  .item-head strong {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
+
+  .candidate-card p,
+  .memory-item p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 5;
+  }
+
+  .candidate-card footer,
+  .memory-item footer {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .candidate-card,
+  .memory-item {
+    padding: 16px;
+  }
+
+  .candidate-card {
+    display: grid;
+    gap: 10px;
   }
 
   /* CP 卡片 */

@@ -395,6 +395,26 @@
   font-size: 12px;
 }
 
+.memory-expand-action {
+  width: 100%;
+  min-height: 42px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-full);
+  background: var(--pink-50);
+  color: var(--pink-700);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.memory-expand-action:hover {
+  border-color: var(--line-strong);
+  background: var(--pink-100);
+  transform: translateY(-1px);
+}
+
 /* ── Memory Item (单条记忆卡) ── */
 
 .muted-item {

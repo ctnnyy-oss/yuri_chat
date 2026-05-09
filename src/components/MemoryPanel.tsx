@@ -243,13 +243,53 @@ export function MemoryPanel({
           />
           <div className="detail-actions">
             <button className="secondary-action" onClick={onAddMemory} type="button">
-              整理最近聊天
+              从聊天提取记忆
             </button>
             <button className="quiet-action" onClick={onOrganizeMemories} type="button">
               <Sparkles size={16} />
-              后台整理
+              合并重复记忆
             </button>
           </div>
+          <MemoryCandidateReview
+            candidates={candidateMemories}
+            characters={characters}
+            onArchive={(memory) =>
+              onUpdateMemory({
+                ...memory,
+                status: 'archived',
+                userEdited: true,
+              })
+            }
+            onConfirm={(memory) =>
+              onUpdateMemory({
+                ...memory,
+                status: 'active',
+                confidence: Math.max(memory.confidence, 0.9),
+                userEdited: true,
+              })
+            }
+            onEdit={startMemoryEdit}
+            onOpen={(memory) => setSelectedMemoryId(memory.id)}
+            onTrash={(memory) => onTrashMemory(memory.id)}
+          />
+          <MemoryList
+            activeCharacterId={activeCharacterId}
+            activeConversationId={activeConversationId}
+            characters={characters}
+            editingMemoryId={editingMemoryId}
+            memories={memories}
+            memoryDraft={memoryDraft}
+            onCancelEdit={cancelEdit}
+            onDraftChange={setMemoryDraft}
+            onOpenMemory={setSelectedMemoryId}
+            onRestoreMemoryRevision={onRestoreMemoryRevision}
+            onSaveMemory={saveMemoryEdit}
+            onStartMemoryEdit={startMemoryEdit}
+            onTrashMemory={onTrashMemory}
+            onUpdateMemory={onUpdateMemory}
+            reviewedMemories={reviewedMemories}
+            worldNodes={worldNodes}
+          />
           <MemoryGardenInsight memories={memories} />
           <MemorySpaceOverview
             activeCharacterId={activeCharacterId}
@@ -274,52 +314,12 @@ export function MemoryPanel({
               usageLogs={memoryUsageLogs}
             />
           </ErrorBoundary>
-          <MemoryCandidateReview
-            candidates={candidateMemories}
-            characters={characters}
-            onArchive={(memory) =>
-              onUpdateMemory({
-                ...memory,
-                status: 'archived',
-                userEdited: true,
-              })
-            }
-            onConfirm={(memory) =>
-              onUpdateMemory({
-                ...memory,
-                status: 'active',
-                confidence: Math.max(memory.confidence, 0.9),
-                userEdited: true,
-              })
-            }
-            onEdit={startMemoryEdit}
-            onOpen={(memory) => setSelectedMemoryId(memory.id)}
-            onTrash={(memory) => onTrashMemory(memory.id)}
-          />
           <MemoryDiagnostics
             activeCharacterId={activeCharacterId}
             conflicts={memoryConflicts}
             memories={memories}
             onUpdateMemory={onUpdateMemory}
             usageLogs={memoryUsageLogs}
-          />
-          <MemoryList
-            activeCharacterId={activeCharacterId}
-            activeConversationId={activeConversationId}
-            characters={characters}
-            editingMemoryId={editingMemoryId}
-            memories={memories}
-            memoryDraft={memoryDraft}
-            onCancelEdit={cancelEdit}
-            onDraftChange={setMemoryDraft}
-            onOpenMemory={setSelectedMemoryId}
-            onRestoreMemoryRevision={onRestoreMemoryRevision}
-            onSaveMemory={saveMemoryEdit}
-            onStartMemoryEdit={startMemoryEdit}
-            onTrashMemory={onTrashMemory}
-            onUpdateMemory={onUpdateMemory}
-            reviewedMemories={reviewedMemories}
-            worldNodes={worldNodes}
           />
           {selectedMemory && (
             <MemoryArchiveModal

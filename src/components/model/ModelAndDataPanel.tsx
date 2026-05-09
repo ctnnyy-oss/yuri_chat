@@ -252,6 +252,39 @@ export function ModelAndDataPanel({
           </section>
         )}
 
+        <div className="model-layout">
+          <ModelProfileEditor
+            canFetchCatalog={draftController.canFetchCatalog}
+            canUseDraft={draftController.canUseDraft}
+            catalogStatus={draftController.catalogStatus}
+            draft={draftController.draft}
+            modelOptions={draftController.modelOptions}
+            modelStatusText={modelProfileStatus}
+            onDraftChange={draftController.setDraft}
+            onFetchDraftCatalog={draftController.handleFetchDraftCatalog}
+            onPresetChange={draftController.handlePresetChange}
+            onResetCatalog={draftController.resetCatalog}
+            onSaveProfile={draftController.handleSaveProfile}
+            onTestDraft={draftController.handleTestDraft}
+            selectedPresetId={draftController.selectedPresetId}
+          />
+
+          <section className="settings-section model-column">
+            <SavedModelProfiles
+              activeProfileId={settings.modelProfileId}
+              modelProfiles={modelProfiles}
+              onDeleteModelProfile={onDeleteModelProfile}
+              onEditProfile={draftController.loadProfileIntoDraft}
+              onTestProfile={(profile) => void onTestModelProfile({ profileId: profile.id })}
+              onUseProfile={handleUseProfile}
+            />
+          </section>
+        </div>
+
+        <section className="settings-section model-column model-generation-section">
+          <GenerationSettings onUpdateSettings={onUpdateSettings} settings={settings} />
+        </section>
+
         <ModelCurrentStrip
           activeProfile={activeProfile}
           modelBackendHint={modelBackendHint}
@@ -285,36 +318,6 @@ export function ModelAndDataPanel({
           </div>
           <p className="section-note">{diagnosticSummary}</p>
         </section>
-
-        <div className="model-layout">
-          <ModelProfileEditor
-            canFetchCatalog={draftController.canFetchCatalog}
-            canUseDraft={draftController.canUseDraft}
-            catalogStatus={draftController.catalogStatus}
-            draft={draftController.draft}
-            modelOptions={draftController.modelOptions}
-            modelStatusText={modelProfileStatus}
-            onDraftChange={draftController.setDraft}
-            onFetchDraftCatalog={draftController.handleFetchDraftCatalog}
-            onPresetChange={draftController.handlePresetChange}
-            onResetCatalog={draftController.resetCatalog}
-            onSaveProfile={draftController.handleSaveProfile}
-            onTestDraft={draftController.handleTestDraft}
-            selectedPresetId={draftController.selectedPresetId}
-          />
-
-          <section className="settings-section model-column">
-            <SavedModelProfiles
-              activeProfileId={settings.modelProfileId}
-              modelProfiles={modelProfiles}
-              onDeleteModelProfile={onDeleteModelProfile}
-              onEditProfile={draftController.loadProfileIntoDraft}
-              onTestProfile={(profile) => void onTestModelProfile({ profileId: profile.id })}
-              onUseProfile={handleUseProfile}
-            />
-            <GenerationSettings onUpdateSettings={onUpdateSettings} settings={settings} />
-          </section>
-        </div>
       </section>
     </>
   )

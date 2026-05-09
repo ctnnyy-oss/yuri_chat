@@ -1,4 +1,5 @@
 import { ArchiveRestore, CheckCircle2, FileText, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import type { CharacterCard, LongTermMemory } from '../../../domain/types'
 import {
   memoryKindLabels,
@@ -25,6 +26,8 @@ export function MemoryCandidateReview({
   onOpen: (memory: LongTermMemory) => void
   onTrash: (memory: LongTermMemory) => void
 }) {
+  const [showAll, setShowAll] = useState(false)
+
   if (candidates.length === 0) {
     return (
       <section className="candidate-review empty-review" aria-label="候选记忆审核中心">
@@ -39,6 +42,9 @@ export function MemoryCandidateReview({
     )
   }
 
+  const visibleCandidates = showAll ? candidates : candidates.slice(0, 3)
+  const hiddenCount = Math.max(0, candidates.length - visibleCandidates.length)
+
   return (
     <section className="candidate-review" aria-label="候选记忆审核中心">
       <div className="candidate-review-head">
@@ -49,7 +55,7 @@ export function MemoryCandidateReview({
         <ShieldCheck size={18} />
       </div>
       <div className="candidate-list">
-        {candidates.map((memory) => (
+        {visibleCandidates.map((memory) => (
           <article className="candidate-card" key={memory.id}>
             <div className="candidate-card-head">
               <strong>{memory.title}</strong>
@@ -74,6 +80,11 @@ export function MemoryCandidateReview({
             </div>
           </article>
         ))}
+        {hiddenCount > 0 && (
+          <button className="memory-expand-action" type="button" onClick={() => setShowAll(true)}>
+            展开剩余 {hiddenCount} 条候选记忆
+          </button>
+        )}
       </div>
     </section>
   )

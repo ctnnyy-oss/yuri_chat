@@ -43,7 +43,7 @@ export function ModelProfileEditor({
     <section className="settings-section model-column">
       <div className="settings-section-title">
         <KeyRound size={18} />
-        <span>新增或编辑模型</span>
+        <span>接入或更换模型</span>
       </div>
 
       <label>
@@ -58,28 +58,15 @@ export function ModelProfileEditor({
         <small>{modelProviderPresets.find((preset) => preset.id === selectedPresetId)?.description}</small>
       </label>
 
-      <div className="model-form-grid">
-        <label>
-          <span>接口格式</span>
-          <select
-            value={draft.kind}
-            onChange={(event) => updateDraft({ kind: event.target.value as ModelProviderKind }, { resetCatalog: true })}
-          >
-            <option value="openai-compatible">OpenAI 兼容</option>
-            <option value="anthropic">Anthropic</option>
-            <option value="google-gemini">Gemini</option>
-          </select>
-        </label>
-        <label>
-          <span>Base URL</span>
-          <input
-            autoComplete="off"
-            placeholder="https://example.com/v1"
-            value={draft.baseUrl}
-            onChange={(event) => updateDraft({ baseUrl: event.target.value }, { resetCatalog: true })}
-          />
-        </label>
-      </div>
+      <label>
+        <span>Base URL</span>
+        <input
+          autoComplete="off"
+          placeholder="https://example.com/v1"
+          value={draft.baseUrl}
+          onChange={(event) => updateDraft({ baseUrl: event.target.value }, { resetCatalog: true })}
+        />
+      </label>
 
       <label>
         <span>API Key</span>
@@ -90,6 +77,18 @@ export function ModelProfileEditor({
           type="password"
           value={draft.apiKey ?? ''}
         />
+      </label>
+
+      <label>
+        <span>接口格式</span>
+        <select
+          value={draft.kind}
+          onChange={(event) => updateDraft({ kind: event.target.value as ModelProviderKind }, { resetCatalog: true })}
+        >
+          <option value="openai-compatible">OpenAI 兼容</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="google-gemini">Gemini</option>
+        </select>
       </label>
 
       <div className="model-picker-row">

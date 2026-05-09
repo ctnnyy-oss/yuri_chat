@@ -20,18 +20,19 @@ export function ModelCurrentStrip({
   return (
     <section className="model-current-strip" aria-label="当前模型状态">
       <div>
-        <small>当前模型</small>
+        <small>当前启用</small>
         <strong>{activeProfile ? activeProfile.model : '尚未选择模型'}</strong>
-        <span>{activeProfile ? `${providerKindLabels[activeProfile.kind]} / ${activeProfile.baseUrl}` : modelBackendHint}</span>
+        <span>{activeProfile ? `${activeProfile.name} / ${providerKindLabels[activeProfile.kind]}` : modelBackendHint}</span>
+        {activeProfile && <span>{activeProfile.baseUrl}</span>}
       </div>
       <div className="model-current-actions">
         <button disabled={!activeProfile || !activeProfile.hasApiKey || modelProfileBusy} onClick={onFetchCatalog} type="button">
           <Link2 size={15} />
-          拉列表
+          刷新列表
         </button>
         <button disabled={!activeProfile || !activeProfile.hasApiKey || modelProfileBusy} onClick={onTestProfile} type="button">
           <PlugZap size={15} />
-          测试
+          测试连接
         </button>
       </div>
     </section>

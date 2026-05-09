@@ -42,14 +42,26 @@ export function SavedModelProfiles({
         ) : (
           modelProfiles.map((profile) => (
             <article className={`model-profile-item ${profile.id === activeProfileId ? 'active' : ''}`} key={profile.id}>
-              <div>
+              <div className="model-profile-main">
                 <strong>{profile.model}</strong>
-                <span>
-                  {providerKindLabels[profile.kind]} / {profile.name}
-                </span>
-                <small>
-                  {profile.baseUrl} / {profile.hasApiKey ? '已保存密钥' : '没有密钥'}
-                </small>
+                <dl className="model-profile-meta">
+                  <div>
+                    <dt>平台</dt>
+                    <dd>{profile.name}</dd>
+                  </div>
+                  <div>
+                    <dt>接口</dt>
+                    <dd>{providerKindLabels[profile.kind]}</dd>
+                  </div>
+                  <div>
+                    <dt>地址</dt>
+                    <dd>{profile.baseUrl}</dd>
+                  </div>
+                  <div>
+                    <dt>密钥</dt>
+                    <dd>{profile.hasApiKey ? '已保存' : '未填写'}</dd>
+                  </div>
+                </dl>
               </div>
               <div className="backup-actions">
                 <button onClick={() => onUseProfile(profile)} type="button">
