@@ -19,7 +19,7 @@
   gap: var(--space-md);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-lg);
-  background: var(--panel);
+  background: var(--feature-card, var(--panel));
   box-shadow: var(--shadow-sm);
   padding: 14px 16px;
 }
@@ -71,7 +71,7 @@
   gap: 6px;
   border: 1px solid var(--line-soft);
   border-radius: 12px;
-  background: var(--pink-50);
+  background: var(--feature-field, var(--pink-50));
   color: var(--ink);
   font: inherit;
   font-size: 12px;
@@ -85,7 +85,7 @@
 .model-picker-row button:hover:not(:disabled),
 .model-inline-link:hover {
   border-color: var(--line);
-  background: var(--pink-100);
+  background: var(--middle-hover, var(--pink-100));
 }
 
 .model-current-actions button:disabled,
@@ -111,7 +111,7 @@
   min-width: 0;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: var(--pink-50);
+  background: var(--feature-field, var(--pink-50));
   padding: 12px 14px;
 }
 
@@ -197,7 +197,7 @@
   font: inherit;
   font-size: 14px;
   color: var(--ink);
-  background: var(--panel);
+  background: var(--feature-field, var(--panel));
   min-height: 42px;
   transition: all var(--duration-fast) var(--ease-smooth);
   box-shadow: var(--shadow-xs);
@@ -211,7 +211,7 @@
 .settings-stack select:focus {
   border-color: var(--pink-400);
   box-shadow: 0 0 0 3px var(--rose-glow), var(--shadow-sm);
-  background: #fff;
+  background: var(--panel);
 }
 
 /* ── Section 卡片 ── */
@@ -223,7 +223,7 @@
   min-width: 0;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-xl);
-  background: var(--panel);
+  background: var(--feature-card, var(--panel));
   box-shadow: var(--shadow-sm);
   padding: 22px;
 }
@@ -286,7 +286,11 @@
 
 .model-hero-section {
   background:
-    linear-gradient(135deg, var(--pink-50), var(--panel));
+    linear-gradient(
+      135deg,
+      var(--feature-card, var(--pink-50)),
+      color-mix(in srgb, var(--rose) 5%, var(--panel))
+    );
 }
 
 /* ── 状态网格 (3 列) ── */
@@ -299,7 +303,7 @@
   overflow: hidden;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: var(--pink-50);
+  background: var(--feature-field, var(--pink-50));
 }
 
 .model-status-grid span,
@@ -338,7 +342,7 @@
   gap: var(--space-sm);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: var(--pink-50);
+  background: var(--feature-field, var(--pink-50));
   padding: var(--space-md);
 }
 
@@ -353,7 +357,7 @@
   display: block;
   border: 1px solid rgba(255, 158, 196, 0.32);
   border-radius: var(--radius-md);
-  background: var(--pink-100);
+  background: var(--middle-active, var(--pink-100));
   color: var(--pink-700);
   font-size: 12.5px;
   font-weight: 600;
@@ -385,7 +389,7 @@
   box-sizing: border-box;
   border: 1px solid var(--line-soft);
   border-radius: 14px;
-  background: var(--pink-50);
+  background: var(--feature-field, var(--pink-50));
   padding: 4px;
 }
 
@@ -449,7 +453,7 @@
   overflow: hidden;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: var(--pink-50);
+  background: var(--feature-field, var(--pink-50));
 }
 
 .model-profile-item,
@@ -475,11 +479,11 @@
 }
 
 .model-profile-item:hover {
-  background: var(--pink-100);
+  background: var(--middle-hover, var(--pink-100));
 }
 
 .model-profile-item.active {
-  background: linear-gradient(135deg, var(--pink-100), var(--pink-50));
+  background: linear-gradient(135deg, var(--middle-active, var(--pink-100)), var(--feature-field, var(--pink-50)));
   box-shadow: inset 4px 0 0 var(--pink-400);
 }
 
@@ -550,7 +554,7 @@
   gap: var(--space-xl);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: var(--pink-50);
+  background: var(--feature-field, var(--pink-50));
   padding: 12px 16px;
 }
 
@@ -670,7 +674,7 @@
   gap: 10px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: var(--panel);
+  background: var(--feature-field, var(--panel));
   color: var(--ink);
   padding: 10px 14px;
   cursor: pointer;
@@ -698,14 +702,14 @@
 
 .swatch-button:hover {
   border-color: var(--line);
-  background: var(--pink-50);
+  background: var(--middle-hover, var(--pink-50));
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
 
 .swatch-button.active {
   border-color: var(--pink-400);
-  background: var(--pink-100);
+  background: var(--middle-active, var(--pink-100));
   box-shadow: inset 3px 0 0 var(--pink-500), var(--shadow-xs);
 }
 
@@ -725,7 +729,7 @@
   gap: var(--space-lg);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: var(--pink-50);
+  background: var(--feature-field, var(--pink-50));
   padding: 12px 16px;
 }
 
@@ -781,11 +785,11 @@
 }
 
 .retention-button:hover {
-  background: var(--pink-100);
+  background: var(--middle-hover, var(--pink-100));
 }
 
 .retention-button.active {
-  background: linear-gradient(135deg, var(--pink-100), var(--pink-50));
+  background: linear-gradient(135deg, var(--middle-active, var(--pink-100)), var(--feature-field, var(--pink-50)));
   box-shadow: inset 4px 0 0 var(--pink-400);
 }
 
@@ -818,7 +822,7 @@
 }
 
 .settings-actions button:hover:not(:disabled) {
-  background: var(--pink-50);
+  background: var(--middle-hover, var(--pink-50));
   border-color: var(--line);
   transform: translateY(-1px);
 }
@@ -855,7 +859,7 @@
   min-height: 38px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-full);
-  background: var(--panel);
+  background: var(--feature-field, var(--panel));
   color: var(--ink-secondary);
   cursor: pointer;
   font: inherit;
@@ -869,7 +873,7 @@
 }
 
 .file-button:hover {
-  background: var(--pink-50);
+  background: var(--middle-hover, var(--pink-50));
   border-color: var(--line);
   transform: translateY(-1px);
 }
@@ -887,7 +891,7 @@
 }
 
 .danger-button:hover {
-  background: var(--pink-100);
+  background: var(--middle-active, var(--pink-100));
   border-color: rgba(255, 124, 174, 0.45);
   color: var(--pink-700);
 }
@@ -950,7 +954,7 @@
 }
 
 .backup-item:hover {
-  background: var(--pink-100);
+  background: var(--middle-hover, var(--pink-100));
 }
 
 .backup-item strong,
@@ -987,7 +991,7 @@
 .backup-actions button {
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-full);
-  background: var(--panel);
+  background: var(--feature-field, var(--panel));
   color: var(--ink-secondary);
   cursor: pointer;
   font: inherit;
@@ -1000,7 +1004,7 @@
 }
 
 .backup-actions button:hover {
-  background: var(--pink-50);
+  background: var(--middle-hover, var(--pink-50));
   border-color: var(--line);
   transform: translateY(-1px);
 }

@@ -651,7 +651,7 @@
   .mobile-message-thread-list {
     min-height: 0;
     overflow-y: auto;
-    background: #fff;
+    background: var(--feature-card, var(--panel));
   }
 
   .mobile-message-thread {
@@ -811,7 +811,7 @@
     width: 100%;
     margin: 0;
     border-radius: 22px 22px 0 0;
-    background: #fff;
+    background: var(--feature-card, var(--panel));
     box-shadow: 0 -18px 44px rgba(74, 46, 58, 0.18);
     padding: 16px 16px calc(88px + env(safe-area-inset-bottom));
   }
@@ -952,7 +952,7 @@
   .mobile-message-list {
     grid-template-rows: auto auto auto minmax(0, 1fr);
     padding: 0 0 calc(78px + env(safe-area-inset-bottom));
-    background: #eef3ff;
+    background: color-mix(in srgb, var(--rose) 14%, var(--panel-soft));
   }
 
   .mobile-message-header {
@@ -990,7 +990,7 @@
     height: 54px;
     margin: 0 20px 24px;
     border-radius: 18px;
-    background: #fff;
+    background: var(--feature-field, var(--panel));
   }
 
   .mobile-message-search input {
@@ -999,7 +999,7 @@
   }
 
   .mobile-message-thread-list {
-    background: #fff;
+    background: var(--feature-card, var(--panel));
   }
 
   .mobile-device-row {
@@ -1010,7 +1010,7 @@
     align-items: center;
     gap: 20px;
     padding: 0 26px;
-    background: #eef3ff;
+    background: color-mix(in srgb, var(--rose) 14%, var(--panel-soft));
     color: #9097a4;
     font-size: 22px;
     text-align: left;
@@ -1023,7 +1023,7 @@
   }
 
   .mobile-message-thread.active {
-    background: #fff;
+    background: var(--panel);
   }
 
   .mobile-thread-avatar {
@@ -1034,7 +1034,7 @@
   }
 
   .system-avatar {
-    background: #159af2;
+    background: var(--grad-bubble);
     color: #fff;
   }
 
@@ -1071,11 +1071,11 @@
   }
 
   .mobile-nav-item.active {
-    color: #159af2;
+    color: var(--pink-500);
   }
 
   .mobile-nav-item.active svg {
-    color: #159af2;
+    color: var(--pink-500);
   }
 
   .chat-workspace {
@@ -1142,7 +1142,7 @@
   }
 
   .message-user {
-    background: #159af2;
+    background: var(--grad-bubble);
     color: #fff;
   }
 
@@ -1151,7 +1151,7 @@
   }
 
   .message-user::before {
-    border-left-color: #159af2;
+    border-left-color: var(--pink-400);
   }
 
   .sticker-message {
@@ -1165,7 +1165,7 @@
     min-height: 156px;
     padding: 10px 20px calc(12px + env(safe-area-inset-bottom));
     gap: 10px;
-    background: #fff;
+    background: var(--feature-card, var(--panel));
   }
 
   .composer.with-tool-panel {
@@ -1181,7 +1181,7 @@
     min-height: 48px;
     border-radius: 19px;
     padding: 10px 14px;
-    background: #fff;
+    background: var(--feature-field, var(--panel));
     box-shadow: inset 0 0 0 1px rgba(20, 20, 20, 0.04);
     font-size: 18px;
   }
@@ -1190,13 +1190,13 @@
     width: 84px;
     height: 54px;
     border-radius: 17px;
-    background: #7fc5f5;
+    background: var(--feature-field, color-mix(in srgb, var(--rose) 10%, var(--panel-soft)));
     color: rgba(255, 255, 255, 0.74);
     font-size: 20px;
   }
 
   .composer-send:not(:disabled) {
-    background: #159af2;
+    background: var(--grad-bubble);
     color: #fff;
   }
 
@@ -1313,7 +1313,7 @@
     align-items: center;
     gap: 16px;
     padding: 0 24px 20px;
-    background: #eef3ff;
+    background: color-mix(in srgb, var(--rose) 14%, var(--panel-soft));
   }
 
   .mobile-feature-header.centered {
@@ -1351,7 +1351,7 @@
     gap: 10px;
     margin: 0 20px 22px;
     border-radius: 21px;
-    background: #fff;
+    background: var(--feature-field, var(--panel));
     color: #9ba0aa;
   }
 
@@ -1373,7 +1373,7 @@
   .settings-account,
   .mobile-settings-list section > div,
   .settings-single {
-    background: #fff;
+    background: var(--feature-card, var(--panel));
   }
 
   .possible-friends {
@@ -1460,7 +1460,7 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     min-height: 70px;
-    background: #fff;
+    background: var(--feature-card, var(--panel));
     border-top: 10px solid #f0f0f2;
     border-bottom: 1px solid #e7e7ec;
   }
@@ -1479,11 +1479,11 @@
     bottom: 0;
     height: 5px;
     border-radius: 999px;
-    background: #159af2;
+    background: var(--pink-500);
   }
 
   .mobile-contact-list {
-    background: #fff;
+    background: var(--feature-card, var(--panel));
   }
 
   .mobile-contact-group {
@@ -1567,7 +1567,7 @@
     margin: 10px 16px 0;
     padding: 12px;
     border-radius: 14px;
-    background: #fff;
+    background: var(--feature-card, var(--panel));
   }
 
   .role-mobile-form label {
@@ -1583,7 +1583,7 @@
   .role-mobile-form textarea {
     width: 100%;
     border: 0;
-    background: #f7f7fa;
+    background: var(--feature-field, var(--panel-soft));
     color: #1d1d1f;
     font: inherit;
   }
@@ -1602,7 +1602,7 @@
   }
 
   .mobile-channel-list {
-    background: #fff;
+    background: var(--feature-card, var(--panel));
   }
 
   .mobile-channel-list button {
@@ -1620,7 +1620,7 @@
     width: 72px;
     height: 72px;
     flex-basis: 72px;
-    background: #159af2;
+    background: var(--grad-bubble);
     color: #fff;
   }
 
@@ -1831,7 +1831,7 @@
 
   .mobile-message-list {
     padding-bottom: calc(64px + env(safe-area-inset-bottom));
-    background: #eef3ff;
+    background: color-mix(in srgb, var(--rose) 14%, var(--panel-soft));
   }
 
   .mobile-message-header {
@@ -2262,7 +2262,7 @@
   .channel-avatar::before {
     background:
       radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.58), transparent 28%),
-      linear-gradient(135deg, #1f9df0, #1688e8);
+      var(--grad-bubble);
   }
 
   .mobile-device-row {
@@ -2282,7 +2282,7 @@
 /* Theme unification: mobile follows the desktop pink skin instead of the default blue QQ skin. */
 @media (max-width: 760px) {
   .mobile-message-list {
-    background: #fff0f7;
+    background: color-mix(in srgb, var(--rose) 12%, var(--panel-soft));
   }
 
   .mobile-message-thread-list,
@@ -2293,7 +2293,7 @@
 
   .mobile-message-search,
   .mobile-feature-search {
-    background: rgba(255, 255, 255, 0.82);
+    background: var(--feature-field, rgba(255, 255, 255, 0.82));
   }
 
   .mobile-nav-item.active,
@@ -2301,23 +2301,23 @@
   .composer-tool.active,
   .emoji-tabs b,
   .mobile-contact-tabs button.active {
-    color: #ec78b2;
+    color: var(--pink-500);
   }
 
   .composer-tool.active {
-    background: rgba(236, 120, 178, 0.12);
+    background: var(--rose-ghost);
   }
 
   .mobile-message-thread.active,
   .mobile-contact-tabs button.active {
-    background: #fff;
+    background: var(--panel);
   }
 
   .system-avatar::before,
   .channel-avatar::before {
     background:
       radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.58), transparent 28%),
-      linear-gradient(135deg, #f08fc0, #e96fae);
+      var(--grad-bubble);
   }
 
   .system-avatar,
@@ -2327,29 +2327,29 @@
 
   .message-user,
   .composer-send:not(:disabled) {
-    background: #ec83bb;
+    background: var(--grad-bubble);
   }
 
   .message-user::before {
-    border-left-color: #ec83bb;
+    border-left-color: var(--pink-400);
   }
 
   .composer-send {
-    background: #eadfe6;
+    background: var(--feature-field, color-mix(in srgb, var(--rose) 10%, var(--panel-soft)));
   }
 
   .chat-tool-panel {
-    background: #f7f7f8;
+    background: var(--panel-soft);
   }
 
   .chat-workspace,
   .chat-workspace > .mobile-status-bar,
   .chat-topbar {
-    background: #f3f3f5;
+    background: color-mix(in srgb, var(--rose) 8%, var(--panel-soft));
   }
 
   .mobile-feature-page {
-    background: #f6f7fb;
+    background: var(--canvas);
   }
 }
 
@@ -2446,7 +2446,7 @@
     display: grid;
     grid-template-rows: auto auto auto minmax(0, 1fr) auto;
     border-radius: 22px 22px 0 0;
-    background: #fff;
+    background: var(--panel);
     box-shadow: 0 -18px 44px rgba(74, 46, 58, 0.18);
     overflow: hidden;
   }
@@ -2497,8 +2497,8 @@
     gap: 10px;
     margin: 14px 18px 10px;
     border-radius: 14px;
-    background: #f7f7fa;
-    color: #8f939b;
+    background: var(--feature-field, var(--panel-soft));
+    color: var(--muted);
     padding: 0 14px;
   }
 
@@ -2510,13 +2510,13 @@
     border: 0;
     outline: 0;
     background: transparent;
-    color: #1d1d1f;
+    color: var(--ink);
     font: inherit;
   }
 
   .mobile-group-search {
     margin-bottom: 8px;
-    background: #f7f7fa;
+    background: var(--feature-field, var(--panel-soft));
   }
 
   .mobile-group-member-list {
@@ -2537,7 +2537,7 @@
   }
 
   .mobile-group-member-list button.selected {
-    background: #fff3f8;
+    background: var(--middle-active, var(--pink-50));
   }
 
   .mobile-group-member-list .avatar {
@@ -2550,7 +2550,7 @@
   .mobile-group-member-list strong,
   .mobile-role-hero strong {
     display: block;
-    color: #191a1e;
+    color: var(--ink);
     font-size: 18px;
     font-weight: 700;
   }
@@ -2559,7 +2559,7 @@
   .mobile-role-hero small {
     display: block;
     margin-top: 4px;
-    color: #8f939b;
+    color: var(--muted);
     font-size: 13px;
   }
 
@@ -2570,7 +2570,7 @@
     place-items: center;
     border: 1px solid #d9d9df;
     border-radius: 50%;
-    color: #ec78b2;
+    color: var(--pink-500);
   }
 
   .mobile-group-sheet footer {
@@ -2578,7 +2578,7 @@
     display: flex;
     align-items: center;
     padding: 0 22px max(8px, env(safe-area-inset-bottom));
-    color: #8f939b;
+    color: var(--muted);
     font-size: 13px;
   }
 
@@ -2614,7 +2614,7 @@
   .mobile-role-fields label {
     display: grid;
     gap: 7px;
-    color: #7f838c;
+    color: var(--muted);
     font-size: 13px;
     font-weight: 700;
   }
@@ -2623,7 +2623,7 @@
   .mobile-role-fields textarea {
     min-height: 44px;
     border-radius: 13px;
-    background: #f7f7fa;
+    background: var(--feature-field, var(--panel-soft));
     padding: 0 12px;
     font-weight: 500;
   }
@@ -2670,12 +2670,12 @@
   }
 
   .primary-mobile-role-action {
-    background: #ec83bb;
+    background: var(--grad-bubble);
     color: #fff;
   }
 
   .danger-mobile-role-action {
-    background: #fff0f5;
+    background: var(--middle-active, var(--pink-50));
     color: #c73d5a;
   }
 }
@@ -2742,12 +2742,12 @@
     display: grid;
     justify-items: center;
     gap: 12px;
-    border: 1px solid rgba(236, 131, 187, 0.22);
+    border: 1px solid var(--line-soft);
     border-radius: 22px;
-    background: #fffafd;
+    background: var(--feature-card, var(--panel));
     padding: 22px 20px 16px;
     box-shadow: 0 22px 54px rgba(117, 43, 78, 0.24);
-    color: #201720;
+    color: var(--ink);
     text-align: center;
   }
 
@@ -2757,12 +2757,12 @@
     display: grid;
     place-items: center;
     border-radius: 50%;
-    background: #fff0f7;
-    color: #ec78b2;
+    background: var(--rose-ghost);
+    color: var(--pink-500);
   }
 
   .app-confirm-dialog.danger .app-confirm-icon {
-    background: #fff0f3;
+    background: var(--middle-active, var(--pink-50));
     color: #d84d74;
   }
 
@@ -2773,7 +2773,7 @@
 
   .app-confirm-dialog p {
     margin: 0;
-    color: #7a6874;
+    color: var(--muted);
     font-size: 15px;
     line-height: 1.55;
   }
@@ -2793,12 +2793,12 @@
   }
 
   .app-confirm-cancel {
-    background: #f6eef3;
-    color: #7b6b75;
+    background: var(--feature-field, var(--panel-soft));
+    color: var(--muted);
   }
 
   .app-confirm-submit {
-    background: #ec83bb;
+    background: var(--grad-bubble);
     color: #fff;
   }
 
@@ -2829,12 +2829,14 @@
 
   .detail-workspace {
     padding: 14px 14px calc(104px + env(safe-area-inset-bottom));
-    background:
+    background: var(
+      --feature-bg,
       linear-gradient(
         180deg,
         color-mix(in srgb, var(--rose) 14%, var(--panel-soft)),
         color-mix(in srgb, var(--rose) 5%, var(--panel))
-      );
+      )
+    );
   }
 
   .detail-workspace > .workspace-title,
@@ -2869,12 +2871,14 @@
   .qq-feature-workspace,
   .mobile-feature-page,
   .mobile-message-list {
-    background:
+    background: var(
+      --feature-bg,
       linear-gradient(
         180deg,
         color-mix(in srgb, var(--rose) 15%, var(--panel-soft)),
         color-mix(in srgb, var(--rose) 5%, var(--panel))
-      );
+      )
+    );
   }
 
   .mobile-feature-header,
@@ -2882,7 +2886,7 @@
   .mobile-message-thread-list,
   .mobile-nav,
   .composer {
-    background: color-mix(in srgb, var(--rose) 5%, var(--panel));
+    background: var(--feature-card, color-mix(in srgb, var(--rose) 5%, var(--panel)));
   }
 
   .mobile-nav {
@@ -2891,13 +2895,13 @@
 
   .mobile-message-search,
   .mobile-feature-search {
-    background: color-mix(in srgb, var(--rose) 6%, var(--panel));
+    background: var(--feature-field, color-mix(in srgb, var(--rose) 6%, var(--panel)));
   }
 
   .chat-workspace,
   .chat-workspace > .mobile-status-bar,
   .chat-topbar {
-    background: color-mix(in srgb, var(--rose) 8%, var(--panel-soft));
+    background: var(--feature-bg, color-mix(in srgb, var(--rose) 8%, var(--panel-soft)));
   }
 
   .model-picker-row {
@@ -2953,7 +2957,7 @@
     justify-items: center;
     gap: 12px;
     border-radius: 18px;
-    background: #fffafd;
+    background: var(--feature-card, var(--panel));
     padding: 22px 20px 16px;
     box-shadow: 0 22px 54px rgba(117, 43, 78, 0.2);
     text-align: center;
@@ -2965,13 +2969,13 @@
     display: grid;
     place-items: center;
     border-radius: 50%;
-    background: #fff0f7;
-    color: #ec78b2;
+    background: var(--rose-ghost);
+    color: var(--pink-500);
   }
 
   .app-confirm-dialog p {
     margin: 0;
-    color: #7a6874;
+    color: var(--muted);
     line-height: 1.55;
   }
 
@@ -2990,12 +2994,12 @@
   }
 
   .app-confirm-cancel {
-    background: #f6eef3;
-    color: #7b6b75;
+    background: var(--feature-field, var(--panel-soft));
+    color: var(--muted);
   }
 
   .app-confirm-submit {
-    background: #ec83bb;
+    background: var(--grad-bubble);
     color: #fff;
   }
 }

@@ -159,10 +159,14 @@ export function useYuriNestApp({ accountId, authToken, canManageCloudBackups }: 
   }, [accountId, isReady, state])
 
   useEffect(() => {
+    const resolvedAccentTheme =
+      state.settings.accentTheme === 'white' || state.settings.accentTheme === 'custom'
+        ? state.settings.accentTheme
+        : 'sakura'
     const themeTokens =
-      state.settings.accentTheme === 'custom'
+      resolvedAccentTheme === 'custom'
         ? buildCustomThemeVariables(state.settings.customAccentColor)
-        : themeVariables[state.settings.accentTheme] ?? themeVariables.sakura
+        : themeVariables[resolvedAccentTheme] ?? themeVariables.sakura
     if (typeof document === 'undefined' || !themeTokens) return
     const root = document.documentElement
     const previous: Record<string, string> = {}
@@ -172,7 +176,7 @@ export function useYuriNestApp({ accountId, authToken, canManageCloudBackups }: 
         root.style.setProperty(key, value)
       }
     }
-    root.dataset.theme = state.settings.accentTheme
+    root.dataset.theme = resolvedAccentTheme
     return () => {
       for (const [key, value] of Object.entries(previous)) {
         if (value) {

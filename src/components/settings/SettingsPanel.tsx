@@ -78,6 +78,8 @@ export function SettingsPanel({
   const visibleLocalBackups = localBackups.slice(0, 3)
   const hiddenCloudBackupCount = Math.max(0, cloudBackups.length - visibleCloudBackups.length)
   const hiddenLocalBackupCount = Math.max(0, localBackups.length - visibleLocalBackups.length)
+  const selectedAccentTheme =
+    settings.accentTheme === 'white' || settings.accentTheme === 'custom' ? settings.accentTheme : 'sakura'
 
   return (
     <>
@@ -135,7 +137,7 @@ export function SettingsPanel({
             {accentThemes.map((theme) => (
               <button
                 aria-label={`切换到${theme.label}`}
-                className={`swatch-button ${settings.accentTheme === theme.id ? 'active' : ''}`}
+                className={`swatch-button ${selectedAccentTheme === theme.id ? 'active' : ''}`}
                 key={theme.id}
                 onClick={() => onUpdateSettings({ ...settings, accentTheme: theme.id })}
                 type="button"
@@ -146,7 +148,7 @@ export function SettingsPanel({
             ))}
             <label
               aria-label="自定义主题色"
-              className={`swatch-button swatch-button-custom ${settings.accentTheme === 'custom' ? 'active' : ''}`}
+              className={`swatch-button swatch-button-custom ${selectedAccentTheme === 'custom' ? 'active' : ''}`}
               onClick={() => onUpdateSettings({ ...settings, accentTheme: 'custom' })}
             >
               <span className="swatch-dot" style={{ background: settings.customAccentColor || '#ffabcc' }} />

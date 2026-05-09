@@ -736,11 +736,11 @@
 
 .message-user {
   border-top-right-radius: 4px;
-  background: #ec83bb;
+  background: var(--grad-bubble);
 }
 
 .message-user::before {
-  border-left-color: #ec83bb;
+  border-left-color: var(--pink-400);
 }
 
 .sticker-message {
@@ -781,8 +781,8 @@
 }
 
 .composer-tool.active {
-  color: #159af2;
-  background: rgba(21, 154, 242, 0.08);
+  color: var(--pink-500);
+  background: var(--rose-ghost);
 }
 
 .chat-tool-panel {
@@ -1085,12 +1085,14 @@
 .qq-feature-workspace {
   min-width: 0;
   min-height: 0;
-  background:
+  background: var(
+    --feature-bg,
     linear-gradient(
       90deg,
       color-mix(in srgb, var(--rose) 22%, var(--panel-soft)),
       color-mix(in srgb, var(--rose) 6%, var(--panel))
-    );
+    )
+  );
 }
 
 .qq-desktop-feature {
@@ -1098,12 +1100,14 @@
   grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
   height: 100%;
-  background:
+  background: var(
+    --feature-bg,
     linear-gradient(
       90deg,
       color-mix(in srgb, var(--rose) 22%, var(--panel-soft)),
       color-mix(in srgb, var(--rose) 6%, var(--panel))
-    );
+    )
+  );
 }
 
 .qq-desktop-feature-head {
@@ -1133,12 +1137,14 @@
   display: grid;
   place-items: center;
   min-height: 100%;
-  background:
+  background: var(
+    --feature-bg,
     linear-gradient(
       90deg,
       color-mix(in srgb, var(--rose) 22%, var(--panel-soft)),
       color-mix(in srgb, var(--rose) 6%, var(--panel))
-    );
+    )
+  );
 }
 
 .qq-desktop-empty span {
@@ -1182,7 +1188,7 @@
   min-width: 118px;
   min-height: 38px;
   border-radius: 10px;
-  background: #ec83bb;
+  background: var(--grad-bubble);
   color: #fff;
   font-weight: 800;
 }
@@ -1383,7 +1389,7 @@
   min-height: 34px;
   padding: 0 12px;
   border-radius: 8px;
-  background: #ec83bb;
+  background: var(--grad-bubble);
   color: #fff;
   font-size: 13px;
   font-weight: 700;
@@ -1714,24 +1720,28 @@
     display: block;
     min-width: 0;
     min-height: 0;
-    background:
+    background: var(
+      --feature-bg,
       linear-gradient(
         90deg,
         color-mix(in srgb, var(--rose) 22%, var(--panel-soft)),
         color-mix(in srgb, var(--rose) 6%, var(--panel))
-      );
+      )
+    );
   }
 
   .qq-desktop-feature {
     display: grid;
     width: 100%;
     height: 100%;
-    background:
+    background: var(
+      --feature-bg,
       linear-gradient(
         90deg,
         color-mix(in srgb, var(--rose) 22%, var(--panel-soft)),
         color-mix(in srgb, var(--rose) 6%, var(--panel))
-      );
+      )
+    );
   }
 
   .qq-desktop-empty {
@@ -1808,12 +1818,12 @@
     line-height: 1.58;
   }
 
-  .message-user {
-    background: #ec83bb;
+.message-user {
+    background: var(--grad-bubble);
   }
 
   .message-user::before {
-    border-left-color: #ec83bb;
+    border-left-color: var(--pink-400);
   }
 
   .sticker-message {

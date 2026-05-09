@@ -15,8 +15,8 @@
   align-items: center;
   gap: 7px;
   padding: 12px 8px 16px;
-  border-right: 1px solid rgba(122, 70, 94, 0.1);
-  background: #fde7f2;
+  border-right: 1px solid var(--hairline);
+  background: var(--rail-bg, color-mix(in srgb, var(--rose) 14%, var(--panel)));
 }
 
 .qq-brand-button {
@@ -25,7 +25,7 @@
   display: grid;
   place-items: center;
   border-radius: 0;
-  color: #ee78b0;
+  color: var(--pink-500);
   background: transparent;
   font-size: 15px;
   font-weight: 800;
@@ -52,16 +52,16 @@
   display: grid;
   place-items: center;
   border-radius: 12px;
-  color: #2c1b23;
+  color: var(--ink);
   cursor: pointer;
 }
 
 .nav-button:hover {
-  background: rgba(255, 255, 255, 0.42);
+  background: var(--middle-hover, rgba(255, 255, 255, 0.42));
 }
 
 .nav-button.active {
-  color: #ee78b0;
+  color: var(--pink-500);
   background: transparent;
   box-shadow: none;
 }
@@ -114,13 +114,13 @@
   border-radius: 12px;
   display: grid;
   place-items: center;
-  color: #2c1b23;
+  color: var(--ink);
   cursor: pointer;
 }
 
 .qq-dock-icons button:hover,
 .qq-dock-icons button.active {
-  background: rgba(255, 255, 255, 0.48);
+  background: var(--middle-hover, rgba(255, 255, 255, 0.48));
 }
 
 .qq-dock-icons button i {
@@ -142,7 +142,7 @@
   padding: 12px 12px 10px;
   border: 1px solid rgba(50, 30, 40, 0.08);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--feature-card, rgba(255, 255, 255, 0.96));
   box-shadow: 0 18px 48px rgba(74, 46, 58, 0.18);
 }
 
@@ -167,7 +167,7 @@
 
 .desktop-rail-menu-shortcuts button:hover,
 .desktop-rail-menu-row:hover {
-  background: #f7f2f5;
+  background: var(--middle-hover, color-mix(in srgb, var(--rose) 9%, var(--panel)));
 }
 
 .desktop-rail-menu-row {
@@ -200,7 +200,7 @@
   min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  background: rgba(247, 220, 233, 0.92);
+  background: var(--middle-bg, color-mix(in srgb, var(--rose) 18%, var(--panel)));
 }
 
 .conversation-search-row {
@@ -216,8 +216,8 @@
   border-radius: 13px;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.48);
-  color: rgba(88, 57, 70, 0.75);
+  background: var(--feature-field, rgba(255, 255, 255, 0.48));
+  color: var(--ink-secondary);
   cursor: pointer;
 }
 
@@ -229,8 +229,8 @@
   margin: 0;
   padding: 0 14px;
   border-radius: 13px;
-  background: rgba(255, 255, 255, 0.5);
-  color: rgba(88, 57, 70, 0.48);
+  background: var(--feature-field, rgba(255, 255, 255, 0.5));
+  color: var(--muted);
 }
 
 .conversation-search input {
@@ -272,11 +272,11 @@
 }
 
 .character-button:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--middle-hover, rgba(255, 255, 255, 0.35));
 }
 
 .character-button.active {
-  background: rgba(105, 77, 91, 0.12);
+  background: var(--middle-active, rgba(105, 77, 91, 0.12));
 }
 
 .character-button.ghost {
@@ -310,7 +310,7 @@
 
 .channel-avatar {
   position: relative;
-  background: #2196f3;
+  background: var(--grad-bubble);
   color: #fff;
 }
 
@@ -337,7 +337,7 @@
 
 .conversation-copy strong {
   overflow: hidden;
-  color: #271822;
+  color: var(--ink);
   font-size: 17px;
   font-weight: 600;
   line-height: 1.2;
@@ -347,7 +347,7 @@
 
 .conversation-copy small {
   overflow: hidden;
-  color: rgba(78, 58, 68, 0.62);
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.22;
   text-overflow: ellipsis;
@@ -360,7 +360,7 @@
   align-content: center;
   justify-items: end;
   gap: 10px;
-  color: rgba(78, 58, 68, 0.55);
+  color: var(--muted);
 }
 
 .conversation-meta time {
@@ -392,16 +392,16 @@
 
 .qq-role-actions button {
   min-height: 42px;
-  border: 1px solid rgba(86, 50, 68, 0.16);
+  border: 1px solid var(--line-soft);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.42);
-  color: #2b1b24;
+  background: var(--feature-field, rgba(255, 255, 255, 0.42));
+  color: var(--ink);
   font-size: 14px;
 }
 
 .qq-role-actions button:hover {
-  background: #fff;
-  color: #ee78b0;
+  background: var(--panel);
+  color: var(--pink-500);
 }
 
 .qq-contact-pane-simple .qq-contact-friends {
@@ -412,13 +412,13 @@
 .qq-contact-manager {
   min-height: 48px;
   margin: 0 24px 10px;
-  border: 1px solid rgba(86, 50, 68, 0.22);
+  border: 1px solid var(--line-soft);
   border-radius: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #2b1b24;
+  color: var(--ink);
   font-size: 16px;
 }
 
@@ -428,7 +428,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  color: #2b1b24;
+  color: var(--ink);
   font-size: 16px;
 }
 
@@ -439,19 +439,19 @@
   margin: 16px 24px;
   padding: 5px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--feature-field, rgba(255, 255, 255, 0.35));
 }
 
 .qq-contact-tabs button {
   min-height: 36px;
   border-radius: 7px;
-  color: rgba(88, 57, 70, 0.7);
+  color: var(--muted);
   font-size: 16px;
 }
 
 .qq-contact-tabs button.active {
-  background: #fff;
-  color: #ee78b0;
+  background: var(--panel);
+  color: var(--pink-500);
 }
 
 .qq-contact-groups {
@@ -467,13 +467,13 @@
   align-items: center;
   gap: 8px;
   padding: 0 22px;
-  color: #2b1b24;
+  color: var(--ink);
   font-size: 17px;
   text-align: left;
 }
 
 .qq-contact-group-title small {
-  color: rgba(88, 57, 70, 0.62);
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -490,13 +490,13 @@
 
 .qq-contact-friends button.active,
 .qq-contact-friends button:hover {
-  background: rgba(255, 255, 255, 0.38);
+  background: var(--middle-hover, rgba(255, 255, 255, 0.38));
 }
 
 .qq-contact-friends strong,
 .qq-app-pane strong {
   display: block;
-  color: #2b1b24;
+  color: var(--ink);
   font-size: 16px;
   font-weight: 600;
 }
@@ -506,7 +506,7 @@
   display: block;
   overflow: hidden;
   margin-top: 4px;
-  color: rgba(78, 58, 68, 0.62);
+  color: var(--muted);
   font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -526,13 +526,13 @@
   align-items: center;
   gap: 13px;
   padding: 10px 18px;
-  color: #2b1b24;
+  color: var(--ink);
   text-align: left;
 }
 
 .qq-app-pane button.active,
 .qq-app-pane button:hover {
-  background: rgba(255, 255, 255, 0.38);
+  background: var(--middle-hover, rgba(255, 255, 255, 0.38));
 }
 
 .qq-app-pane-icon {
@@ -541,8 +541,8 @@
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: #fff6fb;
-  color: #ee78b0;
+  background: var(--feature-field, color-mix(in srgb, var(--rose) 7%, var(--panel)));
+  color: var(--pink-500);
 }
 
 /* Third-pass desktop polish: lighter QQ-like density and flatter texture. */
@@ -550,7 +550,7 @@
   .qq-icon-rail {
     gap: 5px;
     padding: 10px 6px 14px;
-    background: #fde8f3;
+    background: var(--rail-bg, color-mix(in srgb, var(--rose) 14%, var(--panel)));
   }
 
   .qq-brand-button {
@@ -604,7 +604,7 @@
   }
 
   .conversation-pane {
-    background: rgba(247, 221, 234, 0.86);
+    background: var(--middle-bg, color-mix(in srgb, var(--rose) 18%, var(--panel)));
   }
 
   .conversation-search-row {
@@ -622,7 +622,7 @@
   .conversation-search {
     height: 38px;
     border-radius: 11px;
-    background: rgba(255, 255, 255, 0.54);
+    background: var(--feature-field, rgba(255, 255, 255, 0.54));
   }
 
   .character-button {
@@ -633,7 +633,7 @@
   }
 
   .character-button.active {
-    background: rgba(64, 48, 57, 0.1);
+    background: var(--middle-active, rgba(64, 48, 57, 0.1));
   }
 
   .avatar {
@@ -727,7 +727,7 @@
   .channel-avatar::before {
     background:
       radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.58), transparent 28%),
-      linear-gradient(135deg, #1f9df0, #1688e8);
+      var(--grad-bubble);
   }
 }
 
