@@ -18,8 +18,12 @@ export function shouldUseWeatherTool(text) {
 
 export function shouldUseSearchTool(text) {
   if (hasUrl(text)) return false
-  const explicitSearch = /搜索|搜一下|搜搜|查找|查询|帮我查|帮我搜|研究|网上|联网|资料|文档|官方|官网|教程|百科|新闻|热搜|最新|近况|榜单|价格|评测|推荐|谁是|是什么|有哪些|哪里买|怎么买/.test(text)
-  const plainLookup = /(^|[^检])(?:查一下|查查)/.test(text)
+  const searchText = text.replace(
+    /(?:不要|不用|无需|无须|不必|别|先别|禁止|别去|别再|不要再|先不用|无需再).{0,8}(?:联网|上网|搜索|搜一下|搜搜|查找|查询|查资料|查网页|查网络|查官网|查官方)/g,
+    '',
+  )
+  const explicitSearch = /搜索|搜一下|搜搜|查找|查询|帮我查|帮我搜|研究|网上|联网|资料|文档|官方|官网|教程|百科|新闻|热搜|最新|近况|榜单|价格|评测|推荐|谁是|是什么|有哪些|哪里买|怎么买/.test(searchText)
+  const plainLookup = /(^|[^检])(?:查一下|查查)/.test(searchText)
   return explicitSearch || plainLookup
 }
 

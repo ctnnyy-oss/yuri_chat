@@ -71,6 +71,11 @@ const cases = [
     decisionIntent: '创作协助',
   },
   {
+    name: 'negated web search does not trigger tools',
+    bundle: simpleBundle('路由复查：请继续用叶灯凛的语气回答，不要联网。妹妹说：姐姐帮我检查一下今晚这段百合开头会不会太AI味。你会怎么接住她？'),
+    excludes: ['current_time', 'web_search', 'web_research', 'evidence_audit'],
+  },
+  {
     name: 'memory context uses memory bridge',
     bundle: {
       ...simpleBundle('姐姐按记忆继续推进。'),
@@ -305,6 +310,10 @@ function runDetectorRegression() {
     {
       name: 'plain explicit 查一下 still uses search',
       run: () => shouldUseSearchTool('姐姐查一下 YOP 中转站最新模型有哪些'),
+    },
+    {
+      name: 'negated web search does not search',
+      run: () => !shouldUseSearchTool('请继续用叶灯凛的语气回答，不要联网。妹妹说：姐姐帮我检查一下今晚这段百合开头会不会太AI味。'),
     },
     {
       name: 'tonight in creative phrasing does not require clock',
