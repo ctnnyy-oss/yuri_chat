@@ -76,6 +76,9 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
     if (!isCloudSyncConfigured()) return '云端后端未配置'
     return '云端直连已启用'
   })
+  const [cloudBootstrapping, setCloudBootstrapping] = useState(() => {
+    return isCloudSyncConfigured() && Boolean((authToken || getSavedCloudToken()).trim())
+  })
   const [cloudMeta, setCloudMeta] = useState<CloudMetadata | null>(null)
   const [cloudBusy, setCloudBusy] = useState<CloudBusyTask | null>(null)
   const [cloudBackups, setCloudBackups] = useState<CloudBackupSummary[]>([])
@@ -143,14 +146,19 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
   }, [refreshCloudBackups, refreshModelProfileList])
 
   const bootstrapCloudState = useCallback(async (localState: AppState) => {
-    if (!isCloudSyncConfigured() || autoCloudReadyRef.current) return
+    if (!isCloudSyncConfigured() || autoCloudReadyRef.current) {
+      setCloudBootstrapping(false)
+      return
+    }
     if (localState.settings.dataStorageMode === 'local') {
       setCloudMeta(null)
       setCloudStatus('当前为仅本地模式，不会自动上传云端')
       setModelProfileStatus('本地数据模式下，模型配置仍可保存到当前模型后端')
+      setCloudBootstrapping(false)
       return
     }
 
+    setCloudBootstrapping(true)
     setCloudStatus('正在自动连接云端...')
     setModelProfileStatus('正在读取模型配置...')
     try {
@@ -194,6 +202,8 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
       autoCloudReadyRef.current = false
       setCloudStatus(error instanceof Error ? error.message : '自动连接云端失败')
       setModelProfileStatus('模型配置暂时没连上')
+    } finally {
+      setCloudBootstrapping(false)
     }
   }, [cloudToken, refreshCloudBackups, refreshModelProfileList, setModelProfileStatus, setState, setNotice])
 
@@ -453,6 +463,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
     cloudToken,
     cloudStatus,
     setCloudStatus,
+    cloudBootstrapping,
     cloudMeta,
     setCloudMeta,
     cloudBusy,

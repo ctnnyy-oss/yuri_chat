@@ -24,6 +24,46 @@
   text-shadow: 0 1px 2px rgba(214, 63, 125, 0.22);
 }
 
+.cloud-bootstrap-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(255, 248, 252, 0.76);
+  backdrop-filter: blur(12px);
+}
+
+.cloud-bootstrap-panel {
+  width: min(360px, calc(100vw - 48px));
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  border: 1px solid rgba(233, 111, 174, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--ink);
+  padding: 22px 20px;
+  text-align: center;
+  box-shadow: 0 18px 48px rgba(126, 76, 104, 0.18);
+}
+
+.cloud-bootstrap-panel svg {
+  color: var(--pink-600);
+}
+
+.cloud-bootstrap-panel strong {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.cloud-bootstrap-panel span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 @keyframes pill-in {
   from { opacity: 0; transform: translateY(12px) scale(0.96); }
   to   { opacity: 1; transform: translateY(0) scale(1); }

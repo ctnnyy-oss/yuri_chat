@@ -222,6 +222,7 @@ export function useYuriNestApp({ accountId, authToken, canManageCloudBackups }: 
     appStyle,
     character,
     cloudBackups: cloud.cloudBackups,
+    cloudBootstrapping: cloud.cloudBootstrapping,
     cloudBusy: cloud.cloudBusy,
     cloudMeta: cloud.cloudMeta,
     cloudStatus: cloud.cloudStatus,

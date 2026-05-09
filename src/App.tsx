@@ -71,6 +71,7 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
     appStyle,
     character,
     cloudBackups,
+    cloudBootstrapping,
     cloudBusy,
     cloudMeta,
     cloudStatus,
@@ -410,6 +411,15 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
       )}
 
       {showMobileBottomNav && <MobileNav activeView={activeView} onViewChange={handleViewChange} />}
+      {cloudBootstrapping && (
+        <div className="cloud-bootstrap-cover" role="status" aria-live="polite">
+          <div className="cloud-bootstrap-panel">
+            <CloudSun size={24} />
+            <strong>正在读取云端存档</strong>
+            <span>姐姐先把云端里的角色和聊天接回来，再放开操作。</span>
+          </div>
+        </div>
+      )}
       {notice && <div className="status-pill">{notice}</div>}
       {shellTip && <div className="shell-toast" role="status">{shellTip}</div>}
     </div>
