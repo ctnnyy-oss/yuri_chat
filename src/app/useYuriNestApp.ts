@@ -270,6 +270,7 @@ export function useYuriNestApp({ accountId, authToken, canManageCloudBackups }: 
     handleSaveModelProfile: cloud.handleSaveModelProfile,
     handleSelectCharacter: characterCommands.handleSelectCharacter,
     handleSend: chat.handleSend,
+    handleGroupProactiveTurn: chat.handleGroupProactiveTurn,
     handleTestModelProfile: cloud.handleTestModelProfile,
     handleTrashMemory: memory.handleTrashMemory,
     handleTrashWorldNode: memory.handleTrashWorldNode,

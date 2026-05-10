@@ -25,6 +25,7 @@ import { QqFeaturePanel } from './components/QqFeaturePanel'
 import { AgentTaskPanel } from './components/agent/AgentTaskPanel'
 import { AuthPanel } from './components/auth/AuthPanel'
 import type { AccountUser } from './services/accountAuth'
+import { isGroupCharacter } from './services/groupChatEngine'
 
 type GroupChatDraft = { name: string; text: string; memberIds?: string[] }
 
@@ -115,6 +116,7 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
     handleSaveModelProfile,
     handleSelectCharacter,
     handleSend,
+    handleGroupProactiveTurn,
     handleTestModelProfile,
     handleTrashMemory,
     handleTrashWorldNode,
@@ -313,6 +315,7 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
           onMemoryFeedback={handleMemoryFeedbackFromChat}
           onSelectCharacter={handleSelectCharacter}
           onSend={handleSend}
+          onGroupProactive={isGroupCharacter(character) ? handleGroupProactiveTurn : undefined}
           onShellAction={showShellTip}
           settings={state.settings}
         />

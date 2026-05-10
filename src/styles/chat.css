@@ -552,6 +552,15 @@
   color: var(--pink-700);
 }
 
+.composer-tool:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.group-proactive-tool {
+  color: var(--pink-600);
+}
+
 /* ── 移动端适配 ── */
 
 @media (max-width: 760px) {

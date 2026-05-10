@@ -32,6 +32,7 @@ export interface ChatMessage {
   authorAvatar?: string
   authorAccent?: string
   groupTurnId?: string
+  groupTurnKind?: 'reactive' | 'proactive'
   groupReplyState?: 'reply' | 'silent'
 }
 
@@ -135,6 +136,7 @@ export interface AppSettings {
   memoryConfidenceFloor: number
   showDevTrace: boolean
   groupChatHumanMode: boolean
+  groupChatProactiveMode: boolean
   groupChatMaxAutoReplies: number
 }
 

@@ -1,9 +1,13 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { useState } from 'react'
-import type { AppState, CharacterCard, ConversationState } from '../domain/types'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { AppState, CharacterCard, ChatMessage, ConversationState } from '../domain/types'
 import { requestAssistantReply } from '../services/chatApi'
 import { getSavedCloudToken, isCloudSyncConfigured } from '../services/cloudSync'
-import { generateGroupChatReplies, isGroupCharacter } from '../services/groupChatEngine'
+import {
+  generateGroupChatProactiveTurn,
+  generateGroupChatReplies,
+  isGroupCharacter,
+} from '../services/groupChatEngine'
 import {
   getMemoryEmbeddingInput,
   upsertMemoryEmbeddingRecordsFromVectors,
@@ -38,7 +42,92 @@ export function useChat({ state, setState, setNotice, character, conversation }:
   const [draft, setDraft] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [chatAlertState, setChatAlertState] = useState<{ conversationId: string; message: string } | null>(null)
+  const proactiveTimerRef = useRef<number | null>(null)
+  const proactiveInFlightRef = useRef(false)
+  const lastProactiveAttemptKeyRef = useRef('')
   const chatAlert = chatAlertState?.conversationId === conversation.id ? chatAlertState.message : ''
+
+  const runGroupProactiveTurn = useCallback(
+    async ({ force = true }: { force?: boolean } = {}) => {
+      if (!isGroupCharacter(character) || isSending || proactiveInFlightRef.current) return
+      if (!force && (!state.settings.groupChatHumanMode || !state.settings.groupChatProactiveMode)) return
+      if (!force && countProactiveTurnsSinceLastUser(conversation.messages) >= 2) return
+
+      const attemptKey = getConversationMessageKey(conversation.messages)
+      proactiveInFlightRef.current = true
+      setChatAlertState(null)
+      setIsSending(true)
+      setNotice(force ? '群里有人在想要不要开口' : '群里安静了一会儿')
+
+      try {
+        const groupTurn = await generateGroupChatProactiveTurn({
+          state,
+          group: character,
+          conversation,
+          requestReply: requestAssistantReply,
+          force,
+        })
+        if (groupTurn.replies.length === 0) {
+          lastProactiveAttemptKeyRef.current = attemptKey
+          setNotice(groupTurn.skippedReason ?? '群里暂时没人主动开口')
+          return
+        }
+
+        const repliedConversation = updateConversationSummary({
+          ...conversation,
+          messages: [...conversation.messages, ...groupTurn.replies],
+          updatedAt: nowIso(),
+        })
+        setState((currentState) => upsertConversation(currentState, repliedConversation))
+        const firstSpeaker = groupTurn.replies[0]?.authorName ?? character.name
+        const silentHint = groupTurn.silentCount > 0 ? `（${groupTurn.silentCount} 位看过但没插话）` : ''
+        setNotice(`${firstSpeaker} 主动开口了${silentHint}`)
+      } catch (error) {
+        setChatAlertState({ conversationId: conversation.id, message: formatChatFailure(error) })
+        setNotice('模型代理未接通')
+      } finally {
+        proactiveInFlightRef.current = false
+        setIsSending(false)
+      }
+    },
+    [character, conversation, isSending, setNotice, setState, state],
+  )
+
+  useEffect(() => {
+    if (proactiveTimerRef.current !== null) {
+      window.clearTimeout(proactiveTimerRef.current)
+      proactiveTimerRef.current = null
+    }
+    if (!isGroupCharacter(character)) return
+    if (!state.settings.groupChatHumanMode || !state.settings.groupChatProactiveMode) return
+    if (isSending || proactiveInFlightRef.current) return
+    if (conversation.messages.length === 0) return
+    if (countProactiveTurnsSinceLastUser(conversation.messages) >= 2) return
+    if (typeof document !== 'undefined' && document.hidden) return
+
+    const attemptKey = getConversationMessageKey(conversation.messages)
+    if (lastProactiveAttemptKeyRef.current === attemptKey) return
+
+    proactiveTimerRef.current = window.setTimeout(() => {
+      proactiveTimerRef.current = null
+      void runGroupProactiveTurn({ force: false })
+    }, getProactiveDelayMs(conversation.id, conversation.messages))
+
+    return () => {
+      if (proactiveTimerRef.current !== null) {
+        window.clearTimeout(proactiveTimerRef.current)
+        proactiveTimerRef.current = null
+      }
+    }
+  }, [
+    character,
+    conversation.id,
+    conversation.messages,
+    isSending,
+    runGroupProactiveTurn,
+    state.settings.groupChatHumanMode,
+    state.settings.groupChatProactiveMode,
+  ])
 
   async function handleSend() {
     const content = draft.trim()
@@ -206,7 +295,44 @@ export function useChat({ state, setState, setNotice, character, conversation }:
     chatAlert,
     clearChatAlert,
     handleSend,
+    handleGroupProactiveTurn: () => {
+      void runGroupProactiveTurn({ force: true })
+    },
   }
+}
+
+function getConversationMessageKey(messages: ChatMessage[]): string {
+  const latestMessage = messages.at(-1)
+  return `${messages.length}:${latestMessage?.id ?? 'empty'}`
+}
+
+function countProactiveTurnsSinceLastUser(messages: ChatMessage[]): number {
+  const proactiveTurnIds = new Set<string>()
+
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index]
+    if (message.role === 'user') break
+    if (message.groupTurnKind === 'proactive') {
+      proactiveTurnIds.add(message.groupTurnId ?? message.id)
+    }
+  }
+
+  return proactiveTurnIds.size
+}
+
+function getProactiveDelayMs(conversationId: string, messages: ChatMessage[]): number {
+  const latestMessage = messages.at(-1)
+  const pulse = seededUnit(`${conversationId}:${messages.length}:${latestMessage?.id ?? 'empty'}:proactive-delay`)
+  return 10_000 + Math.round(pulse * 16_000)
+}
+
+function seededUnit(seed: string): number {
+  let hash = 2166136261
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return (hash >>> 0) / 0xffffffff
 }
 
 function formatChatFailure(error: unknown): string {

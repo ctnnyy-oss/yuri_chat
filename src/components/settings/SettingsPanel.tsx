@@ -196,6 +196,17 @@ export function SettingsPanel({
               type="checkbox"
             />
           </label>
+          <label className="toggle-row">
+            <span>
+              <strong>群成员主动发言</strong>
+              <small>群聊空闲时，成员会随机起话题或互相接话，最多连续两轮</small>
+            </span>
+            <input
+              checked={settings.groupChatProactiveMode}
+              onChange={(event) => onUpdateSettings({ ...settings, groupChatProactiveMode: event.target.checked })}
+              type="checkbox"
+            />
+          </label>
           <label className="range-control">
             <span>
               <strong>每轮最多接话人数</strong>

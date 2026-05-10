@@ -25,6 +25,14 @@ interface GenerateGroupChatRepliesInput {
   requestReply: RequestAssistantReply
 }
 
+interface GenerateGroupChatProactiveInput {
+  state: AppState
+  group: CharacterCard
+  conversation: ConversationState
+  requestReply: RequestAssistantReply
+  force?: boolean
+}
+
 interface GroupCandidate {
   member: CharacterCard
   drive: number
@@ -32,6 +40,8 @@ interface GroupCandidate {
   recentlySpoke: boolean
   order: number
 }
+
+type GroupPromptMode = 'reactive' | 'proactive-start' | 'proactive-reply'
 
 export interface GroupChatTurnResult {
   replies: ChatMessage[]
@@ -82,7 +92,7 @@ export async function generateGroupChatReplies({
       members,
       candidate,
       conversationMessages: [...conversation.messages, ...replies],
-      userMessage,
+      triggerMessage: userMessage,
       settings: state.settings,
     })
     callCount += 1
@@ -94,7 +104,7 @@ export async function generateGroupChatReplies({
       continue
     }
 
-    replies.push(createGroupReplyMessage(candidate.member, content, result.agent, userMessage.id))
+    replies.push(createGroupReplyMessage(candidate.member, content, result.agent, userMessage.id, 'reactive'))
   }
 
   return {
@@ -102,6 +112,104 @@ export async function generateGroupChatReplies({
     silentCount,
     callCount,
     skippedReason: replies.length === 0 ? '群里暂时安静了一下，没有人自然接话。' : undefined,
+  }
+}
+
+export async function generateGroupChatProactiveTurn({
+  state,
+  group,
+  conversation,
+  requestReply,
+  force = false,
+}: GenerateGroupChatProactiveInput): Promise<GroupChatTurnResult> {
+  const members = resolveGroupMembers(group, state.characters)
+  if (members.length === 0) {
+    return {
+      replies: [],
+      silentCount: 0,
+      callCount: 0,
+      skippedReason: '这个群聊还没有成员，先从好友列表里重新拉一个群就好。',
+    }
+  }
+
+  const maxReplies = Math.min(members.length, clampInteger(state.settings.groupChatMaxAutoReplies, 1, 4, 3))
+  const turnId = createId('groupturn')
+  const candidates = buildProactiveCandidateQueue(members, conversation, state.settings, force).slice(
+    0,
+    MAX_GROUP_MEMBERS_TO_DRAFT,
+  )
+  const replies: ChatMessage[] = []
+  let silentCount = 0
+  let callCount = 0
+
+  for (const candidate of candidates) {
+    const bundle = buildGroupPromptBundle({
+      group,
+      members,
+      candidate,
+      conversationMessages: conversation.messages,
+      triggerMessage: conversation.messages.at(-1) ?? null,
+      settings: state.settings,
+      mode: 'proactive-start',
+    })
+    callCount += 1
+
+    const result = await requestReply(bundle, createGroupReplySettings(state.settings))
+    const content = normalizeGroupReply(result.reply, candidate.member, members)
+    if (!content) {
+      silentCount += 1
+      continue
+    }
+
+    replies.push(createGroupReplyMessage(candidate.member, content, result.agent, turnId, 'proactive'))
+    break
+  }
+
+  const initiator = replies[0]
+  if (!initiator) {
+    return {
+      replies,
+      silentCount,
+      callCount,
+      skippedReason: '群里安静了一会儿，但暂时没人主动开新话题。',
+    }
+  }
+
+  const responderCandidates = buildCandidateQueue(
+    members.filter((member) => member.id !== initiator.authorCharacterId),
+    { ...conversation, messages: [...conversation.messages, initiator] },
+    initiator,
+    state.settings,
+  ).slice(0, MAX_GROUP_MEMBERS_TO_DRAFT)
+
+  for (const candidate of responderCandidates) {
+    if (replies.length >= maxReplies) break
+
+    const bundle = buildGroupPromptBundle({
+      group,
+      members,
+      candidate,
+      conversationMessages: [...conversation.messages, ...replies],
+      triggerMessage: initiator,
+      settings: state.settings,
+      mode: 'proactive-reply',
+    })
+    callCount += 1
+
+    const result = await requestReply(bundle, createGroupReplySettings(state.settings))
+    const content = normalizeGroupReply(result.reply, candidate.member, members)
+    if (!content) {
+      silentCount += 1
+      continue
+    }
+
+    replies.push(createGroupReplyMessage(candidate.member, content, result.agent, turnId, 'proactive'))
+  }
+
+  return {
+    replies,
+    silentCount,
+    callCount,
   }
 }
 
@@ -161,6 +269,51 @@ function buildCandidateQueue(
     })
 }
 
+function buildProactiveCandidateQueue(
+  members: CharacterCard[],
+  conversation: ConversationState,
+  settings: AppSettings,
+  force: boolean,
+): GroupCandidate[] {
+  const recentAuthorIds = conversation.messages
+    .slice(-8)
+    .filter((message) => message.role === 'assistant')
+    .map((message) => message.authorCharacterId)
+    .filter(Boolean)
+  const latestMessage = conversation.messages.at(-1)
+  const latestText = latestMessage?.content ?? ''
+
+  return members
+    .map((member, order) => {
+      const mentioned = Boolean(latestText && isMemberMentioned(member, latestText))
+      const recentlySpoke = recentAuthorIds.slice(-3).includes(member.id)
+      const talkativeness = inferTalkativeness(member)
+      const randomPulse = seededUnit(
+        `${conversation.id}:${latestMessage?.id ?? conversation.updatedAt}:${member.id}:initiative`,
+      )
+      const quietBonus = latestMessage?.role === 'user' ? 8 : 0
+      let drive = Math.round(talkativeness * 46 + randomPulse * 42 + quietBonus)
+
+      if (mentioned) drive += 10
+      if (recentlySpoke) drive -= 24
+      if (!settings.groupChatHumanMode) drive += 18
+
+      return {
+        member,
+        drive: clampInteger(drive, 0, 100, 45),
+        mentioned,
+        recentlySpoke,
+        order,
+      }
+    })
+    .filter((candidate) => force || candidate.drive >= 42)
+    .sort((left, right) => {
+      if (left.drive !== right.drive) return right.drive - left.drive
+      if (left.recentlySpoke !== right.recentlySpoke) return left.recentlySpoke ? 1 : -1
+      return left.order - right.order
+    })
+}
+
 function computeResponseDrive(
   member: CharacterCard,
   text: string,
@@ -188,15 +341,17 @@ function buildGroupPromptBundle({
   members,
   candidate,
   conversationMessages,
-  userMessage,
+  triggerMessage,
   settings,
+  mode = 'reactive',
 }: {
   group: CharacterCard
   members: CharacterCard[]
   candidate: GroupCandidate
   conversationMessages: ChatMessage[]
-  userMessage: ChatMessage
+  triggerMessage: ChatMessage | null
   settings: AppSettings
+  mode?: GroupPromptMode
 }): PromptBundle {
   const member = candidate.member
   const userName = settings.userNickname?.trim() || '妹妹'
@@ -204,6 +359,8 @@ function buildGroupPromptBundle({
     .map((item) => `${item.name}（${item.relationship || item.title || '角色'}）`)
     .join('、')
   const transcript = buildGroupTranscript(conversationMessages, group, members, userName, settings.maxContextMessages)
+  const memberById = new Map(members.map((item) => [item.id, item]))
+  const lastSpeakerName = triggerMessage ? getMessageAuthorName(triggerMessage, group, memberById, userName) : ''
 
   return {
     characterName: member.name,
@@ -225,7 +382,9 @@ function buildGroupPromptBundle({
           `本轮接话冲动：${candidate.drive}/100`,
           `是否被点名：${candidate.mentioned ? '是' : '否'}`,
           `最近是否刚说过话：${candidate.recentlySpoke ? '是' : '否'}`,
-          '冲动低、没被点名、话题和自己关系不大时，直接输出静默标记。',
+          mode === 'proactive-start'
+            ? '现在是群里空闲时的主动发言判断；没想法、没必要开口时，直接输出静默标记。'
+            : '冲动低、没被点名、话题和自己关系不大时，直接输出静默标记。',
         ].join('\n'),
         category: 'relationship',
       },
@@ -237,17 +396,38 @@ function buildGroupPromptBundle({
     ],
     messages: [
       {
-        id: `${userMessage.id}-${member.id}`,
+        id: `${triggerMessage?.id ?? 'proactive'}-${member.id}`,
         role: 'user',
-        content: [
-          `现在轮到你判断：${member.name} 要不要在群里接话。`,
-          `如果不自然接话，只输出 ${GROUP_SILENCE_MARKER}。`,
-          `如果要接话，直接输出 ${member.name} 的一条群消息，不要写名字前缀，不要替其他人发言。`,
-        ].join('\n'),
+        content: buildGroupUserInstruction(member, mode, lastSpeakerName),
         createdAt: nowIso(),
       },
     ],
   }
+}
+
+function buildGroupUserInstruction(member: CharacterCard, mode: GroupPromptMode, lastSpeakerName: string): string {
+  if (mode === 'proactive-start') {
+    return [
+      `现在群里空了一会儿，轮到你判断：${member.name} 要不要主动开口。`,
+      `如果只是尴尬续话、没有真实想法、或此刻不想说话，只输出 ${GROUP_SILENCE_MARKER}。`,
+      `如果要主动发言，直接输出 ${member.name} 的一条群消息。可以分享小想法、问某位成员一句、吐槽刚才话题，或自然开一个轻量新话题。`,
+      '不要写名字前缀，不要替其他人发言。',
+    ].join('\n')
+  }
+
+  if (mode === 'proactive-reply') {
+    return [
+      `刚才 ${lastSpeakerName || '群里有人'} 主动发了一句，轮到你判断：${member.name} 要不要自然接话。`,
+      `如果不自然接话，只输出 ${GROUP_SILENCE_MARKER}。`,
+      `如果要接话，直接输出 ${member.name} 的一条群消息，不要写名字前缀，不要替其他人发言。`,
+    ].join('\n')
+  }
+
+  return [
+    `现在轮到你判断：${member.name} 要不要在群里接话。`,
+    `如果不自然接话，只输出 ${GROUP_SILENCE_MARKER}。`,
+    `如果要接话，直接输出 ${member.name} 的一条群消息，不要写名字前缀，不要替其他人发言。`,
+  ].join('\n')
 }
 
 function buildGroupSystemPrompt(member: CharacterCard): string {
@@ -258,6 +438,7 @@ function buildGroupSystemPrompt(member: CharacterCard): string {
     `你现在是群聊成员「${member.name}」，不是群主，也不是旁白。`,
     '你能看到群里的共享记录，但你只拥有自己的角色卡、语气、记忆和立场。',
     `你不需要每条消息都回复。自然不想接话时，只输出 ${GROUP_SILENCE_MARKER}。`,
+    '群里空下来时，你也可以像真人一样主动发起一句话，但必须是真有角色动机，而不是机械续聊。',
     '要回复时，只发一条像真人群聊里的短消息。可以简短、玩笑、表情、吐槽，也可以认真接话。',
     '不要写“某某：”，不要同时扮演多个人，不要总结规则，不要解释你为什么回复或不回复。',
   ].join('\n')
@@ -352,6 +533,7 @@ function createGroupReplyMessage(
   content: string,
   agent: AssistantReplyResult['agent'],
   groupTurnId: string,
+  groupTurnKind: 'reactive' | 'proactive',
 ): ChatMessage {
   return {
     id: createId('msg'),
@@ -364,6 +546,7 @@ function createGroupReplyMessage(
     authorAvatar: member.avatar,
     authorAccent: member.accent,
     groupTurnId,
+    groupTurnKind,
     groupReplyState: 'reply',
   }
 }

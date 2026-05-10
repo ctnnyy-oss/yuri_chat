@@ -9,6 +9,7 @@ import {
   Plus,
   Send,
   Smile,
+  Sparkles,
 } from 'lucide-react'
 import type {
   AppSettings,
@@ -39,6 +40,7 @@ interface ChatPhoneProps {
   onSelectCharacter: (characterId: string) => void
   onMemoryFeedback: (memoryId: string, action: MemoryFeedbackAction) => void
   onSend: () => void
+  onGroupProactive?: () => void
   onShellAction?: (message: string) => void
 }
 
@@ -76,6 +78,7 @@ export function ChatPhone({
   onSelectCharacter,
   onMemoryFeedback,
   onSend,
+  onGroupProactive,
   onShellAction,
 }: ChatPhoneProps) {
   const [activePanel, setActivePanel] = useState<ToolPanel>(null)
@@ -351,6 +354,18 @@ export function ChatPhone({
           <button aria-label="语音" className="composer-tool" onClick={startVoiceInput} title="语音" type="button">
             <Mic size={24} />
           </button>
+          {onGroupProactive && (
+            <button
+              aria-label="让群里自己聊"
+              className="composer-tool group-proactive-tool"
+              disabled={isSending}
+              onClick={onGroupProactive}
+              title="让群里自己聊"
+              type="button"
+            >
+              <Sparkles size={23} />
+            </button>
+          )}
           <button
             aria-label="图片"
             className="composer-tool"

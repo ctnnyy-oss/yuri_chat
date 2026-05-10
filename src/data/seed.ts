@@ -388,7 +388,7 @@ export function createSeedState(): AppState {
   }))
 
   return {
-    version: 28,
+    version: 29,
     activeCharacterId: characters[0].id,
     characters,
     conversations,
@@ -426,6 +426,7 @@ export function createSeedState(): AppState {
       memoryConfidenceFloor: 0.7,
       showDevTrace: false,
       groupChatHumanMode: true,
+      groupChatProactiveMode: true,
       groupChatMaxAutoReplies: 3,
     },
   }

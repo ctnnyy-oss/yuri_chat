@@ -4,7 +4,7 @@ import { normalizeMemories } from '../services/memoryEngine'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { agentRooms, createSeedState } from './seed'
 
-const currentStateVersion = 28
+const currentStateVersion = 29
 const legacyDefaultRoomId = 'room-yuri-nest'
 const currentDefaultRoomId = 'room-yuri-chat'
 
@@ -65,6 +65,7 @@ export function migrateAppState(state: AppState): AppState {
       dataStorageMode: sourceSettings.dataStorageMode === 'local' ? 'local' : defaults.settings.dataStorageMode,
       maxOutputTokens: clampNumber(sourceSettings.maxOutputTokens, 512, 32768, defaults.settings.maxOutputTokens),
       groupChatHumanMode: sourceSettings.groupChatHumanMode !== false,
+      groupChatProactiveMode: sourceSettings.groupChatProactiveMode !== false,
       groupChatMaxAutoReplies: clampNumber(
         sourceSettings.groupChatMaxAutoReplies,
         1,
