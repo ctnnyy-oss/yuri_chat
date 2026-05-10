@@ -190,16 +190,19 @@ export function CharacterRail({
     })
     const customRows = groupCharacters
       .filter((character) => !defaultTitles.has(character.name))
-      .map((character, index) => ({
-        id: `group:${character.id}`,
-        title: character.name,
-        text: character.mood || character.title,
-        time: formatThreadTime(conversationByCharacterId.get(character.id)?.updatedAt, index === 0 ? '刚刚' : '今天'),
-        avatar: character.avatar,
-        badge: '',
-        characterId: character.id,
-        updatedAt: conversationByCharacterId.get(character.id)?.updatedAt ?? '',
-      }))
+      .map((character, index) => {
+        const conversation = conversationByCharacterId.get(character.id)
+        return {
+          id: `group:${character.id}`,
+          title: character.name,
+          text: getLastConversationText(conversation, character.mood || character.title),
+          time: formatThreadTime(conversation?.updatedAt, index === 0 ? '刚刚' : '今天'),
+          avatar: character.avatar,
+          badge: '',
+          characterId: character.id,
+          updatedAt: conversation?.updatedAt ?? '',
+        }
+      })
     const rows = [...defaultRows, ...customRows]
     if (!normalizedQuery) return rows
     return rows.filter((row) => `${row.title} ${row.text}`.toLowerCase().includes(normalizedQuery))
