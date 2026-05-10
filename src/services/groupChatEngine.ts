@@ -103,6 +103,10 @@ export async function generateGroupChatReplies({
       silentCount += 1
       continue
     }
+    if (isRepeatedRecentReply(content, candidate.member, [...conversation.messages, ...replies])) {
+      silentCount += 1
+      continue
+    }
 
     replies.push(createGroupReplyMessage(candidate.member, content, result.agent, userMessage.id, 'reactive'))
   }
@@ -160,6 +164,10 @@ export async function generateGroupChatProactiveTurn({
       silentCount += 1
       continue
     }
+    if (isRepeatedRecentReply(content, candidate.member, conversation.messages)) {
+      silentCount += 1
+      continue
+    }
 
     replies.push(createGroupReplyMessage(candidate.member, content, result.agent, turnId, 'proactive'))
     break
@@ -199,6 +207,10 @@ export async function generateGroupChatProactiveTurn({
     const result = await requestReply(bundle, createGroupReplySettings(state.settings))
     const content = normalizeGroupReply(result.reply, candidate.member, members)
     if (!content) {
+      silentCount += 1
+      continue
+    }
+    if (isRepeatedRecentReply(content, candidate.member, [...conversation.messages, ...replies])) {
       silentCount += 1
       continue
     }
@@ -505,6 +517,32 @@ function normalizeGroupReply(reply: string, member: CharacterCard, members: Char
   if (/^(不回复|不接话|先不说|沉默|静默|略过|无回应|没有回应|保持沉默)[。.!！\s]*$/i.test(text)) return null
 
   return trimReplyLength(text)
+}
+
+function isRepeatedRecentReply(text: string, member: CharacterCard, messages: ChatMessage[]): boolean {
+  const raw = text.trim()
+  const normalized = normalizeForRepeatCheck(text)
+  if (raw.length < 6 && normalized.length < 6) return false
+
+  return messages
+    .slice(-28)
+    .filter((message) => message.role === 'assistant')
+    .some((message) => {
+      const previousRaw = message.content.trim()
+      if (previousRaw && previousRaw === raw && message.authorCharacterId === member.id) return true
+      if (previousRaw.length >= 10 && previousRaw === raw) return true
+      const previous = normalizeForRepeatCheck(message.content)
+      if (!previous) return false
+      if (message.authorCharacterId === member.id && previous === normalized) return true
+      return previous.length >= 10 && previous === normalized
+    })
+}
+
+function normalizeForRepeatCheck(text: string): string {
+  return text
+    .replace(/\s+/g, '')
+    .replace(/[，。！？、,.!?~～…"'“”‘’（）()[\]{}<>《》]/g, '')
+    .trim()
 }
 
 function tryParseReplyJson(text: string): string | null {

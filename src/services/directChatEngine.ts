@@ -75,6 +75,15 @@ export async function generateDirectChatReply({
     }
   }
 
+  if (isRepeatedRecentReply(content, character, conversation.messages)) {
+    return {
+      message: null,
+      silent: true,
+      callCount: 1,
+      skippedReason: `${character.name} skipped a repeated line.`,
+    }
+  }
+
   return {
     message: createDirectReplyMessage(character, content, result.agent, userMessage.id, 'reactive'),
     silent: false,
@@ -121,6 +130,15 @@ export async function generateDirectChatProactiveTurn({
       silent: true,
       callCount: 1,
       skippedReason: `${character.name}想了想，还是没有主动打扰。`,
+    }
+  }
+
+  if (isRepeatedRecentReply(content, character, conversation.messages)) {
+    return {
+      message: null,
+      silent: true,
+      callCount: 1,
+      skippedReason: `${character.name} skipped a repeated line.`,
     }
   }
 
@@ -261,6 +279,32 @@ function normalizeDirectReply(reply: string, character: CharacterCard): string |
   if (/^(不回|不回复|先不说|先不回|沉默|已读不回|暂时不回|无回复|保持沉默|跳过)[。.!！\s]*$/i.test(text)) return null
 
   return trimReplyLength(text)
+}
+
+function isRepeatedRecentReply(text: string, character: CharacterCard, messages: ChatMessage[]): boolean {
+  const raw = text.trim()
+  const normalized = normalizeForRepeatCheck(text)
+  if (raw.length < 6 && normalized.length < 6) return false
+
+  return messages
+    .slice(-24)
+    .filter((message) => message.role === 'assistant')
+    .some((message) => {
+      const previousRaw = message.content.trim()
+      if (previousRaw && previousRaw === raw && message.authorCharacterId === character.id) return true
+      if (previousRaw.length >= 10 && previousRaw === raw) return true
+      const previous = normalizeForRepeatCheck(message.content)
+      if (!previous) return false
+      if (message.authorCharacterId === character.id && previous === normalized) return true
+      return previous.length >= 10 && previous === normalized
+    })
+}
+
+function normalizeForRepeatCheck(text: string): string {
+  return text
+    .replace(/\s+/g, '')
+    .replace(/[，。！？、,.!?~～…"'“”‘’（）()[\]{}<>《》]/g, '')
+    .trim()
 }
 
 function tryParseReplyJson(text: string): string | null {
