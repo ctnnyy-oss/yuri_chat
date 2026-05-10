@@ -1,20 +1,15 @@
-/* ═══════════════════════════════════════════════════
-   百合小窝 — Sidebar (Rail + Conversation Pane)
-   纯白底 + 樱粉强调 + 苹果级软光泽
-   ═══════════════════════════════════════════════════ */
+/* QQ-like left rail + middle pane */
 
 .left-panel {
   height: 100%;
   display: grid;
-  grid-template-columns: var(--desktop-rail-width, 76px) minmax(0, 1fr);
+  grid-template-columns: var(--desktop-rail-width, 82px) minmax(0, 1fr);
   overflow: hidden;
 }
 
 .left-panel-compact {
-  grid-template-columns: var(--desktop-rail-width, 76px);
+  grid-template-columns: var(--desktop-rail-width, 82px);
 }
-
-/* ── 左侧极窄 Rail ── */
 
 .qq-icon-rail {
   position: relative;
@@ -22,23 +17,23 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 14px 6px 16px;
+  gap: 7px;
+  padding: 12px 8px 16px;
   border-right: 1px solid var(--hairline);
-  background: var(--panel);
+  background: var(--rail-bg, color-mix(in srgb, var(--rose) 14%, var(--panel)));
 }
 
 .qq-brand-button {
-  width: 52px;
-  height: 32px;
+  width: 58px;
+  height: 34px;
   display: grid;
   place-items: center;
   border-radius: 0;
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  color: var(--pink-500);
   background: transparent;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0;
 }
 
 .qq-brand-button span {
@@ -51,79 +46,51 @@
 .primary-nav {
   width: 100%;
   display: grid;
-  gap: 4px;
+  gap: 7px;
 }
 
 .nav-button {
   position: relative;
-  width: 52px;
-  height: 46px;
+  width: 58px;
+  height: 50px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-sm);
-  color: var(--muted-strong);
+  border-radius: 12px;
+  color: var(--ink);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.nav-button svg {
-  width: 22px;
-  height: 22px;
-  stroke-width: 1.7;
-  transition: transform var(--duration-fast) var(--ease-spring);
 }
 
 .nav-button:hover {
-  color: var(--pink-700);
-  background: var(--surface-hover);
-}
-
-.nav-button:hover svg {
-  transform: scale(1.06);
+  background: var(--middle-hover, rgba(255, 255, 255, 0.42));
 }
 
 .nav-button.active {
-  color: var(--pink-600);
-  background: var(--pink-100);
-  box-shadow: inset 0 0 0 1px var(--line-soft);
-}
-
-.nav-button.active::after {
-  content: '';
-  position: absolute;
-  left: -6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 18px;
-  border-radius: 0 3px 3px 0;
-  background: var(--grad-pink);
+  color: var(--pink-500);
+  background: transparent;
+  box-shadow: none;
 }
 
 .nav-button b {
   position: absolute;
-  top: 5px;
-  right: 8px;
-  min-width: 18px;
-  height: 18px;
+  top: 6px;
+  right: 10px;
+  min-width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
-  padding: 0 5px;
-  border-radius: var(--radius-full);
-  background: linear-gradient(135deg, #ff5d6c, #ff3d5a);
+  border-radius: 999px;
+  background: #ff4b37;
   color: #fff;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
   line-height: 1;
-  box-shadow: 0 2px 6px rgba(255, 61, 90, 0.36);
 }
 
 .nav-button b.nav-dot {
-  width: 8px;
-  min-width: 8px;
-  height: 8px;
+  width: 10px;
+  min-width: 10px;
+  height: 10px;
   top: 9px;
-  right: 11px;
+  right: 13px;
   color: transparent;
 }
 
@@ -141,97 +108,70 @@
 
 .qq-dock-icons {
   display: grid;
-  gap: 4px;
+  gap: 7px;
 }
 
 .qq-dock-icons button {
   position: relative;
-  width: 52px;
-  height: 40px;
-  border-radius: var(--radius-sm);
+  width: 58px;
+  height: 42px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
-  color: var(--muted-strong);
+  color: var(--ink);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.qq-dock-icons button svg {
-  width: 20px;
-  height: 20px;
-  stroke-width: 1.7;
 }
 
 .qq-dock-icons button:hover,
 .qq-dock-icons button.active {
-  background: var(--surface-hover);
-  color: var(--pink-700);
+  background: var(--middle-hover, rgba(255, 255, 255, 0.48));
 }
 
 .qq-dock-icons button i {
   position: absolute;
-  right: 11px;
-  top: 9px;
-  width: 8px;
-  height: 8px;
+  right: 13px;
+  top: 10px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: var(--butter);
-  box-shadow: 0 0 0 2px var(--panel);
+  background: #ffd12d;
 }
-
-/* ── Rail menu 弹层 ── */
 
 .desktop-rail-menu {
   position: absolute;
-  left: 76px;
+  left: 82px;
   bottom: 16px;
   z-index: 20;
-  width: 280px;
-  padding: var(--space-md);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-lg);
-  background: var(--glass-strong);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: var(--shadow-lg);
-  animation: rail-menu-in 200ms var(--ease-out) both;
-}
-
-@keyframes rail-menu-in {
-  from { opacity: 0; transform: translateY(8px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  width: 268px;
+  padding: 12px 12px 10px;
+  border: 1px solid rgba(50, 30, 40, 0.08);
+  border-radius: 8px;
+  background: var(--feature-card, rgba(255, 255, 255, 0.96));
+  box-shadow: 0 18px 48px rgba(74, 46, 58, 0.18);
 }
 
 .desktop-rail-menu-shortcuts {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
-  padding-bottom: var(--space-sm);
-  margin-bottom: var(--space-sm);
-  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 9px;
+  margin-bottom: 7px;
+  border-bottom: 1px solid rgba(40, 22, 30, 0.08);
 }
 
 .desktop-rail-menu-shortcuts button {
   display: grid;
   justify-items: center;
-  gap: 6px;
-  min-height: 60px;
-  padding: var(--space-sm);
-  border-radius: var(--radius-sm);
-  color: var(--ink);
-  font-size: 12.5px;
-  font-weight: 500;
-  transition: all var(--duration-fast) var(--ease-smooth);
+  gap: 5px;
+  min-height: 58px;
+  border-radius: 6px;
+  color: #20141a;
+  font-size: 14px;
 }
 
 .desktop-rail-menu-shortcuts button:hover,
 .desktop-rail-menu-row:hover {
-  background: var(--surface-hover);
-  color: var(--pink-700);
-}
-
-.desktop-rail-menu-shortcuts button svg {
-  color: var(--pink-500);
+  background: var(--middle-hover, color-mix(in srgb, var(--rose) 9%, var(--panel)));
 }
 
 .desktop-rail-menu-row {
@@ -241,31 +181,22 @@
   align-items: center;
   gap: 10px;
   min-height: 40px;
-  padding: 0 10px;
-  border-radius: var(--radius-sm);
-  color: var(--ink);
-  font-size: 13.5px;
+  padding: 0 8px;
+  border-radius: 6px;
+  color: #20141a;
   text-align: left;
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.desktop-rail-menu-row svg {
-  color: var(--pink-500);
 }
 
 .desktop-rail-menu-row b {
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: var(--butter);
-  color: var(--butter-ink);
+  background: #ffbd22;
+  color: #fff;
   font-size: 11px;
-  font-weight: 700;
 }
-
-/* ── 中间会话窗格 ── */
 
 .conversation-pane {
   position: relative;
@@ -273,37 +204,25 @@
   min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  background: var(--middle-bg);
-  border-right: 1px solid var(--hairline);
+  background: var(--middle-bg, color-mix(in srgb, var(--rose) 18%, var(--panel)));
 }
 
 .conversation-search-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 38px;
+  grid-template-columns: minmax(0, 1fr) 42px;
   gap: 10px;
-  padding: 16px 14px 12px;
+  padding: 18px 14px 14px;
 }
 
 .conversation-add-button {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-sm);
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
   display: grid;
   place-items: center;
-  background: var(--panel);
-  color: var(--pink-600);
+  background: var(--feature-field, rgba(255, 255, 255, 0.48));
+  color: var(--ink-secondary);
   cursor: pointer;
-  border: 1px solid var(--line-soft);
-  box-shadow: var(--shadow-xs);
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.conversation-add-button:hover {
-  background: var(--pink-50);
-  border-color: var(--line);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-  color: var(--pink-700);
 }
 
 .conversation-search {
@@ -313,24 +232,8 @@
   min-width: 0;
   margin: 0;
   padding: 0 14px;
-  height: 38px;
-  border-radius: var(--radius-sm);
-  background: var(--panel);
-  border: 1px solid var(--line-soft);
-  color: var(--muted);
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.conversation-search:focus-within {
-  border-color: var(--pink-300);
-  box-shadow: 0 0 0 3px var(--rose-glow);
-  background: #fff;
-}
-
-.conversation-search svg {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
+  border-radius: 13px;
+  background: var(--feature-field, rgba(255, 255, 255, 0.5));
   color: var(--muted);
 }
 
@@ -341,11 +244,7 @@
   outline: 0;
   background: transparent;
   color: var(--ink);
-  font-size: 13.5px;
-}
-
-.conversation-search input::placeholder {
-  color: var(--muted-light);
+  font-size: 14px;
 }
 
 .character-list {
@@ -354,8 +253,7 @@
   display: grid;
   align-content: start;
   overflow-y: auto;
-  padding: 4px 8px 12px;
-  gap: 2px;
+  padding: 0 0 8px;
 }
 
 .conversation-pane.with-group-creator .conversation-list {
@@ -365,148 +263,88 @@
 .character-button {
   width: 100%;
   min-width: 0;
-  min-height: 68px;
+  min-height: 92px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  border-radius: var(--radius-md);
-  padding: 10px 12px;
+  gap: 13px;
+  border-radius: 8px;
+  padding: 10px 12px 10px 18px;
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-smooth);
 }
 
 .character-button:hover {
-  background: var(--surface-hover);
+  background: var(--middle-hover, rgba(255, 255, 255, 0.35));
 }
 
 .character-button.active {
-  background: var(--pink-100);
-  box-shadow: inset 0 0 0 1px var(--line-soft);
-}
-
-.character-button.active .conversation-copy strong {
-  color: var(--pink-800);
+  background: var(--middle-active, rgba(105, 77, 91, 0.12));
 }
 
 .character-button.ghost {
   opacity: 0.92;
 }
 
-/* ── 头像 (玻璃光泽) ── */
-
 .avatar {
   --avatar-accent: var(--pink-300);
-  width: 44px;
-  height: 44px;
+  width: 58px;
+  height: 58px;
   flex: 0 0 auto;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  color: color-mix(in srgb, var(--avatar-accent) 78%, var(--ink));
-  font-size: 15px;
-  font-weight: 700;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.4),
-    0 2px 6px color-mix(in srgb, var(--avatar-accent) 18%, transparent);
-}
-
-.avatar::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
   background:
-    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.85), transparent 36%),
-    radial-gradient(circle at 74% 76%, color-mix(in srgb, var(--avatar-accent) 26%, transparent), transparent 42%),
-    conic-gradient(
-      from 150deg,
-      color-mix(in srgb, var(--avatar-accent) 36%, #fff),
-      color-mix(in srgb, var(--avatar-accent) 14%, #fff),
-      color-mix(in srgb, var(--avatar-accent) 26%, #f7f1ff),
-      color-mix(in srgb, var(--avatar-accent) 36%, #fff)
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--avatar-accent) 42%, #fff),
+      color-mix(in srgb, var(--avatar-accent) 16%, #fff)
     );
-}
-
-.avatar::after {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  z-index: -1;
-  border-radius: inherit;
-  box-shadow: inset 0 -10px 18px rgba(255, 255, 255, 0.28);
-}
-
-.avatar b {
-  z-index: 1;
+  color: color-mix(in srgb, var(--avatar-accent) 76%, var(--ink));
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--avatar-accent) 18%, transparent);
 }
 
 .muted-avatar {
-  background: var(--pink-50);
-  color: var(--muted-strong);
-}
-
-.muted-avatar::before {
-  background:
-    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.85), transparent 36%),
-    var(--pink-50);
+  background: #f2edf0;
+  color: #7d6e77;
 }
 
 .channel-avatar {
   position: relative;
+  background: var(--grad-bubble);
   color: #fff;
-}
-
-.channel-avatar::before {
-  background:
-    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.6), transparent 28%),
-    var(--grad-bubble);
 }
 
 .channel-avatar b {
   position: absolute;
-  top: -7px;
+  top: -8px;
   right: -7px;
-  min-width: 22px;
-  height: 20px;
+  min-width: 28px;
+  height: 24px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-full);
-  background: linear-gradient(135deg, #ff7a8a, #ff4a6c);
+  border-radius: 999px;
+  background: #b6bdca;
   color: #fff;
-  font-size: 11px;
-  padding: 0 5px;
-  z-index: 2;
-  box-shadow: 0 2px 4px rgba(255, 61, 90, 0.32);
+  font-size: 14px;
+  padding: 0 6px;
 }
-
-.system-avatar::before {
-  background:
-    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.6), transparent 28%),
-    var(--grad-bubble);
-}
-
-/* ── 会话条目 ── */
 
 .conversation-copy {
   min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 5px;
 }
 
 .conversation-copy strong {
   overflow: hidden;
   color: var(--ink);
-  font-size: 14.5px;
+  font-size: 17px;
   font-weight: 600;
   line-height: 1.2;
-  letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -514,9 +352,8 @@
 .conversation-copy small {
   overflow: hidden;
   color: var(--muted);
-  font-size: 12.5px;
-  font-weight: 400;
-  line-height: 1.3;
+  font-size: 14px;
+  line-height: 1.22;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -526,20 +363,18 @@
   display: grid;
   align-content: center;
   justify-items: end;
-  gap: 6px;
+  gap: 10px;
   color: var(--muted);
 }
 
 .conversation-meta time {
-  font-size: 11.5px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
 .conversation-pane-foot {
   display: none;
 }
-
-/* ── 联系人/角色 Pane ── */
 
 .qq-contact-pane {
   min-height: 0;
@@ -556,26 +391,21 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin: 8px 14px 12px;
+  margin: 8px 18px 12px;
 }
 
 .qq-role-actions button {
-  min-height: 38px;
+  min-height: 42px;
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-  background: var(--panel);
+  border-radius: 10px;
+  background: var(--feature-field, rgba(255, 255, 255, 0.42));
   color: var(--ink);
-  font-size: 13px;
-  font-weight: 500;
-  transition: all var(--duration-fast) var(--ease-smooth);
+  font-size: 14px;
 }
 
 .qq-role-actions button:hover {
-  background: var(--pink-50);
-  border-color: var(--line);
-  color: var(--pink-700);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-xs);
+  background: var(--panel);
+  color: var(--pink-500);
 }
 
 .qq-contact-pane-simple .qq-contact-friends {
@@ -584,96 +414,71 @@
 }
 
 .qq-contact-manager {
-  min-height: 44px;
-  margin: 0 14px 8px;
+  min-height: 48px;
+  margin: 0 24px 10px;
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-  background: var(--panel);
+  border-radius: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   color: var(--ink);
-  font-size: 13.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.qq-contact-manager:hover {
-  background: var(--pink-50);
-  color: var(--pink-700);
-}
-
-.qq-contact-manager svg {
-  color: var(--pink-500);
+  font-size: 16px;
 }
 
 .qq-contact-notice {
-  min-height: 48px;
+  min-height: 54px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 18px;
+  padding: 0 24px;
   color: var(--ink);
-  font-size: 13.5px;
-}
-
-.qq-contact-notice svg {
-  color: var(--pink-500);
+  font-size: 16px;
 }
 
 .qq-contact-tabs {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
-  margin: 12px 14px;
-  padding: 4px;
-  border-radius: var(--radius-sm);
-  background: var(--pink-50);
+  gap: 6px;
+  margin: 16px 24px;
+  padding: 5px;
+  border-radius: 8px;
+  background: var(--feature-field, rgba(255, 255, 255, 0.35));
 }
 
 .qq-contact-tabs button {
-  min-height: 32px;
-  border-radius: calc(var(--radius-sm) - 4px);
-  color: var(--muted-strong);
-  font-size: 13px;
-  font-weight: 500;
-  transition: all var(--duration-fast) var(--ease-smooth);
+  min-height: 36px;
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 16px;
 }
 
 .qq-contact-tabs button.active {
   background: var(--panel);
-  color: var(--pink-700);
-  font-weight: 600;
-  box-shadow: var(--shadow-xs);
+  color: var(--pink-500);
 }
 
 .qq-contact-groups {
   min-height: 0;
   overflow-y: auto;
-  padding: 0 8px 12px;
 }
 
 .qq-contact-group-title {
   width: 100%;
-  min-height: 44px;
+  min-height: 52px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
+  padding: 0 22px;
   color: var(--ink);
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: 17px;
   text-align: left;
-  letter-spacing: -0.005em;
 }
 
 .qq-contact-group-title small {
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 400;
+  font-size: 14px;
 }
 
 .qq-contact-friends button {
@@ -681,39 +486,32 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  min-height: 64px;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
+  gap: 14px;
+  min-height: 88px;
+  padding: 10px 18px;
   text-align: left;
-  transition: all var(--duration-fast) var(--ease-smooth);
 }
 
 .qq-contact-friends button.active,
 .qq-contact-friends button:hover {
-  background: var(--surface-hover);
-}
-
-.qq-contact-friends button.active {
-  background: var(--pink-100);
+  background: var(--middle-hover, rgba(255, 255, 255, 0.38));
 }
 
 .qq-contact-friends strong,
 .qq-app-pane strong {
   display: block;
   color: var(--ink);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.01em;
 }
 
 .qq-contact-friends small,
 .qq-app-pane small {
   display: block;
   overflow: hidden;
-  margin-top: 3px;
+  margin-top: 4px;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -721,183 +519,234 @@
 .qq-app-pane {
   min-height: 0;
   overflow-y: auto;
-  padding: 4px 8px 14px;
+  padding: 4px 0 14px;
 }
 
 .qq-app-pane button {
   width: 100%;
-  min-height: 60px;
+  min-height: 78px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
+  gap: 13px;
+  padding: 10px 18px;
   color: var(--ink);
   text-align: left;
-  transition: all var(--duration-fast) var(--ease-smooth);
 }
 
 .qq-app-pane button.active,
 .qq-app-pane button:hover {
-  background: var(--surface-hover);
+  background: var(--middle-hover, rgba(255, 255, 255, 0.38));
 }
 
 .qq-app-pane-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-sm);
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
-  background: var(--pink-50);
-  color: var(--pink-600);
-  border: 1px solid var(--line-soft);
+  background: var(--feature-field, color-mix(in srgb, var(--rose) 7%, var(--panel)));
+  color: var(--pink-500);
 }
 
-/* ── 桌面端密度 ── */
+/* Third-pass desktop polish: lighter QQ-like density and flatter texture. */
 @media (min-width: 761px) {
   .qq-icon-rail {
-    gap: 4px;
-    padding: 12px 6px 14px;
+    gap: 5px;
+    padding: 10px 6px 14px;
+    background: var(--rail-bg, color-mix(in srgb, var(--rose) 14%, var(--panel)));
   }
 
   .qq-brand-button {
     width: 48px;
     height: 30px;
-    font-size: 12.5px;
+    font-size: 14px;
   }
 
   .primary-nav,
   .qq-dock-icons {
-    gap: 4px;
+    gap: 5px;
   }
 
   .nav-button {
     width: 48px;
-    height: 42px;
-    border-radius: 11px;
+    height: 43px;
+    border-radius: 9px;
   }
 
   .nav-button svg {
-    width: 20px;
-    height: 20px;
+    width: 23px;
+    height: 23px;
   }
 
   .nav-button b {
     top: 4px;
-    right: 6px;
-    min-width: 16px;
-    height: 16px;
-    font-size: 10.5px;
+    right: 7px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 11px;
   }
 
   .nav-button b.nav-dot {
-    top: 6px;
-    right: 8px;
+    top: 7px;
+    right: 9px;
   }
 
   .qq-dock-icons button {
     width: 48px;
     height: 36px;
-    border-radius: 11px;
+    border-radius: 9px;
   }
 
   .qq-dock-icons button svg {
-    width: 19px;
-    height: 19px;
+    width: 21px;
+    height: 21px;
   }
 
   .desktop-rail-menu {
-    left: 68px;
+    left: 66px;
+  }
+
+  .conversation-pane {
+    background: var(--middle-bg, color-mix(in srgb, var(--rose) 18%, var(--panel)));
   }
 
   .conversation-search-row {
-    grid-template-columns: minmax(0, 1fr) 36px;
+    grid-template-columns: minmax(0, 1fr) 38px;
     gap: 8px;
-    padding: 12px 12px 8px;
+    padding: 14px 12px 10px;
   }
 
   .conversation-add-button {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
   }
 
   .conversation-search {
-    height: 36px;
-    border-radius: 10px;
+    height: 38px;
+    border-radius: 11px;
+    background: var(--feature-field, rgba(255, 255, 255, 0.54));
   }
 
   .character-button {
-    min-height: 64px;
+    min-height: 78px;
     gap: 11px;
-    padding: 9px 11px;
-    border-radius: 12px;
+    padding: 8px 10px 8px 14px;
+    border-radius: 7px;
+  }
+
+  .character-button.active {
+    background: var(--middle-active, rgba(64, 48, 57, 0.1));
   }
 
   .avatar {
-    width: 42px;
-    height: 42px;
-    font-size: 14px;
+    width: 48px;
+    height: 48px;
+    font-size: 15px;
+    box-shadow: none;
   }
 
   .conversation-copy {
-    gap: 3px;
+    gap: 4px;
   }
 
   .conversation-copy strong {
-    font-size: 14px;
+    font-size: 15.5px;
+    font-weight: 600;
   }
 
   .conversation-copy small {
-    font-size: 12px;
+    font-size: 12.5px;
   }
 
   .conversation-meta time {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .qq-contact-manager {
-    min-height: 40px;
-    margin: 0 12px 6px;
-    font-size: 13px;
+    min-height: 42px;
+    margin: 0 18px 8px;
+    border-radius: 10px;
+    font-size: 14px;
   }
 
   .qq-contact-notice,
   .qq-contact-group-title {
-    min-height: 42px;
-    padding: 0 14px;
-    font-size: 13px;
+    min-height: 46px;
+    padding: 0 18px;
+    font-size: 15px;
   }
 
   .qq-contact-tabs {
-    margin: 10px 12px;
+    margin: 12px 18px;
   }
 
   .qq-contact-friends button {
-    min-height: 60px;
-    gap: 11px;
-    padding: 9px 12px;
+    min-height: 72px;
+    gap: 12px;
+    padding: 8px 14px;
+  }
+
+  .avatar {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.36);
+  }
+
+  .avatar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background:
+      radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.72), transparent 30%),
+      radial-gradient(circle at 74% 76%, color-mix(in srgb, var(--avatar-accent) 26%, transparent), transparent 42%),
+      conic-gradient(
+        from 150deg,
+        color-mix(in srgb, var(--avatar-accent) 34%, #fff),
+        color-mix(in srgb, var(--avatar-accent) 12%, #fff),
+        color-mix(in srgb, var(--avatar-accent) 24%, #f7f1ff),
+        color-mix(in srgb, var(--avatar-accent) 34%, #fff)
+      );
+  }
+
+  .avatar::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    border-radius: inherit;
+    box-shadow: inset 0 -12px 22px rgba(255, 255, 255, 0.28);
+  }
+
+  .avatar b {
+    z-index: 1;
+  }
+
+  .system-avatar::before,
+  .channel-avatar::before {
+    background:
+      radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.58), transparent 28%),
+      var(--grad-bubble);
   }
 }
 
-/* ── 群聊创建器 ── */
-
 .rail-group-creator {
   position: absolute;
-  inset: 64px 14px 14px;
+  inset: 64px 12px 12px;
   z-index: 8;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 10px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-lg);
-  background: var(--glass-strong);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  padding: 14px;
-  box-shadow: var(--shadow-lg);
-  animation: rail-menu-in 200ms var(--ease-out) both;
+  border: 1px solid rgba(233, 111, 174, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 12px;
+  box-shadow: 0 14px 30px rgba(126, 76, 104, 0.12);
 }
 
 .rail-group-creator header,
@@ -911,69 +760,55 @@
 .rail-group-creator header span {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   color: var(--ink);
 }
 
 .rail-group-creator header strong {
   font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
 }
 
 .rail-group-creator input {
   min-height: 36px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-  background: var(--panel);
+  border: 1px solid rgba(86, 50, 68, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 247, 251, 0.72);
   color: var(--ink);
-  padding: 0 12px;
+  padding: 0 11px;
   font: inherit;
-  font-size: 13px;
   outline: 0;
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.rail-group-creator input:focus {
-  border-color: var(--pink-300);
-  box-shadow: 0 0 0 3px var(--rose-glow);
 }
 
 .rail-group-members {
   min-height: 0;
   display: grid;
-  gap: 4px;
+  gap: 6px;
   overflow-y: auto;
   padding-right: 2px;
 }
 
 .rail-group-members button {
   min-width: 0;
-  min-height: 48px;
+  min-height: 50px;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 22px;
+  grid-template-columns: auto minmax(0, 1fr) 24px;
   align-items: center;
-  gap: 10px;
-  border-radius: var(--radius-sm);
+  gap: 9px;
+  border-radius: 12px;
   padding: 7px 8px;
   color: var(--ink);
   text-align: left;
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.rail-group-members button:hover {
-  background: var(--surface-hover);
 }
 
 .rail-group-members button.selected {
-  background: var(--pink-100);
+  background: rgba(236, 120, 178, 0.12);
 }
 
 .rail-group-members .avatar {
-  width: 32px;
-  height: 32px;
-  flex-basis: 32px;
-  font-size: 12px;
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  font-size: 13px;
 }
 
 .rail-group-members strong,
@@ -986,39 +821,29 @@
 
 .rail-group-members strong {
   font-size: 13px;
-  font-weight: 600;
 }
 
 .rail-group-members small,
 .rail-group-creator footer small {
   color: var(--muted);
-  font-size: 11.5px;
-}
-
-.rail-group-members b {
-  width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  color: var(--pink-600);
   font-size: 11px;
 }
 
-.rail-group-creator footer button {
-  min-height: 32px;
-  border-radius: var(--radius-full);
-  background: var(--grad-pink);
-  color: #fff;
-  padding: 0 16px;
-  font-weight: 700;
-  font-size: 12.5px;
-  box-shadow: var(--shadow-pink);
-  transition: all var(--duration-fast) var(--ease-smooth);
+.rail-group-members b {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 50, 68, 0.16);
+  border-radius: 50%;
+  color: var(--pink-600);
 }
 
-.rail-group-creator footer button:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-pink-lg);
+.rail-group-creator footer button {
+  min-height: 30px;
+  border-radius: 999px;
+  background: var(--pink-500);
+  color: #fff;
+  padding: 0 14px;
+  font-weight: 800;
 }

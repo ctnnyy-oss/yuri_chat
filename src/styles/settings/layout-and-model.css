@@ -32,32 +32,28 @@
   justify-content: space-between;
   gap: 12px;
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-md);
-  background: var(--panel);
-  box-shadow: var(--shadow-xs);
-  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--feature-card, var(--panel));
+  box-shadow: var(--shadow-sm);
+  padding: 12px 14px;
 }
 
 .model-current-strip > div:first-child {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .model-current-strip small {
-  color: var(--pink-700);
+  color: var(--muted);
   font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
+  font-weight: 800;
 }
 
 .model-current-strip strong {
   color: var(--ink);
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
   font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.015em;
+  font-weight: 900;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -87,29 +83,23 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-full);
-  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: var(--feature-field, var(--pink-50));
   color: var(--ink);
   font: inherit;
   font-size: 12px;
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  min-height: 36px;
-  padding: 8px 14px;
+  font-weight: 800;
+  min-height: 38px;
+  padding: 8px 12px;
   cursor: pointer;
-  box-shadow: var(--shadow-xs);
-  transition: all var(--duration-fast) var(--ease-smooth);
 }
 
 .model-current-actions button:hover:not(:disabled),
 .model-picker-row button:hover:not(:disabled),
 .model-inline-link:hover {
-  border-color: var(--line-strong);
-  background: var(--pink-50);
-  color: var(--pink-700);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+  border-color: var(--line);
+  background: var(--middle-hover, var(--pink-100));
 }
 
 .model-current-actions button:disabled,
@@ -251,36 +241,28 @@
 .settings-section {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-lg);
-  background: var(--panel);
-  box-shadow: var(--shadow-card);
-  padding: 22px 24px;
-  position: relative;
-  isolation: isolate;
-}
-
-.settings-section::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 245, 250, 0.4), transparent 30%);
-  pointer-events: none;
-  z-index: -1;
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--rose) 7%, var(--feature-card, var(--panel))),
+      var(--feature-card, var(--panel))
+    );
+  box-shadow: var(--shadow-sm);
+  padding: 16px 18px;
 }
 
 .settings-section-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
-  font-weight: 700;
-  font-size: 15px;
+  gap: 7px;
+  font-weight: 800;
+  font-size: 14.5px;
   color: var(--ink);
-  letter-spacing: -0.015em;
+  letter-spacing: 0;
 }
 
 .settings-section-title svg {
@@ -426,20 +408,22 @@
 .model-saved-section .model-profile-item {
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: var(--panel);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--rose) 12%, var(--feature-field, var(--panel))),
+      color-mix(in srgb, var(--rose) 4%, var(--feature-card, var(--panel)))
+    );
   box-shadow: var(--shadow-xs);
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.model-saved-section .model-profile-item:hover {
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
 }
 
 .model-saved-section .model-profile-item.active {
-  border-color: var(--line-strong);
-  background: linear-gradient(135deg, var(--pink-50), var(--panel));
-  box-shadow: var(--shadow-sm), 0 0 0 1px var(--line) inset;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--rose) 20%, var(--feature-field, var(--panel))),
+      color-mix(in srgb, var(--rose) 7%, var(--feature-card, var(--panel)))
+    );
 }
 
 .model-voice-section {
@@ -451,7 +435,11 @@
 }
 
 .model-hero-section {
-  background: linear-gradient(135deg, var(--pink-50), var(--panel));
-  border-color: var(--line);
+  background:
+    linear-gradient(
+      135deg,
+      var(--feature-card, var(--pink-50)),
+      color-mix(in srgb, var(--rose) 5%, var(--panel))
+    );
 }
 

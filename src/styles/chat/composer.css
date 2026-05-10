@@ -1,18 +1,13 @@
-/* ═══════════════════════════════════════════════════
-   百合小窝 — Composer (输入区)
-   苹果级毛玻璃 + iOS 输入框 + 渐变发送键
-   ═══════════════════════════════════════════════════ */
+﻿/* ── 输入区 (简洁) ── */
 
 .composer {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 8px;
-  min-height: 124px;
-  padding: 12px 24px 16px;
+  gap: 6px;
+  min-height: 120px;
+  padding: 8px 16px 12px;
   border-top: 1px solid var(--hairline);
-  background: var(--glass-strong);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  background: rgba(255, 253, 254, 0.96);
 }
 
 .composer-entry {
@@ -21,34 +16,27 @@
   align-items: flex-end;
   gap: 10px;
   min-height: 50px;
-  padding: 8px 12px;
-  background: var(--panel);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-xs);
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.composer-entry:focus-within {
-  border-color: var(--pink-300);
-  box-shadow: 0 0 0 3px var(--rose-glow), var(--shadow-sm);
 }
 
 .composer textarea {
   flex: 1;
-  min-height: 32px;
-  max-height: 140px;
-  padding: 6px 0;
+  min-height: 42px;
+  max-height: 120px;
+  padding: 10px 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--ink);
   font-size: var(--app-font-size, 15px);
-  line-height: 1.55;
-  letter-spacing: -0.005em;
+  line-height: 1.5;
   resize: none;
   outline: none;
+  transition: border-color 0.2s;
   field-sizing: content;
+}
+
+.composer textarea:focus {
+  border-color: transparent;
 }
 
 .composer textarea::placeholder {
@@ -57,50 +45,30 @@
 
 .composer-send {
   flex: 0 0 auto;
-  width: 64px;
-  height: 36px;
-  border-radius: var(--radius-sm);
+  width: 68px;
+  height: 34px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
-  background: var(--grad-pink);
+  background: var(--pink-400);
   color: #fff;
   border: none;
   cursor: pointer;
-  font-size: 13.5px;
-  font-weight: 700;
-  letter-spacing: -0.005em;
-  box-shadow: var(--shadow-pink);
-  transition: all var(--duration-fast) var(--ease-smooth);
-  position: relative;
-  isolation: isolate;
-}
-
-.composer-send::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 50%);
-  pointer-events: none;
-  z-index: -1;
+  transition: opacity 0.15s;
 }
 
 .composer-send:hover:not(:disabled) {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-pink-lg);
+  opacity: 0.85;
 }
 
 .composer-send:active:not(:disabled) {
-  transform: translateY(0) scale(0.96);
+  transform: scale(0.95);
 }
 
 .composer-send:disabled {
-  background: var(--pink-200);
-  color: rgba(255, 255, 255, 0.7);
+  background: #e6dce2;
   cursor: not-allowed;
-  box-shadow: none;
-  filter: saturate(0.5);
+  opacity: 0.5;
 }
 
 .composer-toolbar {
@@ -114,21 +82,16 @@
 .composer-tool {
   width: 34px;
   height: 32px;
-  border-radius: var(--radius-xs);
+  border-radius: 8px;
   display: grid;
   place-items: center;
-  color: var(--muted-strong);
+  color: rgba(74, 46, 58, 0.72);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-smooth);
 }
 
 .composer-tool:hover {
   background: var(--pink-50);
   color: var(--pink-700);
-}
-
-.composer-tool:active {
-  transform: scale(0.94);
 }
 
 .composer-tool:disabled {
@@ -140,12 +103,10 @@
   color: var(--pink-600);
 }
 
-/* ── Voice 工具面板 ── */
-
 .voice-tool-panel {
   display: grid;
   align-content: start;
-  gap: 14px;
+  gap: 12px;
 }
 
 .voice-tool-head {
@@ -156,10 +117,9 @@
 }
 
 .voice-tool-head strong {
-  color: var(--ink);
+  color: #1f1f22;
   font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.015em;
+  font-weight: 800;
 }
 
 .voice-tool-head span,
@@ -169,10 +129,10 @@
 }
 
 .voice-transcript-preview {
-  min-height: 80px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-  background: var(--panel);
+  min-height: 76px;
+  border: 1px solid rgba(86, 50, 68, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
   color: var(--ink);
   line-height: 1.65;
   padding: 12px;
@@ -180,7 +140,7 @@
 
 .voice-error {
   margin: 0;
-  color: var(--pink-700);
+  color: #c73d5a;
 }
 
 .voice-tool-actions {
@@ -195,45 +155,24 @@
   justify-content: center;
   gap: 7px;
   min-height: 38px;
-  border-radius: var(--radius-sm);
-  background: var(--panel);
-  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
   color: var(--ink);
-  padding: 0 16px;
+  padding: 0 14px;
   font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-smooth);
-  box-shadow: var(--shadow-xs);
-}
-
-.voice-record-button:hover {
-  background: var(--pink-50);
-  border-color: var(--line-strong);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+  font-weight: 800;
 }
 
 .voice-record-button.primary,
 .voice-call-actions .primary {
   background: var(--grad-pink);
-  border: 1px solid transparent;
   color: #fff;
-  box-shadow: var(--shadow-pink);
-}
-
-.voice-record-button.primary:hover {
-  filter: brightness(1.05);
-  box-shadow: var(--shadow-pink-lg);
 }
 
 .voice-record-button.danger {
-  background: var(--pink-50);
-  color: var(--pink-700);
-  border-color: var(--line);
+  background: #fff0f5;
+  color: #c73d5a;
 }
-
-/* ── 通话弹层 ── */
 
 .voice-call-layer {
   position: fixed;
@@ -242,9 +181,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(31, 19, 26, 0.55);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  background: rgba(24, 15, 21, 0.62);
 }
 
 .voice-call-panel {
@@ -252,61 +189,45 @@
   width: min(380px, 100%);
   display: grid;
   justify-items: center;
-  gap: 14px;
-  border-radius: var(--radius-xl);
-  background: var(--glass-strong);
-  backdrop-filter: var(--glass-blur-strong);
-  -webkit-backdrop-filter: var(--glass-blur-strong);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: var(--shadow-xl);
-  padding: 32px 24px 24px;
+  gap: 12px;
+  border-radius: 18px;
+  background: rgba(255, 250, 253, 0.98);
+  box-shadow: 0 22px 70px rgba(30, 18, 26, 0.28);
+  padding: 28px 22px 22px;
   text-align: center;
 }
 
 .voice-call-close {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   color: var(--muted);
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.voice-call-close:hover {
-  background: var(--surface-hover);
-  color: var(--pink-700);
 }
 
 .voice-call-avatar {
-  width: 88px;
-  height: 88px;
+  width: 82px;
+  height: 82px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.85), transparent 40%),
     linear-gradient(135deg,
       color-mix(in srgb, var(--avatar-accent, var(--rose)) 55%, #fff),
       color-mix(in srgb, var(--avatar-accent, var(--rose)) 22%, #fff));
-  color: color-mix(in srgb, var(--avatar-accent, var(--rose)) 80%, var(--ink));
+  color: color-mix(in srgb, var(--avatar-accent, var(--rose)) 80%, #333);
   font-size: 30px;
-  font-weight: 800;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.5),
-    0 8px 24px color-mix(in srgb, var(--avatar-accent, var(--rose)) 25%, transparent);
+  font-weight: 900;
 }
 
 .voice-call-panel strong {
-  color: var(--ink);
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
+  color: #21141c;
   font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.025em;
+  font-weight: 900;
 }
 
 .voice-call-panel small,
@@ -319,18 +240,16 @@
 
 .voice-call-panel p {
   width: 100%;
-  min-height: 60px;
+  min-height: 58px;
   margin: 0;
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   background: var(--pink-50);
-  border: 1px solid var(--line-soft);
-  padding: 12px 14px;
+  padding: 10px 12px;
 }
 
 .voice-call-panel em {
-  color: var(--pink-700);
+  color: #c73d5a;
   font-style: normal;
-  font-weight: 600;
 }
 
 .voice-call-actions {
@@ -341,24 +260,15 @@
 }
 
 .voice-call-actions button {
-  min-height: 42px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  border-radius: var(--radius-sm);
-  background: var(--panel);
-  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
   color: var(--ink);
-  padding: 0 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-smooth);
-  box-shadow: var(--shadow-xs);
-}
-
-.voice-call-actions button:hover {
-  background: var(--pink-50);
-  border-color: var(--line-strong);
+  padding: 0 14px;
+  font-weight: 800;
 }
 
 /* ── 移动端适配 ── */
@@ -369,24 +279,18 @@
   }
 
   .chat-topbar {
-    min-height: 80px;
-    padding: 28px 14px 8px;
+    min-height: 88px;
+    padding: 30px 12px 8px;
+    background: #f8f8f9;
   }
 
   .mobile-chat-back {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     flex: 0 0 auto;
     display: grid;
     place-items: center;
-    color: var(--ink);
-    border-radius: var(--radius-sm);
-    transition: all var(--duration-fast) var(--ease-smooth);
-  }
-
-  .mobile-chat-back:active {
-    background: var(--surface-hover);
-    transform: scale(0.94);
+    color: #1d1d1f;
   }
 
   .mobile-menu-button {
@@ -398,10 +302,9 @@
   }
 
   .chat-topbar-text strong {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--ink);
-    letter-spacing: -0.02em;
+    font-size: 20px;
+    font-weight: 800;
+    color: #1f1f22;
   }
 
   .chat-topbar-text span {
@@ -410,9 +313,9 @@
 
   .chat-character-select {
     display: block;
-    max-width: 120px;
+    max-width: 118px;
     border: 0;
-    border-radius: var(--radius-xs);
+    border-radius: 8px;
     background-color: transparent;
     color: var(--muted);
     font-size: 12px;
@@ -428,61 +331,64 @@
   }
 
   .message-list {
-    padding: 14px 0;
-    background: var(--canvas);
+    padding: 12px 0;
+    background: #f0f0f2;
   }
 
   .chat-system-banner {
-    width: calc(100% - 28px);
-    margin-bottom: 10px;
-    padding: 10px 14px;
+    width: calc(100% - 24px);
+    margin-bottom: 8px;
+    padding: 9px 12px;
   }
 
   .chat-row {
-    padding: 3px 14px;
+    padding: 3px 10px;
     gap: 8px;
   }
 
   .chat-row-avatar {
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
-    font-size: 13px;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    font-size: 14px;
   }
 
   .message {
-    max-width: min(78%, 400px);
+    max-width: min(76%, 400px);
     padding: 9px 12px;
   }
 
   .composer {
-    min-height: 124px;
-    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    min-height: 128px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
     gap: 8px;
+    background: #fff;
   }
 
   .composer-entry {
     order: 1;
     min-height: 44px;
-    padding: 6px 10px;
   }
 
   .composer-toolbar {
     order: 2;
     justify-content: space-between;
-    padding: 0 4px;
+    padding: 0 8px;
   }
 
   .composer textarea {
-    min-height: 30px;
-    padding: 4px 0;
-    font-size: 14.5px;
+    min-height: 38px;
+    padding: 7px 12px;
+    border-radius: 14px;
+    background: #fff;
+    font-size: 14px;
+    box-shadow: inset 0 0 0 1px rgba(74, 46, 58, 0.08);
   }
 
   .composer-send {
-    width: 60px;
-    height: 32px;
-    border-radius: var(--radius-xs);
+    width: 64px;
+    height: 34px;
+    border-radius: 12px;
   }
 
   .composer-tool {
@@ -499,7 +405,7 @@
   }
 
   .message {
-    max-width: min(58%, 540px);
+    max-width: min(55%, 520px);
   }
 }
 
@@ -510,3 +416,4 @@
     animation: none;
   }
 }
+
