@@ -6,42 +6,49 @@
 
 :root {
   /* ── 粉粉嫩嫩 8 档色阶 (真正的可可爱爱粉色) ── */
-  --pink-50:  #ffe8f5;   /* 云朵粉，背景最浅层 */
-  --pink-100: #ffd6ed;   /* 棉花糖底 */
-  --pink-150: #ffc4e5;   /* 樱花霜 */
-  --pink-200: #ffb0dc;   /* 糖霜粉 */
-  --pink-300: #ff9ad1;   /* 花瓣粉 */
-  --pink-400: #ff7fc4;   /* 蜜桃粉 */
-  --pink-500: #ff5eb5;   /* 草莓奶 */
-  --pink-600: #f03d9f;   /* 玫瑰粉 */
-  --pink-700: #d6248a;   /* 重点粉 */
+  --pink-50:  color-mix(in srgb, #ffabcc 9%, #fff);   /* 云朵粉，背景最浅层 */
+  --pink-100: color-mix(in srgb, #ffabcc 16%, #fff);  /* 棉花糖底 */
+  --pink-150: color-mix(in srgb, #ffabcc 22%, #fff);  /* 樱花霜 */
+  --pink-200: color-mix(in srgb, #ffabcc 30%, #fff);  /* 糖霜粉 */
+  --pink-300: color-mix(in srgb, #ffabcc 44%, #fff);  /* 花瓣粉 */
+  --pink-400: color-mix(in srgb, #ffabcc 68%, #fff);  /* 蜜桃粉 */
+  --pink-500: #ffabcc;                                /* 草莓奶 */
+  --pink-600: color-mix(in srgb, #ffabcc 78%, #70394f); /* 玫瑰粉 */
+  --pink-700: color-mix(in srgb, #ffabcc 58%, #3d2230); /* 重点粉 */
 
   /* ── 兼容旧变量名 (业务样式仍引用) ── */
-  --rose:        var(--pink-300);
-  --rose-strong: var(--pink-500);
-  --rose-deep:   var(--pink-600);
-  --rose-soft:   var(--pink-100);
-  --rose-hover:  var(--pink-200);
-  --rose-hot:    var(--pink-500);
-  --rose-ghost:  rgba(255, 158, 196, 0.16);
-  --rose-glow:   rgba(255, 158, 196, 0.32);
+  --rose:        #ffabcc;
+  --rose-strong: color-mix(in srgb, #ffabcc 78%, #70394f);
+  --rose-deep:   color-mix(in srgb, #ffabcc 62%, #4c2638);
+  --rose-soft:   color-mix(in srgb, #ffabcc 16%, #fff);
+  --rose-hover:  color-mix(in srgb, #ffabcc 28%, #fff);
+  --rose-hot:    color-mix(in srgb, #ffabcc 90%, #fff);
+  --rose-ghost:  rgba(255, 171, 204, 0.13);
+  --rose-glow:   rgba(255, 171, 204, 0.22);
 
   /* ── 文字色 (粉调暖灰) ── */
-  --ink:           #4a2e3a;   /* 主文字 */
-  --ink-secondary: #6b485a;   /* 次要文字 */
-  --muted:         #9a7587;   /* 辅助说明 */
-  --muted-light:   #c0a3b0;   /* 极弱说明 */
+  --ink:           color-mix(in srgb, #ffabcc 18%, #2f2730);   /* 主文字 */
+  --ink-secondary: color-mix(in srgb, #ffabcc 28%, #4f3c48);   /* 次要文字 */
+  --muted:         color-mix(in srgb, #ffabcc 38%, #7a6971);   /* 辅助说明 */
+  --muted-light:   color-mix(in srgb, #ffabcc 28%, #bbaab2);   /* 极弱说明 */
 
   /* ── 背景与表面 ── */
-  --page-bg:       #ffe8f5;
-  --canvas:        #fff0f9;
-  --panel:         #ffffff;
-  --panel-soft:    #fff8fc;
-  --panel-tint:    #ffebf6;
+  --page-bg:       color-mix(in srgb, #ffabcc 7%, #fff);
+  --canvas:        color-mix(in srgb, #ffabcc 5%, #fff);
+  --panel:         #fffdfd;
+  --panel-soft:    color-mix(in srgb, #ffabcc 4%, #fff);
+  --panel-tint:    color-mix(in srgb, #ffabcc 10%, #fff);
   --surface:       rgba(255, 255, 255, 0.92);
   --surface-strong:rgba(255, 255, 255, 0.98);
-  --surface-hover: rgba(255, 235, 248, 0.94);
-  --surface-active:rgba(255, 214, 237, 0.94);
+  --surface-hover: color-mix(in srgb, #ffabcc 8%, rgba(255, 255, 255, 0.94));
+  --surface-active:color-mix(in srgb, #ffabcc 14%, rgba(255, 255, 255, 0.94));
+  --feature-bg:    linear-gradient(90deg, color-mix(in srgb, #ffabcc 22%, #fff), color-mix(in srgb, #ffabcc 7%, #fff));
+  --feature-card:  color-mix(in srgb, #ffabcc 8%, rgba(255, 255, 255, 0.9));
+  --feature-field: color-mix(in srgb, #ffabcc 4%, rgba(255, 255, 255, 0.78));
+  --rail-bg:       color-mix(in srgb, #ffabcc 15%, #fff);
+  --middle-bg:     color-mix(in srgb, #ffabcc 18%, #fff);
+  --middle-hover:  color-mix(in srgb, #ffabcc 10%, rgba(255, 255, 255, 0.48));
+  --middle-active: rgba(255, 171, 204, 0.13);
 
   /* ── 点缀色 (克制使用，每个仅 1-2 处) ── */
   --lavender:       #e2cdff;
@@ -61,24 +68,24 @@
   --butter-ink:     #a3792d;
 
   /* ── 边线 ── */
-  --line:        rgba(255, 188, 214, 0.32);
-  --line-soft:   rgba(255, 188, 214, 0.18);
-  --line-strong: rgba(255, 158, 196, 0.45);
-  --line-tint:   rgba(255, 214, 231, 0.55);
-  --line-light:  rgba(255, 214, 231, 0.4);
-  --hairline:    rgba(74, 46, 58, 0.06);
+  --line:        rgba(255, 171, 204, 0.26);
+  --line-soft:   rgba(255, 171, 204, 0.14);
+  --line-strong: rgba(255, 171, 204, 0.42);
+  --line-tint:   rgba(255, 171, 204, 0.24);
+  --line-light:  rgba(255, 171, 204, 0.18);
+  --hairline:    rgba(74, 51, 64, 0.06);
 
   /* ── 渐变 ── */
-  --grad-pink:        linear-gradient(135deg, #ff9ad1 0%, #ff7fc4 50%, #ff5eb5 100%);
-  --grad-pink-soft:   linear-gradient(135deg, #ffc4e5 0%, #ffb0dc 100%);
-  --grad-bubble:      linear-gradient(135deg, #ff8ac8 0%, #ff6bb8 100%);
-  --grad-warm:        linear-gradient(135deg, #ffb0dc 0%, #ffd1b8 100%);
-  --grad-cool:        linear-gradient(135deg, #ffb0dc 0%, #e2cdff 100%);
+  --grad-pink:        linear-gradient(135deg, color-mix(in srgb, #ffabcc 62%, #fff) 0%, #ffabcc 52%, color-mix(in srgb, #ffabcc 78%, #6e3d52) 100%);
+  --grad-pink-soft:   linear-gradient(135deg, color-mix(in srgb, #ffabcc 24%, #fff) 0%, color-mix(in srgb, #ffabcc 12%, #fff) 100%);
+  --grad-bubble:      linear-gradient(135deg, color-mix(in srgb, #ffabcc 70%, #fff) 0%, #ffabcc 100%);
+  --grad-warm:        linear-gradient(135deg, color-mix(in srgb, #ffabcc 30%, #fff) 0%, #ffd1b8 100%);
+  --grad-cool:        linear-gradient(135deg, color-mix(in srgb, #ffabcc 30%, #fff) 0%, #e2cdff 100%);
   --grad-page:
-    radial-gradient(900px 700px at 8% 6%, rgba(255, 154, 209, 0.55), transparent 65%),
-    radial-gradient(800px 650px at 96% 12%, rgba(226, 205, 255, 0.35), transparent 68%),
-    radial-gradient(900px 700px at 50% 100%, rgba(255, 176, 220, 0.45), transparent 70%),
-    var(--page-bg);
+    radial-gradient(900px 700px at 8% 6%, rgba(255, 171, 204, 0.28), transparent 65%),
+    radial-gradient(800px 650px at 96% 12%, rgba(226, 205, 255, 0.18), transparent 68%),
+    radial-gradient(900px 700px at 50% 100%, rgba(255, 171, 204, 0.18), transparent 70%),
+    color-mix(in srgb, #ffabcc 7%, #fff);
 
   /* 兼容旧名 */
   --accent-gradient:      var(--grad-pink);
@@ -92,15 +99,15 @@
     radial-gradient(420px 280px at 22% 12%, rgba(255, 255, 255, 0.85), transparent 65%),
     linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(255, 252, 254, 0.86));
   --line-strong-old: rgba(255, 255, 255, 0.95);
-  --soft-shadow: 0 18px 48px rgba(255, 158, 196, 0.16);
+  --soft-shadow: 0 24px 72px rgba(255, 171, 204, 0.12);
 
   /* ── 阴影 (柔和粉调) ── */
-  --shadow-xs: 0 1px 2px rgba(255, 124, 174, 0.06), 0 1px 3px rgba(255, 124, 174, 0.04);
-  --shadow-sm: 0 2px 8px rgba(255, 124, 174, 0.08), 0 1px 3px rgba(255, 124, 174, 0.06);
-  --shadow-md: 0 6px 18px rgba(255, 124, 174, 0.10), 0 2px 6px rgba(255, 124, 174, 0.06);
-  --shadow-lg: 0 14px 38px rgba(255, 124, 174, 0.13), 0 4px 12px rgba(255, 124, 174, 0.08);
-  --shadow-xl: 0 24px 64px rgba(255, 124, 174, 0.16), 0 8px 22px rgba(255, 124, 174, 0.10);
-  --shadow-glow: 0 0 0 4px rgba(255, 158, 196, 0.18);
+  --shadow-xs: 0 1px 2px rgba(255, 171, 204, 0.05), 0 1px 3px rgba(255, 171, 204, 0.04);
+  --shadow-sm: 0 2px 8px rgba(255, 171, 204, 0.07), 0 1px 3px rgba(255, 171, 204, 0.05);
+  --shadow-md: 0 6px 18px rgba(255, 171, 204, 0.09), 0 2px 6px rgba(255, 171, 204, 0.05);
+  --shadow-lg: 0 14px 38px rgba(255, 171, 204, 0.12), 0 4px 12px rgba(255, 171, 204, 0.07);
+  --shadow-xl: 0 24px 64px rgba(255, 171, 204, 0.15), 0 8px 22px rgba(255, 171, 204, 0.09);
+  --shadow-glow: 0 0 0 4px rgba(255, 171, 204, 0.18);
 
   /* ── 圆角 (苹果系) ── */
   --radius-xs:   8px;
@@ -194,7 +201,7 @@ button:disabled {
 
 select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23ff7fb1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23ffabcc' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
   padding-right: 32px !important;
@@ -220,18 +227,18 @@ select:focus-visible {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 158, 196, 0.32);
+  background: rgba(255, 171, 204, 0.32);
   border-radius: var(--radius-full);
   transition: background var(--duration-fast) var(--ease-smooth);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 124, 174, 0.55);
+  background: rgba(255, 171, 204, 0.48);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 158, 196, 0.32) transparent;
+  scrollbar-color: rgba(255, 171, 204, 0.32) transparent;
 }
 
 /* ── 选区 ── */

@@ -361,7 +361,7 @@
   background: var(--grad-pink);
   color: #fff;
   box-shadow:
-    0 12px 28px rgba(255, 124, 174, 0.32),
+    0 12px 28px color-mix(in srgb, var(--rose) 30%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 

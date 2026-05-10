@@ -1,53 +1,12 @@
 import type { CSSProperties } from 'react'
 import type { AccentTheme } from '../domain/types'
 
+const defaultPinkAccent = '#ffabcc'
+
 // Every theme covers the complete CSS token set, so switching themes stays predictable.
 export const themeVariables: Record<Exclude<AccentTheme, 'custom'>, CSSProperties> = {
-  /* 樱花粉 (默认) ─ 管理页也要一眼是粉色，而不是白色卡片漂在粉底上 */
-  sakura: {
-    '--pink-50': '#ffe8f5',
-    '--pink-100': '#ffd6ed',
-    '--pink-150': '#ffc4e5',
-    '--pink-200': '#ffb0dc',
-    '--pink-300': '#ff9ad1',
-    '--pink-400': '#ff83c6',
-    '--pink-500': '#f45fb1',
-    '--pink-600': '#d93b98',
-    '--pink-700': '#b2297e',
-    '--ink': '#4a2e3a',
-    '--ink-secondary': '#6b485a',
-    '--muted': '#9a7084',
-    '--muted-light': '#c89fb4',
-    '--page-bg': '#ffe8f5',
-    '--canvas': '#fff0f9',
-    '--panel': '#fff7fc',
-    '--panel-soft': '#ffedf7',
-    '--feature-bg':
-      'linear-gradient(90deg, rgba(255, 210, 233, 0.96) 0%, rgba(255, 230, 244, 0.92) 58%, rgba(255, 244, 250, 0.88) 100%)',
-    '--feature-card': 'rgba(255, 235, 247, 0.9)',
-    '--feature-field': 'rgba(255, 247, 252, 0.82)',
-    '--rail-bg': '#ffe0f0',
-    '--middle-bg': 'rgba(255, 224, 240, 0.94)',
-    '--middle-hover': 'rgba(255, 245, 251, 0.54)',
-    '--middle-active': 'rgba(216, 73, 150, 0.14)',
-    '--rose': '#ff9ad1',
-    '--rose-strong': '#f45fb1',
-    '--rose-deep': '#b2297e',
-    '--rose-soft': '#ffd6ed',
-    '--rose-hover': '#ffb0dc',
-    '--rose-hot': '#ff5eb5',
-    '--rose-ghost': 'rgba(255, 124, 196, 0.16)',
-    '--rose-glow': 'rgba(255, 124, 196, 0.28)',
-    '--line': 'rgba(255, 158, 196, 0.34)',
-    '--line-soft': 'rgba(255, 158, 196, 0.2)',
-    '--line-strong': 'rgba(255, 124, 196, 0.42)',
-    '--hairline': 'rgba(74, 51, 64, 0.06)',
-    '--soft-shadow': '0 24px 72px rgba(255, 124, 174, 0.16)',
-    '--grad-pink': 'linear-gradient(135deg, #ff9ad1 0%, #ff7fc4 50%, #f45fb1 100%)',
-    '--grad-bubble': 'linear-gradient(135deg, #ff8ac8 0%, #ff6bb8 100%)',
-    '--grad-page':
-      'radial-gradient(900px 700px at 8% 6%, rgba(255, 154, 209, 0.48), transparent 65%), radial-gradient(800px 650px at 96% 12%, rgba(226, 205, 255, 0.22), transparent 68%), radial-gradient(900px 700px at 50% 100%, rgba(255, 176, 220, 0.42), transparent 70%), #ffe8f5',
-  } as CSSProperties,
+  /* 樱花粉 (默认) uses the softer custom pink skin. */
+  sakura: buildCustomThemeVariables(defaultPinkAccent),
 
   /* 蜜桃奶 ─ 暖橙调 */
   white: {
@@ -354,7 +313,7 @@ export const themeVariables: Record<Exclude<AccentTheme, 'custom'>, CSSPropertie
 }
 
 export function buildCustomThemeVariables(color: string): CSSProperties {
-  const accent = normalizeHexColor(color) ?? '#ffabcc'
+  const accent = normalizeHexColor(color) ?? defaultPinkAccent
   const rgb = hexToRgb(accent) ?? { r: 255, g: 171, b: 204 }
   const accentAlpha = (alpha: number) => `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`
 

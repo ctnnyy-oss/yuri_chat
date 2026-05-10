@@ -81,7 +81,7 @@
 
 .room-list-item.active {
   background: linear-gradient(135deg, var(--pink-100), var(--pink-50));
-  border-color: rgba(255, 158, 196, 0.32);
+  border-color: var(--line);
   box-shadow: var(--shadow-xs);
 }
 

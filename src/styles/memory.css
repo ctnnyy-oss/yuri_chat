@@ -322,7 +322,7 @@
 /* ── 空间警告 ── */
 
 .space-warning {
-  border: 1px solid rgba(255, 158, 196, 0.35);
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--pink-50);
   color: var(--pink-700);
@@ -743,7 +743,7 @@
   font-size: 14px;
   font-weight: 800;
   box-shadow:
-    0 8px 18px rgba(255, 124, 174, 0.32),
+    0 8px 18px color-mix(in srgb, var(--rose) 30%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 

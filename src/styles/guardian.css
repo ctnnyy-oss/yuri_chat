@@ -62,12 +62,12 @@
 }
 
 .guardian-score[data-state='fair'] {
-  border-color: rgba(255, 158, 196, 0.32);
+  border-color: var(--line);
   background: var(--pink-100);
 }
 
 .guardian-score[data-state='weak'] {
-  border-color: rgba(255, 124, 174, 0.42);
+  border-color: var(--line-strong);
   background: linear-gradient(135deg, var(--pink-100), var(--pink-150));
 }
 
@@ -445,7 +445,7 @@
 }
 
 .diagnostic-item.warning {
-  border-color: rgba(255, 158, 196, 0.42);
+  border-color: var(--line-strong);
   border-left: 3px solid var(--pink-400);
   background: var(--pink-100);
 }
