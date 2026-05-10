@@ -281,7 +281,20 @@ for (const testCase of cases) {
 const score = passed / cases.length
 console.log(`Memory eval score: ${passed}/${cases.length} (${Math.round(score * 100)}%)`)
 
-const roleplayContextIds = getActiveMemories(memories, 'Rain keeps tapping on the old shop window. Do you still shelter lost writers?', {
+const roleplayMemories = [
+  ...memories,
+  memory({
+    id: 'core-cp-world',
+    title: '三对核心 CP 最新定稿',
+    body: '沈朝歌与顾晚吟、闻霜寒与听露泣、故渊与池鱼是核心百合 CP，池鱼思故渊是第三对的典故。',
+    tags: ['百合', 'CP', '修仙'],
+    kind: 'world',
+    layer: 'stable',
+    priority: 5,
+    pinned: true,
+  }),
+]
+const roleplayContextIds = getActiveMemories(roleplayMemories, '我把伞立在门边，听见你低声哼了一小段曲子。那叫什么名字？', {
   characterId: 'custom-roleplay-character',
   maxItems: 12,
   recallMode: false,
@@ -289,7 +302,8 @@ const roleplayContextIds = getActiveMemories(memories, 'Rain keeps tapping on th
 const roleplaySuppressesProjectAnchors =
   !roleplayContextIds.includes('architecture') &&
   !roleplayContextIds.includes('model-provider') &&
-  !roleplayContextIds.includes('neutral-roadmap')
+  !roleplayContextIds.includes('neutral-roadmap') &&
+  !roleplayContextIds.includes('core-cp-world')
 if (!roleplaySuppressesProjectAnchors) {
   console.error('FAIL roleplay context suppresses unrelated project anchors')
   console.error(`  recalled: ${roleplayContextIds.join(', ')}`)

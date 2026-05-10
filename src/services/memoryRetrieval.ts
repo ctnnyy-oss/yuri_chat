@@ -164,11 +164,28 @@ function hasStrictMemoryMatch(memory: LongTermMemory, query: string): boolean {
   const text = `${memory.title} ${memory.body} ${memory.tags.join(' ')}`
   const normalizedTitle = normalizeComparable(memory.title)
   const normalizedQuery = normalizeComparable(trimmedQuery)
+  const keywordOverlap = getKeywordOverlap(text, trimmedQuery)
+  const titleMatch = normalizedTitle.length >= 4 && normalizedQuery.includes(normalizedTitle)
+  if (isBroadGlobalMemory(memory)) {
+    return keywordOverlap > 0 || titleMatch
+  }
+
   return (
-    getKeywordOverlap(text, trimmedQuery) > 0 ||
+    keywordOverlap > 0 ||
     getMemorySemanticSimilarity(text, trimmedQuery) >= 0.22 ||
-    (normalizedTitle.length >= 4 && normalizedQuery.includes(normalizedTitle))
+    titleMatch
   )
+}
+
+function isBroadGlobalMemory(memory: LongTermMemory): boolean {
+  if (memory.scope.kind !== 'global_user' && memory.scope.kind !== 'project' && memory.scope.kind !== 'world' && memory.scope.kind !== 'world_branch') {
+    return false
+  }
+  return memory.kind === 'project' ||
+    memory.kind === 'world' ||
+    memory.kind === 'procedure' ||
+    memory.kind === 'profile' ||
+    memory.kind === 'preference'
 }
 
 function getRecallSortScore(
