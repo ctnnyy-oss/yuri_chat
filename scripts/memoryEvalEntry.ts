@@ -286,7 +286,7 @@ const roleplayMemories = [
   memory({
     id: 'core-cp-world',
     title: '三对核心 CP 最新定稿',
-    body: '沈朝歌与顾晚吟、闻霜寒与听露泣、故渊与池鱼是核心百合 CP，池鱼思故渊是第三对的典故。',
+    body: '沈朝歌与顾晚吟、闻霜寒与听露泣、故渊与池鱼是核心百合 CP，池鱼思故渊是第三对的典故。不要写成一见钟情，不加入男主情感主线。',
     tags: ['百合', 'CP', '修仙'],
     kind: 'world',
     layer: 'stable',

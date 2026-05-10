@@ -167,7 +167,7 @@ function hasStrictMemoryMatch(memory: LongTermMemory, query: string): boolean {
   const keywordOverlap = getKeywordOverlap(text, trimmedQuery)
   const titleMatch = normalizedTitle.length >= 4 && normalizedQuery.includes(normalizedTitle)
   if (isBroadGlobalMemory(memory)) {
-    return keywordOverlap > 0 || titleMatch
+    return keywordOverlap >= 2 || titleMatch
   }
 
   return (
