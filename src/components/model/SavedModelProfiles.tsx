@@ -92,7 +92,7 @@ export function SavedModelProfiles({
                     {isServerEnvProfileId(profile.id) ? '复制' : '编辑'}
                   </button>
                   <button disabled={!profile.hasApiKey} onClick={() => onTestProfile(profile)} type="button">
-                    测试
+                    {isVoiceOnly ? '测语音' : '测试'}
                   </button>
                   {!isServerEnvProfileId(profile.id) && (
                     <button

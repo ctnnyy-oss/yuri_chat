@@ -4,6 +4,7 @@ import type { AppSettings, ModelProfileInput, ModelProfileSummary } from '../../
 import { checkCloudHealth, saveCloudToken } from '../../services/cloudSync'
 import { isLikelyVoiceOnlyProfile, pickFallbackChatProfile } from '../../services/modelProfileCapabilities'
 import { listModelProfiles, testModelProfile, type ModelCatalogResult } from '../../services/modelProfiles'
+import { requestSpeechAudio } from '../../services/voiceApi'
 import { WorkspaceTitle } from '../memory/atoms'
 import { GenerationSettings } from './GenerationSettings'
 import { ModelCurrentStrip } from './ModelCurrentStrip'
@@ -164,6 +165,33 @@ export function ModelAndDataPanel({
   function handleTestActiveProfile() {
     if (!activeProfile) return
     void onTestModelProfile({ profileId: activeProfile.id })
+  }
+
+  async function handleTestSavedProfile(profile: ModelProfileSummary) {
+    if (!isLikelyVoiceOnlyProfile(profile)) {
+      await onTestModelProfile({ profileId: profile.id })
+      return
+    }
+
+    setModelActionNotice(`正在测试 ${profile.model} 的语音生成...`)
+    try {
+      await requestSpeechAudio({
+        text: '语音测试通过，百合小窝已经能发语音啦。',
+        characterName: '百合小窝',
+        settings: {
+          ...settings,
+          voice: {
+            ...settings.voice,
+            provider: 'openai-compatible',
+            ttsProfileId: profile.id,
+            ttsModel: profile.model || settings.voice.ttsModel,
+          },
+        },
+      })
+      setModelActionNotice(`语音测试成功：${profile.model} 已返回音频。`)
+    } catch (error) {
+      setModelActionNotice(getErrorMessage(error, '语音测试失败，请检查 TTS 档案、音色 ID 或供应商状态。'))
+    }
   }
 
   function handleStoreCloudToken(token: string) {
@@ -360,7 +388,7 @@ export function ModelAndDataPanel({
                 modelProfiles={modelProfiles}
                 onDeleteModelProfile={onDeleteModelProfile}
                 onEditProfile={handleEditProfile}
-                onTestProfile={(profile) => void onTestModelProfile({ profileId: profile.id })}
+                onTestProfile={(profile) => void handleTestSavedProfile(profile)}
                 onUseProfile={handleUseProfile}
               />
             </section>
