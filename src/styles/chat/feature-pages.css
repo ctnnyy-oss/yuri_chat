@@ -3,14 +3,7 @@
 .qq-feature-workspace {
   min-width: 0;
   min-height: 0;
-  background: var(
-    --feature-bg,
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--rose) 22%, var(--panel-soft)),
-      color-mix(in srgb, var(--rose) 6%, var(--panel))
-    )
-  );
+  background: var(--canvas);
 }
 
 .qq-desktop-feature {
@@ -18,36 +11,34 @@
   grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
   height: 100%;
-  background: var(
-    --feature-bg,
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--rose) 22%, var(--panel-soft)),
-      color-mix(in srgb, var(--rose) 6%, var(--panel))
-    )
-  );
+  background: var(--canvas);
 }
 
 .qq-desktop-feature-head {
-  min-height: 76px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  border-bottom: 1px solid rgba(90, 58, 72, 0.08);
+  padding: 0 28px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .qq-desktop-feature-head strong {
-  color: #21141c;
-  font-size: 20px;
-  font-weight: 800;
+  color: var(--ink);
+  font-family: 'SF Pro Display', -apple-system, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .qq-desktop-feature-head div,
 .qq-desktop-dynamic header div {
   display: flex;
-  gap: 16px;
-  color: #251820;
+  gap: 10px;
+  color: var(--ink);
 }
 
 .qq-desktop-empty {
@@ -55,60 +46,72 @@
   display: grid;
   place-items: center;
   min-height: 100%;
-  background: var(
-    --feature-bg,
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--rose) 22%, var(--panel-soft)),
-      color-mix(in srgb, var(--rose) 6%, var(--panel))
-    )
-  );
+  background: var(--canvas);
 }
 
 .qq-desktop-empty span {
-  color: rgba(80, 50, 64, 0.06);
+  color: rgba(255, 127, 172, 0.06);
+  font-family: 'SF Pro Display', -apple-system, sans-serif;
   font-size: 86px;
-  font-weight: 900;
+  font-weight: 800;
+  letter-spacing: -0.04em;
 }
 
 .qq-desktop-center-card {
   place-self: center;
   display: grid;
   justify-items: center;
-  gap: 12px;
-  width: min(380px, 90%);
-  padding: 28px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.68);
+  gap: 14px;
+  width: min(400px, 90%);
+  padding: 36px 32px;
+  border-radius: var(--radius-2xl);
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-md);
   text-align: center;
 }
 
 .qq-contact-avatar {
-  width: 88px;
-  height: 88px;
-  flex-basis: 88px;
+  width: 84px;
+  height: 84px;
+  flex-basis: 84px;
   font-size: 28px;
 }
 
 .qq-desktop-center-card strong {
-  color: #21141c;
-  font-size: 24px;
-  font-weight: 800;
+  color: var(--ink);
+  font-family: 'SF Pro Display', -apple-system, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
 .qq-desktop-center-card p {
   margin: 0;
-  color: rgba(80, 50, 64, 0.62);
-  line-height: 1.7;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.65;
+  letter-spacing: -0.005em;
 }
 
 .qq-desktop-center-card button {
-  min-width: 118px;
-  min-height: 38px;
-  border-radius: 10px;
-  background: var(--grad-bubble);
+  min-width: 124px;
+  min-height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--grad-pink);
   color: #fff;
-  font-weight: 800;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 0 18px;
+  box-shadow: var(--shadow-pink);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.qq-desktop-center-card button:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-pink-lg);
 }
 
 .role-desktop-feature {
@@ -120,25 +123,40 @@
   align-items: center;
   gap: 6px;
   min-height: 34px;
-  padding: 0 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.55);
-  color: #2b1b24;
-  font-size: 14px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
+  box-shadow: var(--shadow-xs);
+}
+
+.role-desktop-feature .qq-desktop-feature-head button:hover {
+  background: var(--pink-50);
+  border-color: var(--line-strong);
+  color: var(--pink-700);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .role-manager-grid {
   min-height: 0;
   display: grid;
-  padding: 18px 24px 24px;
+  padding: 22px 28px 28px;
   overflow: hidden;
 }
 
 .role-detail {
   min-height: 0;
   overflow-y: auto;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.46);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-xs);
 }
 
 .role-list {
@@ -147,50 +165,57 @@
 
 .role-list button {
   width: 100%;
-  min-height: 74px;
+  min-height: 64px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 9px 11px;
+  border-radius: var(--radius-md);
   text-align: left;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
 }
 
-.role-list button.active,
 .role-list button:hover {
-  background: rgba(255, 255, 255, 0.76);
+  background: var(--surface-hover);
+}
+
+.role-list button.active {
+  background: var(--pink-100);
 }
 
 .role-list strong,
 .role-detail-head strong {
   display: block;
-  color: #21141c;
-  font-size: 16px;
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
 }
 
 .role-list small,
 .role-detail-head small {
   display: block;
   overflow: hidden;
-  margin-top: 4px;
-  color: rgba(80, 50, 64, 0.62);
-  font-size: 13px;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .role-list em {
-  color: rgba(80, 50, 64, 0.54);
-  font-size: 12px;
+  color: var(--muted-light);
+  font-size: 11.5px;
   font-style: normal;
 }
 
 .role-detail {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 14px;
-  padding: 20px;
+  gap: 16px;
+  padding: 22px;
 }
 
 .role-detail-head {
@@ -203,23 +228,27 @@
   max-height: 118px;
   overflow-y: auto;
   margin: 0;
-  color: rgba(80, 50, 64, 0.72);
+  color: var(--ink-secondary);
+  font-size: 13.5px;
   line-height: 1.7;
+  letter-spacing: -0.005em;
 }
 
 .role-editor-fields {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: 14px;
   overflow-y: auto;
 }
 
 .role-editor-fields label {
   display: grid;
   gap: 6px;
-  color: rgba(80, 50, 64, 0.72);
+  color: var(--ink);
   font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
 }
 
 .role-editor-fields label:nth-last-child(-n + 2) {
@@ -229,22 +258,39 @@
 .role-editor-fields input,
 .role-editor-fields textarea {
   width: 100%;
-  border: 1px solid rgba(86, 50, 68, 0.14);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.78);
-  color: #21141c;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--ink);
   font: inherit;
+  font-size: 13.5px;
+  letter-spacing: -0.005em;
+  box-shadow: var(--shadow-xs);
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.role-editor-fields input::placeholder,
+.role-editor-fields textarea::placeholder {
+  color: var(--muted-light);
+}
+
+.role-editor-fields input:focus,
+.role-editor-fields textarea:focus {
+  border-color: var(--pink-300);
+  box-shadow: 0 0 0 3px var(--rose-glow), var(--shadow-xs);
+  outline: none;
 }
 
 .role-editor-fields input {
-  min-height: 38px;
-  padding: 0 10px;
+  min-height: 40px;
+  padding: 0 12px;
 }
 
 .role-editor-fields textarea {
-  min-height: 78px;
+  min-height: 80px;
   resize: vertical;
-  padding: 10px;
+  padding: 10px 12px;
+  line-height: 1.6;
 }
 
 .role-editor-fields .voice-consent-row,
@@ -253,10 +299,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  border: 1px solid rgba(86, 50, 68, 0.14);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.58);
-  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-xs);
 }
 
 .role-editor-fields .voice-consent-row {
@@ -282,11 +329,12 @@
 .persona-import-meter {
   grid-column: 1 / -1;
   display: grid;
-  gap: 7px;
+  gap: 8px;
   border: 1px solid var(--line-soft);
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--feature-field, var(--pink-50)), var(--feature-card, var(--panel)));
-  padding: 11px 12px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--pink-50), var(--panel));
+  padding: 12px 14px;
+  box-shadow: var(--shadow-xs);
 }
 
 .persona-import-meter div {
@@ -299,18 +347,21 @@
 .persona-import-meter strong {
   color: var(--ink);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
+  letter-spacing: -0.005em;
 }
 
 .persona-import-meter div span {
   min-width: 48px;
-  border-radius: 999px;
-  background: var(--grad-bubble);
+  border-radius: var(--radius-full);
+  background: var(--grad-pink);
   color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 24px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 22px;
   text-align: center;
+  padding: 0 10px;
+  box-shadow: var(--shadow-pink);
 }
 
 .persona-import-meter p,
@@ -318,11 +369,12 @@
   margin: 0;
   color: var(--muted);
   font-size: 12px;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .persona-import-meter small {
   color: var(--pink-700);
+  font-weight: 500;
 }
 
 .role-template-list {
@@ -336,18 +388,35 @@
   align-items: center;
   gap: 6px;
   min-height: 34px;
-  padding: 0 12px;
-  border-radius: 8px;
-  background: var(--grad-bubble);
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: var(--grad-pink);
   color: #fff;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  box-shadow: var(--shadow-pink);
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.role-template-list button:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-pink-lg);
 }
 
 .role-template-list button.danger-role-action {
-  background: #fff0f5;
-  color: #c73d5a;
-  box-shadow: inset 0 0 0 1px rgba(199, 61, 90, 0.18);
+  background: var(--pink-50);
+  color: var(--pink-700);
+  border-color: var(--line);
+  box-shadow: var(--shadow-xs);
+}
+
+.role-template-list button.danger-role-action:hover {
+  background: var(--pink-100);
+  box-shadow: var(--shadow-sm);
 }
 
 .qq-desktop-dynamic {
@@ -356,54 +425,73 @@
 }
 
 .qq-desktop-dynamic header {
-  min-height: 76px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .qq-desktop-dynamic header strong {
-  font-size: 20px;
-  font-weight: 800;
+  font-family: 'SF Pro Display', -apple-system, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .qq-desktop-dynamic-feed {
   overflow-y: auto;
   display: grid;
   align-content: start;
-  gap: 16px;
+  gap: 14px;
   width: min(760px, 92%);
   margin: 0 auto;
-  padding: 24px 0;
+  padding: 28px 0;
 }
 
 .qq-desktop-dynamic-feed article {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 14px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.78);
-  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  padding: 18px;
+  box-shadow: var(--shadow-xs);
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.qq-desktop-dynamic-feed article:hover {
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
 }
 
 .qq-desktop-dynamic-feed strong {
-  color: #21141c;
-  font-size: 16px;
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .qq-desktop-dynamic-feed p {
   margin: 6px 0;
-  color: #56424c;
+  color: var(--ink-secondary);
+  font-size: 13.5px;
+  line-height: 1.65;
 }
 
 .qq-desktop-dynamic-feed small {
-  color: #9f8d96;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 @media (min-width: 761px) {
   .message {
-    max-width: min(76%, 980px);
+    max-width: min(58%, 560px);
   }
 }
 
@@ -412,24 +500,28 @@
 .qq-feature-workspace {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  background: var(--panel);
+  background: var(--canvas);
 }
 
 .qq-feature-topbar {
-  min-height: 62px;
+  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 18px 8px 24px;
+  padding: 10px 22px;
   border-bottom: 1px solid var(--hairline);
-  background: var(--panel);
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .qq-feature-topbar strong {
   color: var(--ink);
-  font-size: 16px;
-  font-weight: 800;
+  font-family: 'SF Pro Display', -apple-system, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .qq-feature-actions {
@@ -441,10 +533,17 @@
 .qq-feature-actions button {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   display: grid;
   place-items: center;
-  color: rgba(74, 46, 58, 0.7);
+  color: var(--muted-strong);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.qq-feature-actions button:hover {
+  background: var(--surface-hover);
+  color: var(--pink-700);
 }
 
 .qq-feature-body {
@@ -463,15 +562,22 @@
 }
 
 .qq-feature-search {
-  height: 42px;
+  height: 38px;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 18px 14px 12px;
+  margin: 14px 14px 10px;
   padding: 0 14px;
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
   color: var(--muted);
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.qq-feature-search:focus-within {
+  border-color: var(--pink-300);
+  box-shadow: 0 0 0 3px var(--rose-glow);
 }
 
 .qq-feature-search input {
@@ -480,6 +586,12 @@
   border: 0;
   outline: 0;
   background: transparent;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.qq-feature-search input::placeholder {
+  color: var(--muted-light);
 }
 
 .qq-feature-section-title {
@@ -487,33 +599,43 @@
   justify-content: space-between;
   padding: 0 18px 8px;
   color: var(--ink-secondary);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
 }
 
 .qq-feature-section-title small {
   color: var(--muted);
+  font-weight: 400;
+  font-size: 11.5px;
 }
 
 .qq-feature-rows {
   min-height: 0;
   overflow-y: auto;
+  padding: 0 8px;
 }
 
 .qq-feature-row {
   width: 100%;
-  min-height: 78px;
+  min-height: 64px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 13px;
-  padding: 10px 16px;
+  gap: 12px;
+  padding: 9px 11px;
+  border-radius: var(--radius-md);
   text-align: left;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
 }
 
-.qq-feature-row.active,
 .qq-feature-row:hover {
-  background: var(--rose-ghost);
+  background: var(--surface-hover);
+}
+
+.qq-feature-row.active {
+  background: var(--pink-100);
 }
 
 .qq-feature-row > span:nth-child(2) {
@@ -526,8 +648,9 @@
 .qq-dynamic-card strong {
   overflow: hidden;
   color: var(--ink);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -536,25 +659,26 @@
 .qq-feature-row time {
   overflow: hidden;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .qq-feature-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
   display: grid;
   place-items: center;
   background: var(--pink-50);
+  border: 1px solid var(--line-soft);
   color: var(--pink-600);
 }
 
 .qq-feature-avatar {
-  width: 48px;
-  height: 48px;
-  flex-basis: 48px;
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
 }
 
 .qq-feature-preview {
@@ -562,45 +686,65 @@
   min-height: 0;
   display: grid;
   place-items: center;
-  padding: 32px;
-  background: linear-gradient(180deg, rgba(255, 248, 252, 0.92), #fff);
+  padding: 36px;
+  background: var(--canvas);
 }
 
 .qq-contact-preview {
   display: grid;
   justify-items: center;
-  gap: 12px;
+  gap: 14px;
   max-width: 360px;
+  padding: 32px;
+  border-radius: var(--radius-2xl);
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-md);
   text-align: center;
 }
 
 .qq-contact-avatar {
-  width: 88px;
-  height: 88px;
-  flex-basis: 88px;
+  width: 84px;
+  height: 84px;
+  flex-basis: 84px;
   font-size: 28px;
 }
 
 .qq-contact-preview strong {
   color: var(--ink);
+  font-family: 'SF Pro Display', -apple-system, sans-serif;
   font-size: 22px;
-  font-weight: 900;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
 .qq-contact-preview p,
 .qq-dynamic-card p {
   margin: 0;
   color: var(--muted);
+  font-size: 13.5px;
   line-height: 1.65;
+  letter-spacing: -0.005em;
 }
 
 .qq-contact-preview button {
-  min-width: 118px;
-  min-height: 38px;
-  border-radius: 10px;
-  background: var(--pink-400);
+  min-width: 124px;
+  min-height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--grad-pink);
   color: #fff;
-  font-weight: 800;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 0 18px;
+  cursor: pointer;
+  box-shadow: var(--shadow-pink);
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.qq-contact-preview button:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-pink-lg);
 }
 
 .qq-dynamic-feed {
@@ -613,10 +757,17 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 14px;
-  border-radius: 14px;
-  background: #fff;
-  padding: 16px;
-  box-shadow: 0 8px 24px rgba(74, 46, 58, 0.06);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  padding: 18px;
+  box-shadow: var(--shadow-xs);
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.qq-dynamic-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .qq-dynamic-card div {
@@ -626,7 +777,8 @@
 }
 
 .qq-dynamic-card small {
-  color: var(--muted-light);
+  color: var(--muted);
+  font-size: 12px;
 }
 
 @media (max-width: 760px) {
@@ -636,13 +788,16 @@
   }
 
   .qq-feature-topbar {
-    min-height: 88px;
-    padding: 30px 16px 10px;
+    min-height: 80px;
+    padding: 28px 18px 10px;
     background: var(--canvas);
+    border-bottom: 0;
+    backdrop-filter: none;
   }
 
   .qq-feature-topbar strong {
-    font-size: 26px;
+    font-size: 22px;
+    letter-spacing: -0.025em;
   }
 
   .qq-feature-body {
@@ -658,8 +813,8 @@
   }
 
   .qq-feature-row {
-    min-height: 86px;
-    padding: 10px 20px;
+    min-height: 72px;
+    padding: 10px 18px;
   }
 }
 

@@ -8,18 +8,20 @@
   overflow: hidden;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: var(--feature-field, var(--pink-50));
+  background: var(--pink-50);
 }
 
 .model-status-grid span,
 .cloud-meta-strip span {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   border-right: 1px solid var(--line-soft);
   background: transparent;
-  color: var(--ink-secondary);
+  color: var(--ink);
   font-size: 13px;
-  padding: 10px 12px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  padding: 12px 14px;
   min-width: 0;
   min-height: 58px;
 }
@@ -31,10 +33,10 @@
 
 .model-status-grid strong,
 .cloud-meta-strip strong {
-  color: var(--muted);
+  color: var(--pink-700);
   font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.4px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
 }
 
@@ -46,9 +48,9 @@
   align-items: end;
   gap: var(--space-sm);
   border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  background: var(--feature-field, var(--pink-50));
-  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--pink-50);
+  padding: 14px;
 }
 
 .cloud-token-box button {
@@ -61,14 +63,14 @@
 .model-warning {
   display: block;
   border: 1px solid var(--line-soft);
-  border-left: 3px solid var(--pink-400);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--rose) 10%, var(--feature-card, var(--panel)));
-  color: var(--pink-700);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.45;
-  padding: 9px 12px;
+  border-left: 3px solid var(--pink-500);
+  border-radius: var(--radius-sm);
+  background: var(--pink-50);
+  color: var(--pink-800);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.55;
+  padding: 10px 14px;
 }
 
 /* ── 模型表单网格 ── */
@@ -94,9 +96,9 @@
   min-width: 0;
   box-sizing: border-box;
   border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  background: var(--feature-field, var(--pink-50));
-  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--pink-50);
+  padding: 4px;
 }
 
 .model-segmented button {
@@ -105,14 +107,20 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   border: 0;
-  border-radius: 8px;
+  border-radius: calc(var(--radius-sm) - 4px);
   background: transparent;
-  color: var(--muted);
+  color: var(--muted-strong);
   font: inherit;
-  font-size: 13px;
-  font-weight: 900;
-  min-height: 34px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  min-height: 32px;
   cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.model-segmented button:hover {
+  color: var(--ink);
 }
 
 .model-segmented button.active {
@@ -134,12 +142,20 @@
 .model-picker-row button {
   justify-self: start;
   min-height: 38px;
-  border-color: rgba(255, 255, 255, 0.5);
+  border: 1px solid transparent;
   background: var(--grad-pink);
   color: #fff;
   box-shadow:
-    0 8px 20px color-mix(in srgb, var(--rose) 26%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    var(--shadow-pink),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.model-picker-row button:hover:not(:disabled) {
+  filter: brightness(1.05);
+  background: var(--grad-pink);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow-pink-lg);
 }
 
 .model-inline-link {
@@ -159,13 +175,13 @@
   overflow: hidden;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: var(--feature-field, var(--pink-50));
+  background: var(--panel);
 }
 
 .model-profile-item,
 .backup-item,
 .retention-button {
-  border-bottom: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--hairline);
   background: transparent;
 }
 
@@ -180,17 +196,17 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   transition: background var(--duration-fast) var(--ease-smooth);
 }
 
 .model-profile-item:hover {
-  background: var(--middle-hover, var(--pink-100));
+  background: var(--surface-hover);
 }
 
 .model-profile-item.active {
-  background: linear-gradient(135deg, var(--middle-active, var(--pink-100)), var(--feature-field, var(--pink-50)));
-  box-shadow: inset 4px 0 0 var(--pink-400);
+  background: linear-gradient(135deg, var(--pink-100), var(--pink-50));
+  box-shadow: inset 4px 0 0 var(--pink-500);
 }
 
 .model-profile-item strong,
@@ -260,10 +276,18 @@
   justify-content: space-between;
   gap: 18px;
   border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  background: var(--feature-field, var(--pink-50));
+  border-radius: var(--radius-sm);
+  background: var(--pink-50);
   min-height: 54px;
-  padding: 9px 12px;
+  padding: 10px 14px;
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.toggle-row:hover,
+.range-control:hover,
+.number-control:hover {
+  border-color: var(--line);
+  background: var(--pink-100);
 }
 
 .toggle-row strong,
@@ -380,27 +404,17 @@
 
 .voice-model-card {
   display: grid;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--rose) 9%, var(--feature-field, var(--panel))),
-      var(--feature-card, var(--panel))
-    );
-  padding: 12px 14px;
+  background: linear-gradient(135deg, var(--pink-50), var(--panel));
+  padding: 14px 16px;
   box-shadow: var(--shadow-xs);
 }
 
 .voice-model-card.tts-card {
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, #b8eed8 28%, var(--feature-field, var(--panel))),
-      var(--feature-card, var(--panel))
-    );
+  background: linear-gradient(135deg, var(--mint-soft), var(--panel));
 }
 
 .voice-model-kicker {
@@ -446,25 +460,36 @@
 
 .voice-provider-grid button {
   min-width: 0;
-  min-height: 38px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-md);
-  background: var(--feature-field, var(--pink-50));
+  border-radius: var(--radius-sm);
+  background: var(--panel);
   color: var(--ink-secondary);
   font: inherit;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-xs);
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.voice-provider-grid button:hover {
+  border-color: var(--line-strong);
+  background: var(--pink-50);
+  color: var(--pink-700);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .voice-provider-grid button.active {
   border-color: var(--pink-400);
-  background: var(--middle-active, var(--pink-100));
-  color: var(--pink-700);
-  box-shadow: inset 4px 0 0 var(--pink-500);
+  background: var(--pink-100);
+  color: var(--pink-800);
+  box-shadow: inset 0 0 0 1px var(--pink-300);
 }
 
 .voice-config-grid,

@@ -1,124 +1,157 @@
 /* ═══════════════════════════════════════════════════════════
    百合小窝 · Yuri Chat
-   Design System v4 — "粉粉嫩嫩 × 苹果美学"
-   姐姐为妹妹重新调过的甜系少女风
+   Design System v5 — Sakura Studio
+   姐姐重做的「白瓷为底，樱粉为意」苹果级少女系
    ═══════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── 粉粉嫩嫩 8 档色阶 (真正的可可爱爱粉色) ── */
-  --pink-50:  color-mix(in srgb, #ffabcc 9%, #fff);   /* 云朵粉，背景最浅层 */
-  --pink-100: color-mix(in srgb, #ffabcc 16%, #fff);  /* 棉花糖底 */
-  --pink-150: color-mix(in srgb, #ffabcc 22%, #fff);  /* 樱花霜 */
-  --pink-200: color-mix(in srgb, #ffabcc 30%, #fff);  /* 糖霜粉 */
-  --pink-300: color-mix(in srgb, #ffabcc 44%, #fff);  /* 花瓣粉 */
-  --pink-400: color-mix(in srgb, #ffabcc 68%, #fff);  /* 蜜桃粉 */
-  --pink-500: #ffabcc;                                /* 草莓奶 */
-  --pink-600: color-mix(in srgb, #ffabcc 78%, #70394f); /* 玫瑰粉 */
-  --pink-700: color-mix(in srgb, #ffabcc 58%, #3d2230); /* 重点粉 */
+  /* ── 樱粉主色阶 (12 档手调) ── */
+  --pink-50:  #fff7fb;  /* 极淡瓷粉 */
+  --pink-100: #ffeef5;  /* 云朵粉 */
+  --pink-150: #ffe2ec;  /* 棉花糖 */
+  --pink-200: #ffd3e1;  /* 樱花霜 */
+  --pink-300: #ffb8cd;  /* 花瓣粉 */
+  --pink-400: #ff9bbd;  /* 草莓奶 */
+  --pink-500: #ff7fac;  /* 标准品牌粉 */
+  --pink-600: #ec5f93;  /* 玫瑰粉 */
+  --pink-700: #c84679;  /* 重点粉 */
+  --pink-800: #9a2f5b;  /* 深玫瑰 */
+  --pink-900: #5b1f38;  /* 暗夜粉 */
 
   /* ── 兼容旧变量名 (业务样式仍引用) ── */
-  --rose:        #ffabcc;
-  --rose-strong: color-mix(in srgb, #ffabcc 78%, #70394f);
-  --rose-deep:   color-mix(in srgb, #ffabcc 62%, #4c2638);
-  --rose-soft:   color-mix(in srgb, #ffabcc 16%, #fff);
-  --rose-hover:  color-mix(in srgb, #ffabcc 28%, #fff);
-  --rose-hot:    color-mix(in srgb, #ffabcc 90%, #fff);
-  --rose-ghost:  rgba(255, 171, 204, 0.13);
-  --rose-glow:   rgba(255, 171, 204, 0.22);
+  --rose:        var(--pink-500);
+  --rose-strong: var(--pink-600);
+  --rose-deep:   var(--pink-700);
+  --rose-soft:   var(--pink-100);
+  --rose-hover:  var(--pink-150);
+  --rose-hot:    var(--pink-300);
+  --rose-ghost:  rgba(255, 127, 172, 0.08);
+  --rose-glow:   rgba(255, 127, 172, 0.20);
 
-  /* ── 文字色 (粉调暖灰) ── */
-  --ink:           color-mix(in srgb, #ffabcc 18%, #2f2730);   /* 主文字 */
-  --ink-secondary: color-mix(in srgb, #ffabcc 28%, #4f3c48);   /* 次要文字 */
-  --muted:         color-mix(in srgb, #ffabcc 38%, #7a6971);   /* 辅助说明 */
-  --muted-light:   color-mix(in srgb, #ffabcc 28%, #bbaab2);   /* 极弱说明 */
+  /* ── 中性色 (粉调暖灰，靠近 macOS Label) ── */
+  --ink:           #2a1d25;   /* 主文字 (88% 不透明度黑) */
+  --ink-secondary: #574250;   /* 次要文字 */
+  --muted:         #8a7783;   /* 辅助说明 */
+  --muted-light:   #b8a8b1;   /* 极弱说明 */
+  --muted-strong:  #6e5a66;
 
-  /* ── 背景与表面 ── */
-  --page-bg:       color-mix(in srgb, #ffabcc 7%, #fff);
-  --canvas:        color-mix(in srgb, #ffabcc 5%, #fff);
-  --panel:         #fffdfd;
-  --panel-soft:    color-mix(in srgb, #ffabcc 4%, #fff);
-  --panel-tint:    color-mix(in srgb, #ffabcc 10%, #fff);
-  --surface:       rgba(255, 255, 255, 0.92);
-  --surface-strong:rgba(255, 255, 255, 0.98);
-  --surface-hover: color-mix(in srgb, #ffabcc 8%, rgba(255, 255, 255, 0.94));
-  --surface-active:color-mix(in srgb, #ffabcc 14%, rgba(255, 255, 255, 0.94));
-  --feature-bg:    linear-gradient(90deg, color-mix(in srgb, #ffabcc 22%, #fff), color-mix(in srgb, #ffabcc 7%, #fff));
-  --feature-card:  color-mix(in srgb, #ffabcc 8%, rgba(255, 255, 255, 0.9));
-  --feature-field: color-mix(in srgb, #ffabcc 4%, rgba(255, 255, 255, 0.78));
-  --rail-bg:       color-mix(in srgb, #ffabcc 15%, #fff);
-  --middle-bg:     color-mix(in srgb, #ffabcc 18%, #fff);
-  --middle-hover:  color-mix(in srgb, #ffabcc 10%, rgba(255, 255, 255, 0.48));
-  --middle-active: rgba(255, 171, 204, 0.13);
+  /* ── 背景与表面 (白瓷为底) ── */
+  --canvas:        #faf6f8;
+  --page-bg:       #fdfafc;
+  --panel:         #ffffff;
+  --panel-soft:    #fdfafb;
+  --panel-tint:    #fff7fa;
 
-  /* ── 点缀色 (克制使用，每个仅 1-2 处) ── */
-  --lavender:       #e2cdff;
-  --lavender-soft:  #f3ebff;
-  --lavender-ink:   #7561a8;
-  --sky:            #c8e2ff;
-  --sky-soft:       #ebf3ff;
-  --sky-ink:        #5478a3;
-  --mint:           #b8eed8;
-  --mint-soft:      #e6f7f0;
-  --mint-ink:       #4d8a72;
-  --peach:          #ffd1b8;
-  --peach-soft:     #ffe9dd;
-  --peach-ink:      #b8704a;
-  --butter:         #ffe7a8;
-  --butter-soft:    #fff5d6;
-  --butter-ink:     #a3792d;
+  /* ── 玻璃态 (iOS 26 风) ── */
+  --glass:           rgba(255, 255, 255, 0.72);
+  --glass-strong:    rgba(255, 255, 255, 0.86);
+  --glass-pink:      rgba(255, 245, 250, 0.78);
+  --glass-blur:      saturate(1.6) blur(20px);
+  --glass-blur-strong: saturate(1.8) blur(32px);
+  --surface:         rgba(255, 255, 255, 0.92);
+  --surface-strong:  rgba(255, 255, 255, 0.98);
+  --surface-hover:   rgba(255, 245, 250, 0.78);
+  --surface-active:  rgba(255, 235, 244, 0.88);
 
-  /* ── 边线 ── */
-  --line:        rgba(255, 171, 204, 0.26);
-  --line-soft:   rgba(255, 171, 204, 0.14);
-  --line-strong: rgba(255, 171, 204, 0.42);
-  --line-tint:   rgba(255, 171, 204, 0.24);
-  --line-light:  rgba(255, 171, 204, 0.18);
-  --hairline:    rgba(74, 51, 64, 0.06);
+  /* ── 工作区背景 (淡到几乎察觉不到) ── */
+  --feature-bg:    var(--canvas);
+  --feature-card:  #ffffff;
+  --feature-field: rgba(255, 245, 250, 0.62);
+  --rail-bg:       #ffffff;
+  --middle-bg:     #fdfafb;
+  --middle-hover:  rgba(255, 199, 219, 0.18);
+  --middle-active: rgba(255, 127, 172, 0.10);
 
-  /* ── 渐变 ── */
-  --grad-pink:        linear-gradient(135deg, color-mix(in srgb, #ffabcc 62%, #fff) 0%, #ffabcc 52%, color-mix(in srgb, #ffabcc 78%, #6e3d52) 100%);
-  --grad-pink-soft:   linear-gradient(135deg, color-mix(in srgb, #ffabcc 24%, #fff) 0%, color-mix(in srgb, #ffabcc 12%, #fff) 100%);
-  --grad-bubble:      linear-gradient(135deg, color-mix(in srgb, #ffabcc 70%, #fff) 0%, #ffabcc 100%);
-  --grad-warm:        linear-gradient(135deg, color-mix(in srgb, #ffabcc 30%, #fff) 0%, #ffd1b8 100%);
-  --grad-cool:        linear-gradient(135deg, color-mix(in srgb, #ffabcc 30%, #fff) 0%, #e2cdff 100%);
+  /* ── 点缀色 (克制使用，主要为 status / chip) ── */
+  --lavender:       #c8b3ff;
+  --lavender-soft:  #f3edff;
+  --lavender-ink:   #6549a3;
+  --sky:            #a8cdff;
+  --sky-soft:       #e6f0ff;
+  --sky-ink:        #3f6ba1;
+  --mint:           #9be0c2;
+  --mint-soft:      #e1f6ed;
+  --mint-ink:       #2e7958;
+  --peach:          #ffc09a;
+  --peach-soft:     #ffe5d4;
+  --peach-ink:      #b15a2c;
+  --butter:         #ffd980;
+  --butter-soft:    #fff1c8;
+  --butter-ink:     #936419;
+
+  /* ── 边线 (极细极淡) ── */
+  --line:        rgba(255, 127, 172, 0.16);
+  --line-soft:   rgba(255, 127, 172, 0.10);
+  --line-strong: rgba(255, 127, 172, 0.28);
+  --line-tint:   rgba(255, 127, 172, 0.18);
+  --line-light:  rgba(255, 127, 172, 0.12);
+  --hairline:    rgba(42, 29, 37, 0.06);
+  --hairline-strong: rgba(42, 29, 37, 0.10);
+
+  /* ── 渐变 (精心调过的高级粉) ── */
+  --grad-pink:        linear-gradient(135deg, #ffb6cf 0%, #ff7fac 60%, #ec5f93 100%);
+  --grad-pink-soft:   linear-gradient(135deg, #fff0f6 0%, #ffe0eb 100%);
+  --grad-bubble:      linear-gradient(135deg, #ffc4d7 0%, #ff8fb5 100%);
+  --grad-warm:        linear-gradient(135deg, #ffd3e1 0%, #ffc09a 100%);
+  --grad-cool:        linear-gradient(135deg, #ffd3e1 0%, #d8c8ff 100%);
+  --grad-sunset:      linear-gradient(135deg, #ffb6cf 0%, #ffc09a 50%, #ffd980 100%);
+  --grad-dawn:        linear-gradient(160deg, #fff0f6 0%, #ffe6f0 30%, #f3edff 100%);
   --grad-page:
-    radial-gradient(900px 700px at 8% 6%, rgba(255, 171, 204, 0.28), transparent 65%),
-    radial-gradient(800px 650px at 96% 12%, rgba(226, 205, 255, 0.18), transparent 68%),
-    radial-gradient(900px 700px at 50% 100%, rgba(255, 171, 204, 0.18), transparent 70%),
-    color-mix(in srgb, #ffabcc 7%, #fff);
+    radial-gradient(1100px 720px at 6% 0%, rgba(255, 184, 205, 0.16), transparent 55%),
+    radial-gradient(1000px 700px at 100% 18%, rgba(200, 179, 255, 0.10), transparent 60%),
+    radial-gradient(900px 700px at 50% 100%, rgba(255, 192, 154, 0.08), transparent 65%),
+    #fdfafc;
 
   /* 兼容旧名 */
   --accent-gradient:      var(--grad-pink);
   --accent-gradient-cool: var(--grad-cool);
   --accent-gradient-warm: var(--grad-warm);
-  --glass-tint:           rgba(255, 255, 255, 0.86);
-  --glass-tint-strong:    rgba(255, 255, 255, 0.96);
+  --glass-tint:           var(--glass);
+  --glass-tint-strong:    var(--glass-strong);
   --glass-highlight:      rgba(255, 255, 255, 0.95);
   --glass-lowlight:       rgba(255, 220, 240, 0.18);
   --glass-gradient:
     radial-gradient(420px 280px at 22% 12%, rgba(255, 255, 255, 0.85), transparent 65%),
     linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(255, 252, 254, 0.86));
   --line-strong-old: rgba(255, 255, 255, 0.95);
-  --soft-shadow: 0 24px 72px rgba(255, 171, 204, 0.12);
+  --soft-shadow: 0 24px 72px rgba(255, 127, 172, 0.10);
 
-  /* ── 阴影 (柔和粉调) ── */
-  --shadow-xs: 0 1px 2px rgba(255, 171, 204, 0.05), 0 1px 3px rgba(255, 171, 204, 0.04);
-  --shadow-sm: 0 2px 8px rgba(255, 171, 204, 0.07), 0 1px 3px rgba(255, 171, 204, 0.05);
-  --shadow-md: 0 6px 18px rgba(255, 171, 204, 0.09), 0 2px 6px rgba(255, 171, 204, 0.05);
-  --shadow-lg: 0 14px 38px rgba(255, 171, 204, 0.12), 0 4px 12px rgba(255, 171, 204, 0.07);
-  --shadow-xl: 0 24px 64px rgba(255, 171, 204, 0.15), 0 8px 22px rgba(255, 171, 204, 0.09);
-  --shadow-glow: 0 0 0 4px rgba(255, 171, 204, 0.18);
+  /* ── 阴影 (Apple-Style 多层叠加) ── */
+  --shadow-xs:
+    0 1px 2px rgba(31, 19, 26, 0.04),
+    0 1px 1px rgba(31, 19, 26, 0.02);
+  --shadow-sm:
+    0 2px 4px rgba(31, 19, 26, 0.04),
+    0 4px 12px rgba(255, 127, 172, 0.06);
+  --shadow-md:
+    0 4px 8px rgba(31, 19, 26, 0.04),
+    0 12px 28px rgba(255, 127, 172, 0.10);
+  --shadow-lg:
+    0 8px 16px rgba(31, 19, 26, 0.04),
+    0 24px 56px rgba(255, 127, 172, 0.14);
+  --shadow-xl:
+    0 12px 24px rgba(31, 19, 26, 0.06),
+    0 36px 84px rgba(255, 127, 172, 0.18);
+  --shadow-glow:    0 0 0 4px rgba(255, 127, 172, 0.16);
+  --shadow-pink:    0 12px 32px rgba(255, 127, 172, 0.30), 0 2px 6px rgba(236, 95, 147, 0.18);
+  --shadow-pink-lg: 0 20px 50px rgba(255, 127, 172, 0.38), 0 4px 10px rgba(236, 95, 147, 0.22);
+  --shadow-inset-glass: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --shadow-card:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 1px 2px rgba(31, 19, 26, 0.03),
+    0 16px 36px rgba(255, 127, 172, 0.08);
 
-  /* ── 圆角 (苹果系) ── */
+  /* ── 圆角 (Apple Continuous Curve) ── */
   --radius-xs:   8px;
   --radius-sm:   12px;
   --radius-md:   16px;
   --radius-lg:   20px;
   --radius-xl:   28px;
   --radius-2xl:  36px;
+  --radius-3xl:  44px;
   --radius-full: 999px;
 
-  /* ── 间距 ── */
+  /* ── 间距 (8 倍数体系) ── */
   --space-2xs: 2px;
   --space-xs:  4px;
   --space-sm:  8px;
@@ -128,6 +161,7 @@
   --space-2xl: 24px;
   --space-3xl: 32px;
   --space-4xl: 48px;
+  --space-5xl: 64px;
 
   /* ── 动效 ── */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
@@ -137,13 +171,13 @@
   --duration-normal: 240ms;
   --duration-slow:   400ms;
 
-  /* ── 字体 ── */
+  /* ── Typography ── */
   font-family:
-    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
-    'Microsoft YaHei', Inter, ui-sans-serif, system-ui,
-    'Segoe UI', sans-serif;
+    'SF Pro Text', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'HarmonyOS Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei',
+    Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
   font-size: 15px;
-  line-height: 1.65;
+  line-height: 1.6;
   font-weight: 400;
   color: var(--ink);
   background: var(--grad-page);
@@ -151,7 +185,13 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
+}
+
+/* Display 字体 (用于品牌标题、大数字) */
+.font-display {
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  letter-spacing: -0.02em;
 }
 
 /* ── Reset ── */
@@ -201,7 +241,7 @@ button:disabled {
 
 select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23ffabcc' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23ec5f93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
   padding-right: 32px !important;
@@ -215,7 +255,12 @@ select:focus-visible {
   outline-offset: 2px;
 }
 
-/* ── 滚动条 ── */
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--pink-500);
+}
+
+/* ── 滚动条 (Apple 极细风) ── */
 
 ::-webkit-scrollbar {
   width: 8px;
@@ -227,25 +272,29 @@ select:focus-visible {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 171, 204, 0.32);
+  background: rgba(255, 127, 172, 0.18);
   border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: padding-box;
   transition: background var(--duration-fast) var(--ease-smooth);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 171, 204, 0.48);
+  background: rgba(255, 127, 172, 0.36);
+  background-clip: padding-box;
+  border: 2px solid transparent;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 171, 204, 0.32) transparent;
+  scrollbar-color: rgba(255, 127, 172, 0.20) transparent;
 }
 
 /* ── 选区 ── */
 
 ::selection {
   background: var(--pink-200);
-  color: var(--pink-700);
+  color: var(--pink-800);
 }
 
 /* ── ErrorBoundary 兜底 ── */
@@ -259,20 +308,21 @@ select:focus-visible {
 }
 
 .error-boundary-card {
-  max-width: 360px;
-  padding: var(--space-2xl);
-  border-radius: var(--radius-lg);
+  max-width: 380px;
+  padding: var(--space-3xl);
+  border-radius: var(--radius-xl);
   background: var(--panel);
   border: 1px solid var(--line);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   text-align: center;
 }
 
 .error-boundary-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   color: var(--ink);
   margin-bottom: var(--space-sm);
+  letter-spacing: -0.01em;
 }
 
 .error-boundary-hint {
@@ -298,20 +348,20 @@ select:focus-visible {
 }
 
 .error-boundary-retry {
-  padding: var(--space-sm) var(--space-xl);
+  padding: var(--space-sm) var(--space-2xl);
   border-radius: var(--radius-full);
   background: var(--grad-pink);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-pink);
   transition: transform var(--duration-fast) var(--ease-out),
               box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .error-boundary-retry:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-pink-lg);
 }
 
 .error-boundary-retry:active {

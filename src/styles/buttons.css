@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════
    百合小窝 — Button System
    primary / quiet / danger / mini-action
+   苹果级 pill / icon / glass 三套
    ═══════════════════════════════════════════════════ */
 
 .secondary-action,
@@ -8,19 +9,19 @@
 .settings-actions button,
 .file-button,
 .mini-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
   background: var(--panel);
   color: var(--ink);
-  padding: 9px 16px;
+  padding: 9px 18px;
   cursor: pointer;
   font: inherit;
   font-size: 13.5px;
-  font-weight: 700;
-  letter-spacing: 0.1px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
   transition: all var(--duration-fast) var(--ease-smooth);
   box-shadow: var(--shadow-xs);
 }
@@ -42,18 +43,39 @@
   background: var(--pink-50);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
+  color: var(--pink-700);
 }
 
-/* ── Primary: 粉色填充渐变 ── */
+.secondary-action:active,
+.quiet-action:active,
+.file-button:active,
+.mini-action:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 80ms;
+}
+
+/* ── Primary: 樱粉渐变填充 ── */
 
 .secondary-action {
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid transparent;
   background: var(--grad-pink);
   color: #fff;
-  font-weight: 800;
+  font-weight: 700;
   box-shadow:
-    0 8px 20px color-mix(in srgb, var(--rose) 30%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    var(--shadow-pink),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  position: relative;
+  isolation: isolate;
+}
+
+.secondary-action::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 50%);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .secondary-action svg {
@@ -61,40 +83,44 @@
 }
 
 .secondary-action:hover {
+  border-color: transparent;
   background: var(--grad-pink);
+  color: #fff;
   filter: brightness(1.04);
   transform: translateY(-1px);
   box-shadow:
-    0 12px 26px color-mix(in srgb, var(--rose) 38%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    var(--shadow-pink-lg),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .secondary-action:active {
   transform: translateY(0) scale(0.98);
 }
 
-/* ── Quiet: 半透明白底 ── */
+/* ── Quiet: 柔白底 ── */
 
 .quiet-action {
   color: var(--ink-secondary);
-  font-weight: 700;
+  font-weight: 600;
+  background: var(--panel);
 }
 
 /* ── Danger ── */
 
 .secondary-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-full);
   background: var(--pink-50);
   color: var(--pink-700);
   cursor: pointer;
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 13.5px;
-  padding: 9px 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  letter-spacing: -0.005em;
+  padding: 9px 18px;
   transition: all var(--duration-fast) var(--ease-smooth);
   box-shadow: var(--shadow-xs);
 }
@@ -102,13 +128,14 @@
 .secondary-danger:hover {
   background: var(--pink-100);
   border-color: var(--line);
-  color: var(--pink-700);
+  color: var(--pink-800);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
 
 .secondary-danger:active {
   transform: translateY(0) scale(0.98);
+  transition-duration: 80ms;
 }
 
 /* ── Mini Action (小药丸) ── */
@@ -116,13 +143,13 @@
 .mini-action {
   font-size: 12px;
   padding: 5px 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-secondary);
   border-color: var(--line-soft);
 }
 
 .mini-action:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
 }
 
 .danger-action {
@@ -136,7 +163,7 @@
 .danger-action:hover {
   background: var(--pink-100);
   border-color: var(--line-soft);
-  color: var(--pink-700);
+  color: var(--pink-800);
 }
 
 .chat-file-input,
@@ -163,4 +190,27 @@
   transform: none;
   filter: saturate(0.6);
   box-shadow: none;
+}
+
+/* ── Glass Icon Button (toolbar 通用) ── */
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-strong);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.icon-button:hover {
+  background: var(--surface-hover);
+  color: var(--pink-700);
+}
+
+.icon-button:active {
+  transform: scale(0.94);
 }
