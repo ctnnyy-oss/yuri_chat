@@ -36,9 +36,10 @@ interface UseChatDeps {
   setNotice: Dispatch<SetStateAction<string>>
   character: CharacterCard
   conversation: ConversationState
+  proactivePaused?: boolean
 }
 
-export function useChat({ state, setState, setNotice, character, conversation }: UseChatDeps) {
+export function useChat({ state, setState, setNotice, character, conversation, proactivePaused = false }: UseChatDeps) {
   const [draft, setDraft] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [chatAlertState, setChatAlertState] = useState<{ conversationId: string; message: string } | null>(null)
@@ -49,6 +50,7 @@ export function useChat({ state, setState, setNotice, character, conversation }:
 
   const runGroupProactiveTurn = useCallback(
     async ({ force = true }: { force?: boolean } = {}) => {
+      if (proactivePaused) return
       if (!isGroupCharacter(character) || isSending || proactiveInFlightRef.current) return
       if (!force && (!state.settings.groupChatHumanMode || !state.settings.groupChatProactiveMode)) return
       if (!force && countProactiveTurnsSinceLastUser(conversation.messages) >= 2) return
@@ -90,7 +92,7 @@ export function useChat({ state, setState, setNotice, character, conversation }:
         setIsSending(false)
       }
     },
-    [character, conversation, isSending, setNotice, setState, state],
+    [character, conversation, isSending, proactivePaused, setNotice, setState, state],
   )
 
   useEffect(() => {
@@ -99,6 +101,7 @@ export function useChat({ state, setState, setNotice, character, conversation }:
       proactiveTimerRef.current = null
     }
     if (!isGroupCharacter(character)) return
+    if (proactivePaused) return
     if (!state.settings.groupChatHumanMode || !state.settings.groupChatProactiveMode) return
     if (isSending || proactiveInFlightRef.current) return
     if (conversation.messages.length === 0) return
@@ -124,6 +127,7 @@ export function useChat({ state, setState, setNotice, character, conversation }:
     conversation.id,
     conversation.messages,
     isSending,
+    proactivePaused,
     runGroupProactiveTurn,
     state.settings.groupChatHumanMode,
     state.settings.groupChatProactiveMode,

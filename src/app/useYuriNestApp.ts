@@ -75,6 +75,7 @@ export function useYuriNestApp({ accountId, authToken, canManageCloudBackups }: 
     setNotice,
     character,
     conversation,
+    proactivePaused: cloud.cloudBootstrapping,
   })
 
   const tasks = useAgentTasks({ setState, setNotice })
