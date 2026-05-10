@@ -19,6 +19,7 @@ export * from './memoryTypes'
 export * from './agentTypes'
 
 export type MessageRole = 'user' | 'assistant'
+export type MessageDeliveryMode = 'text' | 'voice'
 
 export type VoiceProviderKind = 'browser' | 'openai-compatible'
 
@@ -45,6 +46,7 @@ export interface ChatMessage {
   role: MessageRole
   content: string
   createdAt: string
+  deliveryMode?: MessageDeliveryMode
   inputMode?: 'text' | 'voice'
   voice?: ChatMessageVoice
   memoryCaptured?: boolean

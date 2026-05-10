@@ -7,6 +7,7 @@ import type {
   PromptBundle,
 } from '../domain/types'
 import { createId, nowIso } from './memoryEngine'
+import { chooseAssistantDeliveryMode, extractDeliveryEnvelope } from './messageDelivery'
 
 export const DIRECT_SILENCE_MARKER = '[[NO_REPLY]]'
 
@@ -38,6 +39,11 @@ export interface DirectChatTurnResult {
   skippedReason?: string
 }
 
+interface NormalizedDirectReply {
+  content: string
+  deliveryMode?: ChatMessage['deliveryMode']
+}
+
 export async function generateDirectChatReply({
   character,
   conversation,
@@ -64,9 +70,9 @@ export async function generateDirectChatReply({
     mode: 'reactive',
   })
   const result = await requestReply(replyBundle, createDirectReplySettings(settings, 'reactive'))
-  const content = normalizeDirectReply(result.reply, character)
+  const normalizedReply = normalizeDirectReply(result.reply, character)
 
-  if (!content) {
+  if (!normalizedReply) {
     return {
       message: null,
       silent: true,
@@ -75,7 +81,7 @@ export async function generateDirectChatReply({
     }
   }
 
-  if (isRepeatedRecentReply(content, character, conversation.messages)) {
+  if (isRepeatedRecentReply(normalizedReply.content, character, conversation.messages)) {
     return {
       message: null,
       silent: true,
@@ -85,7 +91,17 @@ export async function generateDirectChatReply({
   }
 
   return {
-    message: createDirectReplyMessage(character, content, result.agent, userMessage.id, 'reactive'),
+    message: createDirectReplyMessage({
+      agent: result.agent,
+      character,
+      content: normalizedReply.content,
+      conversationMessages: conversation.messages,
+      modelHint: normalizedReply.deliveryMode,
+      settings,
+      triggerMessage: userMessage,
+      turnId: userMessage.id,
+      turnKind: 'reactive',
+    }),
     silent: false,
     callCount: 1,
   }
@@ -122,9 +138,9 @@ export async function generateDirectChatProactiveTurn({
     proactiveDrive: drive,
   })
   const result = await requestReply(proactiveBundle, createDirectReplySettings(settings, 'proactive'))
-  const content = normalizeDirectReply(result.reply, character)
+  const normalizedReply = normalizeDirectReply(result.reply, character)
 
-  if (!content) {
+  if (!normalizedReply) {
     return {
       message: null,
       silent: true,
@@ -133,7 +149,7 @@ export async function generateDirectChatProactiveTurn({
     }
   }
 
-  if (isRepeatedRecentReply(content, character, conversation.messages)) {
+  if (isRepeatedRecentReply(normalizedReply.content, character, conversation.messages)) {
     return {
       message: null,
       silent: true,
@@ -143,7 +159,17 @@ export async function generateDirectChatProactiveTurn({
   }
 
   return {
-    message: createDirectReplyMessage(character, content, result.agent, turnId, 'proactive'),
+    message: createDirectReplyMessage({
+      agent: result.agent,
+      character,
+      content: normalizedReply.content,
+      conversationMessages: conversation.messages,
+      modelHint: normalizedReply.deliveryMode,
+      settings,
+      triggerMessage: latestMessage,
+      turnId,
+      turnKind: 'proactive',
+    }),
     silent: false,
     callCount: 1,
   }
@@ -191,6 +217,7 @@ function buildDirectPromptBundle({
           '明确求助、提问、情绪求安慰、项目任务、重要约定必须认真回复，不要用沉默逃避责任。',
           `短促寒暄、话题已经自然收束、对方没有真的抛问题、你此刻没有角色动机时，可以只输出 ${DIRECT_SILENCE_MARKER}。`,
           '如果回复，只输出一条私聊消息；不要写名字前缀，不要解释自己为什么回复或不回复。',
+          '如果你很明确想打字或发语音，可以输出 JSON：{"delivery":"text|voice","message":"你的消息"}。长内容、任务、代码、步骤更适合 text；短情绪、撒娇、懒得打字、对方发来语音时可以 voice。不要每次都 voice。',
         ].join('\n'),
         category: 'relationship',
       },
@@ -231,6 +258,7 @@ function buildDirectSystemPrompt(character: CharacterCard): string {
     '私聊不需要每一句都秒回。你可以已读不回、晚点主动找对方、也可以在真的想接话时自然回复。',
     `不想回复时，只输出 ${DIRECT_SILENCE_MARKER}，不要补解释。`,
     '想回复时，只发一条像真人私聊里的消息：可以短，可以认真，可以撒娇、别扭、吐槽或关心，但不要机械总结。',
+    '你可以自己决定这条是打字还是发语音；需要明确表达时用 JSON 的 delivery 字段，不想特别指定时直接发正文也可以。',
     '不要同时扮演用户，不要写动作旁白，不要写“系统/分析/理由”。',
   ].join('\n')
 }
@@ -256,15 +284,10 @@ function buildDirectTranscript(
     .join('\n') || '暂无私聊记录。'
 }
 
-function normalizeDirectReply(reply: string, character: CharacterCard): string | null {
-  let text = String(reply ?? '')
-    .replace(/```(?:json|text)?/gi, '')
-    .replace(/```/g, '')
-    .trim()
-
-  const parsed = tryParseReplyJson(text)
-  if (parsed) text = parsed
-  if (!text || text.includes(DIRECT_SILENCE_MARKER)) return null
+function normalizeDirectReply(reply: string, character: CharacterCard): NormalizedDirectReply | null {
+  const envelope = extractDeliveryEnvelope(reply, DIRECT_SILENCE_MARKER)
+  let text = envelope.text
+  if (envelope.silent) return null
   if (/^(不回|不回复|先不说|先不回|沉默|已读不回|暂时不回|无回复|保持沉默|跳过)[。.!！\s]*$/i.test(text)) return null
 
   text = stripSpeakerPrefix(text, character)
@@ -278,7 +301,10 @@ function normalizeDirectReply(reply: string, character: CharacterCard): string |
   if (!text || text.includes(DIRECT_SILENCE_MARKER)) return null
   if (/^(不回|不回复|先不说|先不回|沉默|已读不回|暂时不回|无回复|保持沉默|跳过)[。.!！\s]*$/i.test(text)) return null
 
-  return trimReplyLength(text)
+  return {
+    content: trimReplyLength(text),
+    deliveryMode: envelope.deliveryMode,
+  }
 }
 
 function isRepeatedRecentReply(text: string, character: CharacterCard, messages: ChatMessage[]): boolean {
@@ -307,17 +333,6 @@ function normalizeForRepeatCheck(text: string): string {
     .trim()
 }
 
-function tryParseReplyJson(text: string): string | null {
-  if (!text.startsWith('{') || !text.endsWith('}')) return null
-  try {
-    const parsed = JSON.parse(text) as { intent?: string; reply?: string; message?: string; content?: string }
-    if (/silent|no[_ -]?reply|none|skip/i.test(String(parsed.intent ?? ''))) return DIRECT_SILENCE_MARKER
-    return String(parsed.reply ?? parsed.message ?? parsed.content ?? '').trim() || null
-  } catch {
-    return null
-  }
-}
-
 function stripSpeakerPrefix(text: string, character: CharacterCard): string {
   const prefixPattern = new RegExp(`^\\s*(?:${escapeRegExp(character.name)}|${escapeRegExp(character.avatar)})\\s*[:：]\\s*`)
   return text
@@ -333,18 +348,42 @@ function trimReplyLength(text: string): string {
   return (firstSentence ?? singleLine.slice(0, 340)).trim()
 }
 
-function createDirectReplyMessage(
-  character: CharacterCard,
-  content: string,
-  agent: AssistantReplyResult['agent'],
-  turnId: string,
-  turnKind: 'reactive' | 'proactive',
-): ChatMessage {
+function createDirectReplyMessage({
+  agent,
+  character,
+  content,
+  conversationMessages,
+  modelHint,
+  settings,
+  triggerMessage,
+  turnId,
+  turnKind,
+}: {
+  agent: AssistantReplyResult['agent']
+  character: CharacterCard
+  content: string
+  conversationMessages: ChatMessage[]
+  modelHint?: ChatMessage['deliveryMode']
+  settings: AppSettings
+  triggerMessage?: ChatMessage | null
+  turnId: string
+  turnKind: 'reactive' | 'proactive'
+}): ChatMessage {
   return {
     id: createId('msg'),
     role: 'assistant',
     content,
     createdAt: nowIso(),
+    deliveryMode: chooseAssistantDeliveryMode({
+      character,
+      content,
+      conversationMessages,
+      modelHint,
+      scope: 'direct',
+      settings,
+      triggerMessage,
+      turnKind,
+    }),
     agent,
     authorCharacterId: character.id,
     authorName: character.name,

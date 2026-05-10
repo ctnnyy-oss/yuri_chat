@@ -270,6 +270,43 @@
   flex: 0 0 auto;
 }
 
+.message-voice-delivery {
+  display: grid;
+  gap: 6px;
+  min-width: min(230px, 72vw);
+}
+
+.assistant-voice-note {
+  margin-top: 0;
+}
+
+.assistant-voice-note button {
+  width: min(220px, 100%);
+  min-height: 42px;
+  justify-content: flex-start;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--pink-50), #fff);
+  box-shadow: 0 8px 18px rgba(244, 114, 182, 0.12);
+}
+
+.assistant-voice-transcript {
+  width: min(260px, 100%);
+}
+
+.assistant-voice-transcript summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.assistant-voice-transcript p {
+  margin-top: 4px;
+  color: var(--muted-strong);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .assistant-voice-row .lucide-loader-2 {
   animation: voice-spin 0.9s linear infinite;
 }

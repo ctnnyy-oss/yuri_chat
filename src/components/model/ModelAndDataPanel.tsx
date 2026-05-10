@@ -2,6 +2,7 @@ import { Activity, AlertCircle, CheckCircle2, CircleDashed, SlidersHorizontal, X
 import { useEffect, useRef, useState } from 'react'
 import type { AppSettings, ModelProfileInput, ModelProfileSummary } from '../../domain/types'
 import { checkCloudHealth, saveCloudToken } from '../../services/cloudSync'
+import { isLikelyVoiceOnlyProfile, pickFallbackChatProfile } from '../../services/modelProfileCapabilities'
 import { listModelProfiles, testModelProfile, type ModelCatalogResult } from '../../services/modelProfiles'
 import { WorkspaceTitle } from '../memory/atoms'
 import { GenerationSettings } from './GenerationSettings'
@@ -9,6 +10,7 @@ import { ModelCurrentStrip } from './ModelCurrentStrip'
 import { ModelProfileEditor } from './ModelProfileEditor'
 import { SavedModelProfiles } from './SavedModelProfiles'
 import { useModelProfileDraft } from './useModelProfileDraft'
+import { VoiceModelSettings } from './VoiceModelSettings'
 
 type DiagnosticStatus = 'idle' | 'running' | 'ok' | 'warn' | 'fail'
 
@@ -90,10 +92,9 @@ export function ModelAndDataPanel({
   onFetchModelCatalog,
   onTestModelProfile,
 }: ModelAndDataPanelProps) {
+  const selectedProfile = modelProfiles.find((profile) => profile.id === settings.modelProfileId)
   const activeProfile =
-    modelProfiles.find((profile) => profile.id === settings.modelProfileId) ??
-    modelProfiles.find((profile) => profile.isDefault) ??
-    modelProfiles[0]
+    selectedProfile && !isLikelyVoiceOnlyProfile(selectedProfile) ? selectedProfile : pickFallbackChatProfile(modelProfiles)
   const draftController = useModelProfileDraft({
     modelProfileBusy,
     onFetchModelCatalog,
@@ -133,6 +134,11 @@ export function ModelAndDataPanel({
   }
 
   function handleUseProfile(profile: ModelProfileSummary) {
+    if (isLikelyVoiceOnlyProfile(profile)) {
+      setModelActionNotice('这组是 TTS 语音模型，请在右侧语音模型里选择；聊天请启用 LLM 档案。')
+      return
+    }
+
     onUpdateSettings({
       ...settings,
       modelProfileId: profile.id,
@@ -288,34 +294,39 @@ export function ModelAndDataPanel({
         )}
 
         <div className="model-layout">
-          <ModelProfileEditor
-            actionNotice={modelActionNotice}
-            canFetchCatalog={draftController.canFetchCatalog}
-            canUseDraft={draftController.canUseDraft}
-            catalogStatus={draftController.catalogStatus}
-            draft={draftController.draft}
-            modelOptions={draftController.modelOptions}
-            modelStatusText={modelProfileStatus}
-            onDraftChange={draftController.setDraft}
-            onFetchDraftCatalog={draftController.handleFetchDraftCatalog}
-            onPresetChange={draftController.handlePresetChange}
-            onResetCatalog={draftController.resetCatalog}
-            onSaveProfile={draftController.handleSaveProfile}
-            onSaveProfileAsSpare={draftController.handleSaveProfileAsSpare}
-            onTestDraft={draftController.handleTestDraft}
-            selectedPresetId={draftController.selectedPresetId}
-          />
-
-          <section className="settings-section model-column model-saved-section">
-            <SavedModelProfiles
-              activeProfileId={settings.modelProfileId}
-              modelProfiles={modelProfiles}
-              onDeleteModelProfile={onDeleteModelProfile}
-              onEditProfile={handleEditProfile}
-              onTestProfile={(profile) => void onTestModelProfile({ profileId: profile.id })}
-              onUseProfile={handleUseProfile}
+          <div className="model-side-stack">
+            <ModelProfileEditor
+              actionNotice={modelActionNotice}
+              canFetchCatalog={draftController.canFetchCatalog}
+              canUseDraft={draftController.canUseDraft}
+              catalogStatus={draftController.catalogStatus}
+              draft={draftController.draft}
+              modelOptions={draftController.modelOptions}
+              modelStatusText={modelProfileStatus}
+              onDraftChange={draftController.setDraft}
+              onFetchDraftCatalog={draftController.handleFetchDraftCatalog}
+              onPresetChange={draftController.handlePresetChange}
+              onResetCatalog={draftController.resetCatalog}
+              onSaveProfile={draftController.handleSaveProfile}
+              onSaveProfileAsSpare={draftController.handleSaveProfileAsSpare}
+              onTestDraft={draftController.handleTestDraft}
+              selectedPresetId={draftController.selectedPresetId}
             />
-          </section>
+          </div>
+
+          <div className="model-side-stack">
+            <VoiceModelSettings modelProfiles={modelProfiles} onUpdateSettings={onUpdateSettings} settings={settings} />
+            <section className="settings-section model-column model-saved-section">
+              <SavedModelProfiles
+                activeProfileId={settings.modelProfileId}
+                modelProfiles={modelProfiles}
+                onDeleteModelProfile={onDeleteModelProfile}
+                onEditProfile={handleEditProfile}
+                onTestProfile={(profile) => void onTestModelProfile({ profileId: profile.id })}
+                onUseProfile={handleUseProfile}
+              />
+            </section>
+          </div>
         </div>
 
         <section className="settings-section model-column model-generation-section">

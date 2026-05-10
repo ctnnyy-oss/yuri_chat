@@ -42,7 +42,7 @@ export async function callTextToSpeech(input, profile) {
   if (!response.ok) {
     const detail = await response.text()
     if (shouldTryChatSpeechFallback(response.status, detail, model)) {
-      return callChatCompletionSpeech({ profile, model, voiceId, text, speed })
+      return callChatCompletionSpeech({ profile, model, voiceId, text, instructions, speed })
     }
     throw new Error(formatVoiceProviderError(response.status, detail, profile))
   }
@@ -50,17 +50,26 @@ export async function callTextToSpeech(input, profile) {
   return readAudioResponse(response, profile, model, voiceId)
 }
 
-async function callChatCompletionSpeech({ profile, model, voiceId, text, speed }) {
+async function callChatCompletionSpeech({ profile, model, voiceId, text, instructions, speed }) {
+  const messages = [
+    ...(instructions ? [{ role: 'user', content: instructions }] : []),
+    { role: 'assistant', content: text },
+  ]
   const response = await fetchWithTimeout(`${profile.baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${profile.apiKey}`,
+      'api-key': profile.apiKey,
       'Content-Type': 'application/json; charset=utf-8',
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: 'assistant', content: text }],
+      messages,
       stream: false,
+      audio: {
+        format: 'mp3',
+        voice: voiceId,
+      },
       voice: voiceId,
       speed,
     }),

@@ -82,7 +82,11 @@ export function resolveRuntimeProfileForChat(settings, account) {
   const dataUserId = normalizeDataUserId(getAccountUserId(account))
   const selectedProfileId = settings?.modelProfileId
   if (selectedProfileId && selectedProfileId !== serverEnvProfileId) {
-    return storedProfileToRuntime(readStoredModelProfile(selectedProfileId, dataUserId))
+    const runtimeProfile = storedProfileToRuntime(readStoredModelProfile(selectedProfileId, dataUserId))
+    if (isLikelyVoiceOnlyModel(runtimeProfile.model)) {
+      throw new Error('当前启用的是 TTS 语音模型，不能用于文字聊天。请在模型页左侧启用一个 LLM 聊天模型。')
+    }
+    return runtimeProfile
   }
 
   if (selectedProfileId === serverEnvProfileId) {
@@ -90,6 +94,7 @@ export function resolveRuntimeProfileForChat(settings, account) {
   }
 
   const defaultStoredProfile = readDefaultStoredModelProfile(dataUserId)
+  if (defaultStoredProfile && isLikelyVoiceOnlyModel(defaultStoredProfile.model)) return null
   if (defaultStoredProfile) {
     return storedProfileToRuntime(defaultStoredProfile)
   }
@@ -296,6 +301,14 @@ function storedProfileToRuntime(profile) {
     model: profile.model,
     apiKey: profile.encryptedApiKey ? decryptSecret(profile.encryptedApiKey) : '',
   }
+}
+
+function isLikelyVoiceOnlyModel(model) {
+  const normalized = String(model || '').toLowerCase()
+  return /(^|[-_/.:])tts($|[-_/.:])/.test(normalized)
+    || /text[-_]?to[-_]?speech/.test(normalized)
+    || /speech[-_]?synthesis/.test(normalized)
+    || /voice[-_]?clone|voiceclone|voice[-_]?design|voicedesign/.test(normalized)
 }
 
 function encryptSecret(value) {

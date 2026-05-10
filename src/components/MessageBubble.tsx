@@ -46,6 +46,7 @@ export function MessageBubble({
   const voiceSpeakerName = assistantName
   const canPlayAssistantVoice = !isUser && settings.voice.assistantPlaybackEnabled && Boolean(content.trim())
   const canPlayRecordedVoice = isUser && message.voice?.kind === 'recorded'
+  const isAssistantVoiceMessage = canPlayAssistantVoice && message.deliveryMode === 'voice'
 
   return (
     <>
@@ -61,11 +62,28 @@ export function MessageBubble({
         >
           {isUser ? '我' : assistantAvatar}
         </span>
-        <article className={`message message-${message.role}`}>
+        <article className={`message message-${message.role} ${isAssistantVoiceMessage ? 'message-voice-delivery' : ''}`}>
           {isGroupAssistant && showAvatar && <strong className="message-author-name">{assistantName}</strong>}
           {canPlayRecordedVoice && <RecordedVoicePlayer message={message} />}
-          <p>{content}</p>
-          {canPlayAssistantVoice && (
+          {isAssistantVoiceMessage ? (
+            <AssistantVoicePlayer
+              autoPlay={autoPlayVoice}
+              characterName={voiceSpeakerName}
+              content={content}
+              settings={settings}
+              variant="voice-note"
+              voiceProfile={speakerVoiceProfile}
+            />
+          ) : (
+            <p>{content}</p>
+          )}
+          {isAssistantVoiceMessage && (
+            <details className="assistant-voice-transcript">
+              <summary>转文字</summary>
+              <p>{content}</p>
+            </details>
+          )}
+          {canPlayAssistantVoice && !isAssistantVoiceMessage && (
             <AssistantVoicePlayer
               autoPlay={autoPlayVoice}
               characterName={voiceSpeakerName}
@@ -97,12 +115,14 @@ function AssistantVoicePlayer({
   characterName,
   content,
   settings,
+  variant = 'inline',
   voiceProfile,
 }: {
   autoPlay: boolean
   characterName: string
   content: string
   settings: AppSettings
+  variant?: 'inline' | 'voice-note'
   voiceProfile?: CharacterCard['voiceProfile']
 }) {
   const [audioUrl, setAudioUrl] = useState('')
@@ -168,11 +188,12 @@ function AssistantVoicePlayer({
   }, [autoPlay, playVoice])
 
   const loading = status === 'loading'
+  const buttonLabel = variant === 'voice-note' ? voiceProfile?.displayName || settings.voice.defaultVoiceLabel || '语音' : '朗读'
   return (
-    <div className="assistant-voice-row">
+    <div className={`assistant-voice-row ${variant === 'voice-note' ? 'assistant-voice-note' : ''}`}>
       <button disabled={loading} onClick={() => void playVoice()} type="button">
         {loading ? <Loader2 size={15} /> : <Volume2 size={15} />}
-        <span>{loading ? '生成中' : voiceProfile?.displayName || settings.voice.defaultVoiceLabel || '语音'}</span>
+        <span>{loading ? '生成中' : buttonLabel}</span>
       </button>
       {error && <small>{error}</small>}
     </div>

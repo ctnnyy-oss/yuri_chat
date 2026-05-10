@@ -8,6 +8,7 @@ import type {
   PromptBundle,
 } from '../domain/types'
 import { createId, nowIso } from './memoryEngine'
+import { chooseAssistantDeliveryMode, extractDeliveryEnvelope } from './messageDelivery'
 
 export const GROUP_SILENCE_MARKER = '[[NO_REPLY]]'
 
@@ -48,6 +49,11 @@ export interface GroupChatTurnResult {
   silentCount: number
   callCount: number
   skippedReason?: string
+}
+
+interface NormalizedGroupReply {
+  content: string
+  deliveryMode?: ChatMessage['deliveryMode']
 }
 
 export function isGroupCharacter(character: CharacterCard): boolean {
@@ -98,17 +104,27 @@ export async function generateGroupChatReplies({
     callCount += 1
 
     const result = await requestReply(bundle, createGroupReplySettings(state.settings))
-    const content = normalizeGroupReply(result.reply, candidate.member, members)
-    if (!content) {
+    const normalizedReply = normalizeGroupReply(result.reply, candidate.member, members)
+    if (!normalizedReply) {
       silentCount += 1
       continue
     }
-    if (isRepeatedRecentReply(content, candidate.member, [...conversation.messages, ...replies])) {
+    if (isRepeatedRecentReply(normalizedReply.content, candidate.member, [...conversation.messages, ...replies])) {
       silentCount += 1
       continue
     }
 
-    replies.push(createGroupReplyMessage(candidate.member, content, result.agent, userMessage.id, 'reactive'))
+    replies.push(createGroupReplyMessage({
+      agent: result.agent,
+      content: normalizedReply.content,
+      conversationMessages: [...conversation.messages, ...replies],
+      groupTurnId: userMessage.id,
+      groupTurnKind: 'reactive',
+      member: candidate.member,
+      modelHint: normalizedReply.deliveryMode,
+      settings: state.settings,
+      triggerMessage: userMessage,
+    }))
   }
 
   return {
@@ -138,6 +154,7 @@ export async function generateGroupChatProactiveTurn({
 
   const maxReplies = Math.min(members.length, clampInteger(state.settings.groupChatMaxAutoReplies, 1, 4, 3))
   const turnId = createId('groupturn')
+  const latestMessage = conversation.messages.at(-1) ?? null
   const candidates = buildProactiveCandidateQueue(members, conversation, state.settings, force).slice(
     0,
     MAX_GROUP_MEMBERS_TO_DRAFT,
@@ -152,24 +169,34 @@ export async function generateGroupChatProactiveTurn({
       members,
       candidate,
       conversationMessages: conversation.messages,
-      triggerMessage: conversation.messages.at(-1) ?? null,
+      triggerMessage: latestMessage,
       settings: state.settings,
       mode: 'proactive-start',
     })
     callCount += 1
 
     const result = await requestReply(bundle, createGroupReplySettings(state.settings))
-    const content = normalizeGroupReply(result.reply, candidate.member, members)
-    if (!content) {
+    const normalizedReply = normalizeGroupReply(result.reply, candidate.member, members)
+    if (!normalizedReply) {
       silentCount += 1
       continue
     }
-    if (isRepeatedRecentReply(content, candidate.member, conversation.messages)) {
+    if (isRepeatedRecentReply(normalizedReply.content, candidate.member, conversation.messages)) {
       silentCount += 1
       continue
     }
 
-    replies.push(createGroupReplyMessage(candidate.member, content, result.agent, turnId, 'proactive'))
+    replies.push(createGroupReplyMessage({
+      agent: result.agent,
+      content: normalizedReply.content,
+      conversationMessages: conversation.messages,
+      groupTurnId: turnId,
+      groupTurnKind: 'proactive',
+      member: candidate.member,
+      modelHint: normalizedReply.deliveryMode,
+      settings: state.settings,
+      triggerMessage: latestMessage,
+    }))
     break
   }
 
@@ -205,17 +232,27 @@ export async function generateGroupChatProactiveTurn({
     callCount += 1
 
     const result = await requestReply(bundle, createGroupReplySettings(state.settings))
-    const content = normalizeGroupReply(result.reply, candidate.member, members)
-    if (!content) {
+    const normalizedReply = normalizeGroupReply(result.reply, candidate.member, members)
+    if (!normalizedReply) {
       silentCount += 1
       continue
     }
-    if (isRepeatedRecentReply(content, candidate.member, [...conversation.messages, ...replies])) {
+    if (isRepeatedRecentReply(normalizedReply.content, candidate.member, [...conversation.messages, ...replies])) {
       silentCount += 1
       continue
     }
 
-    replies.push(createGroupReplyMessage(candidate.member, content, result.agent, turnId, 'proactive'))
+    replies.push(createGroupReplyMessage({
+      agent: result.agent,
+      content: normalizedReply.content,
+      conversationMessages: [...conversation.messages, ...replies],
+      groupTurnId: turnId,
+      groupTurnKind: 'proactive',
+      member: candidate.member,
+      modelHint: normalizedReply.deliveryMode,
+      settings: state.settings,
+      triggerMessage: initiator,
+    }))
   }
 
   return {
@@ -406,6 +443,7 @@ function buildGroupPromptBundle({
           mode === 'proactive-start'
             ? '现在是群里空闲时的主动发言判断；没想法、没必要开口时，直接输出静默标记。'
             : '冲动低、没被点名、话题和自己关系不大时，直接输出静默标记。',
+          '如果发言，你可以自己决定打字还是发语音。可输出 JSON：{"delivery":"text|voice","message":"你的群消息"}。群聊里语音要克制，短情绪、吐槽、撒娇可以 voice；长内容、解释、任务、多人信息用 text。',
         ].join('\n'),
         category: 'relationship',
       },
@@ -463,6 +501,7 @@ function buildGroupSystemPrompt(member: CharacterCard): string {
     `你不需要每条消息都回复。自然不想接话时，只输出 ${GROUP_SILENCE_MARKER}。`,
     '群里空下来时，你也可以像真人一样主动发起一句话，但必须是真有角色动机，而不是机械续聊。',
     '要回复时，只发一条像真人群聊里的短消息。可以简短、玩笑、表情、吐槽，也可以认真接话。',
+    '你可以自己决定这条是文字还是语音；不确定时直接发正文，明确时用 JSON 的 delivery 字段。',
     '不要写“某某：”，不要同时扮演多个人，不要总结规则，不要解释你为什么回复或不回复。',
   ].join('\n')
 }
@@ -493,15 +532,10 @@ function getMessageAuthorName(
   return group.name
 }
 
-function normalizeGroupReply(reply: string, member: CharacterCard, members: CharacterCard[]): string | null {
-  let text = String(reply ?? '')
-    .replace(/```(?:json|text)?/gi, '')
-    .replace(/```/g, '')
-    .trim()
-
-  const parsed = tryParseReplyJson(text)
-  if (parsed) text = parsed
-  if (!text || text.includes(GROUP_SILENCE_MARKER)) return null
+function normalizeGroupReply(reply: string, member: CharacterCard, members: CharacterCard[]): NormalizedGroupReply | null {
+  const envelope = extractDeliveryEnvelope(reply, GROUP_SILENCE_MARKER)
+  let text = envelope.text
+  if (envelope.silent) return null
   if (/^(不回复|不接话|先不说|沉默|静默|略过|无回应|没有回应|保持沉默)[。.!！\s]*$/i.test(text)) return null
 
   text = stripSpeakerPrefix(text, member)
@@ -516,7 +550,10 @@ function normalizeGroupReply(reply: string, member: CharacterCard, members: Char
   if (!text || text.includes(GROUP_SILENCE_MARKER)) return null
   if (/^(不回复|不接话|先不说|沉默|静默|略过|无回应|没有回应|保持沉默)[。.!！\s]*$/i.test(text)) return null
 
-  return trimReplyLength(text)
+  return {
+    content: trimReplyLength(text),
+    deliveryMode: envelope.deliveryMode,
+  }
 }
 
 function isRepeatedRecentReply(text: string, member: CharacterCard, messages: ChatMessage[]): boolean {
@@ -545,17 +582,6 @@ function normalizeForRepeatCheck(text: string): string {
     .trim()
 }
 
-function tryParseReplyJson(text: string): string | null {
-  if (!text.startsWith('{') || !text.endsWith('}')) return null
-  try {
-    const parsed = JSON.parse(text) as { intent?: string; reply?: string; message?: string; content?: string }
-    if (/silent|no[_ -]?reply|none|skip/i.test(String(parsed.intent ?? ''))) return GROUP_SILENCE_MARKER
-    return String(parsed.reply ?? parsed.message ?? parsed.content ?? '').trim() || null
-  } catch {
-    return null
-  }
-}
-
 function stripSpeakerPrefix(text: string, member: CharacterCard): string {
   const prefixPattern = new RegExp(`^\\s*(?:${escapeRegExp(member.name)}|${escapeRegExp(member.avatar)})\\s*[:：]\\s*`)
   return text
@@ -577,18 +603,42 @@ function trimReplyLength(text: string): string {
   return (firstSentence ?? singleLine.slice(0, 220)).trim()
 }
 
-function createGroupReplyMessage(
-  member: CharacterCard,
-  content: string,
-  agent: AssistantReplyResult['agent'],
-  groupTurnId: string,
-  groupTurnKind: 'reactive' | 'proactive',
-): ChatMessage {
+function createGroupReplyMessage({
+  agent,
+  content,
+  conversationMessages,
+  groupTurnId,
+  groupTurnKind,
+  member,
+  modelHint,
+  settings,
+  triggerMessage,
+}: {
+  agent: AssistantReplyResult['agent']
+  content: string
+  conversationMessages: ChatMessage[]
+  groupTurnId: string
+  groupTurnKind: 'reactive' | 'proactive'
+  member: CharacterCard
+  modelHint?: ChatMessage['deliveryMode']
+  settings: AppSettings
+  triggerMessage?: ChatMessage | null
+}): ChatMessage {
   return {
     id: createId('msg'),
     role: 'assistant',
     content,
     createdAt: nowIso(),
+    deliveryMode: chooseAssistantDeliveryMode({
+      character: member,
+      content,
+      conversationMessages,
+      modelHint,
+      scope: 'group',
+      settings,
+      triggerMessage,
+      turnKind: groupTurnKind,
+    }),
     agent,
     authorCharacterId: member.id,
     authorName: member.name,

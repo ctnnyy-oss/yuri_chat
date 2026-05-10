@@ -284,6 +284,13 @@
   align-items: start;
 }
 
+.model-side-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
 .app-shell.compact-mode .settings-stack,
 .app-shell.compact-mode .model-settings-stack {
   max-width: none;
@@ -294,7 +301,8 @@
   align-items: start;
 }
 
-.app-shell.compact-mode .model-layout > .settings-section {
+.app-shell.compact-mode .model-layout > .settings-section,
+.app-shell.compact-mode .model-side-stack > .settings-section {
   height: auto;
   min-height: 0;
 }
@@ -321,7 +329,8 @@
     align-items: start;
   }
 
-  .app-shell.compact-mode .model-layout > .settings-section {
+  .app-shell.compact-mode .model-layout > .settings-section,
+  .app-shell.compact-mode .model-side-stack > .settings-section {
     height: auto;
   }
 }
@@ -367,6 +376,14 @@
       color-mix(in srgb, var(--rose) 20%, var(--feature-field, var(--panel))),
       color-mix(in srgb, var(--rose) 7%, var(--feature-card, var(--panel)))
     );
+}
+
+.model-voice-section {
+  gap: 14px;
+}
+
+.model-voice-section .voice-model-card {
+  min-height: 94px;
 }
 
 .model-hero-section {

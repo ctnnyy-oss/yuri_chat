@@ -50,7 +50,7 @@ export function ModelProfileEditor({
     <section className="settings-section model-column model-profile-editor">
       <div className="settings-section-title">
         <KeyRound size={18} />
-        <span>接入或更换模型</span>
+        <span>LLM 大语言模型</span>
       </div>
 
       {actionNotice && <p className="model-action-notice" role="status">{actionNotice}</p>}
@@ -129,7 +129,7 @@ export function ModelProfileEditor({
 
       <small className="cloud-status-line">{catalogStatus || modelStatusText}</small>
       <small className="model-warning">
-        平台只是帮妹妹填默认地址，不会内置密钥。聊天模型用“保存并启用”；只给语音用的 TTS 供应商用“仅保存档案”，再到设置里选择。
+        平台只是帮妹妹填默认地址，不会内置密钥。聊天模型用“保存并启用”；只给语音用的供应商用“仅保存档案”，再到右侧 TTS 语音模型里选择。
       </small>
 
       <div className="settings-actions">

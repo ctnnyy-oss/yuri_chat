@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CheckCircle2, Trash2 } from 'lucide-react'
 import type { ModelProfileSummary } from '../../domain/types'
+import { isLikelyVoiceOnlyProfile } from '../../services/modelProfileCapabilities'
 import { MobileConfirmDialog } from '../MobileConfirmDialog'
 import { isServerEnvProfileId, providerKindLabels } from './modelPanelUtils'
 
@@ -53,7 +54,8 @@ export function SavedModelProfiles({
           <small className="model-empty-note">还没有保存模型。先选平台或自定义，填 URL 和 API Key，模型列表出来后保存。</small>
         ) : (
           modelProfiles.map((profile) => {
-            const isActive = profile.id === activeProfileId
+            const isVoiceOnly = isLikelyVoiceOnlyProfile(profile)
+            const isActive = profile.id === activeProfileId && !isVoiceOnly
             return (
               <article className={`model-profile-item ${isActive ? 'active' : ''}`} key={profile.id}>
                 <div className="model-profile-main">
@@ -78,8 +80,13 @@ export function SavedModelProfiles({
                   </dl>
                 </div>
                 <div className="backup-actions">
-                  <button className={isActive ? 'model-active-button' : ''} onClick={() => handleUseProfile(profile, isActive)} type="button">
-                    {isActive ? '使用中' : '使用'}
+                  <button
+                    className={isActive ? 'model-active-button' : ''}
+                    disabled={isVoiceOnly}
+                    onClick={() => handleUseProfile(profile, isActive)}
+                    type="button"
+                  >
+                    {isVoiceOnly ? '语音档案' : isActive ? '使用中' : '使用'}
                   </button>
                   <button onClick={() => handleEditProfile(profile)} type="button">
                     {isServerEnvProfileId(profile.id) ? '复制' : '编辑'}

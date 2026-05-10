@@ -112,6 +112,15 @@ export const modelProviderPresets: ModelProviderPreset[] = [
     model: 'glm-4-flash',
   },
   {
+    id: 'xiaomi-mimo',
+    label: '小米 MiMo 官方',
+    description: '小米 MiMo 官方 OpenAI-compatible 接口，TTS 可用 mimo-v2.5-tts。',
+    group: 'official',
+    kind: 'openai-compatible',
+    baseUrl: 'https://api.xiaomimimo.com/v1',
+    model: 'mimo-v2.5-tts',
+  },
+  {
     id: 'anthropic',
     label: 'Anthropic 官方',
     description: 'Claude 官方 messages 接口，不走 OpenAI 格式。',

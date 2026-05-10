@@ -9,6 +9,7 @@ import {
   testModelProfile,
   type ModelCatalogResult,
 } from '../services/modelProfiles'
+import { isLikelyVoiceOnlyProfile, pickFallbackChatProfile } from '../services/modelProfileCapabilities'
 import { isCloudSyncConfigured } from '../services/cloudSync'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 
@@ -16,14 +17,6 @@ interface UseModelProfilesDeps {
   setState: Dispatch<SetStateAction<AppState>>
   setNotice: Dispatch<SetStateAction<string>>
   getCloudToken: () => string
-}
-
-function pickFallbackProfile(profiles: ModelProfileSummary[]): ModelProfileSummary | undefined {
-  return (
-    profiles.find((profile) => profile.isDefault && profile.hasApiKey) ??
-    profiles.find((profile) => profile.hasApiKey) ??
-    profiles[0]
-  )
 }
 
 export function useModelProfiles({ setState, setNotice, getCloudToken }: UseModelProfilesDeps) {
@@ -41,22 +34,21 @@ export function useModelProfiles({ setState, setNotice, getCloudToken }: UseMode
     try {
       const profiles = await listModelProfiles(token)
       setModelProfiles(profiles)
-      const fallbackProfile = pickFallbackProfile(profiles)
-      if (fallbackProfile) {
-        setState((currentState) => {
-          if (currentState.settings.modelProfileId && profiles.some((profile) => profile.id === currentState.settings.modelProfileId)) {
-            return currentState
-          }
-          return {
-            ...currentState,
-            settings: normalizeTrashRetentionSettings({
-              ...currentState.settings,
-              modelProfileId: fallbackProfile.id,
-              model: fallbackProfile.model,
-            }),
-          }
-        })
-      }
+      const fallbackProfile = pickFallbackChatProfile(profiles)
+      setState((currentState) => {
+        const selectedProfile = profiles.find((profile) => profile.id === currentState.settings.modelProfileId)
+        if (selectedProfile && !isLikelyVoiceOnlyProfile(selectedProfile)) return currentState
+        if (!fallbackProfile && !selectedProfile) return currentState
+
+        return {
+          ...currentState,
+          settings: normalizeTrashRetentionSettings({
+            ...currentState.settings,
+            modelProfileId: fallbackProfile?.id ?? '',
+            model: fallbackProfile?.model ?? '',
+          }),
+        }
+      })
       setModelProfileStatus(`已读取 ${profiles.length} 组模型配置`)
       return profiles
     } catch (error) {
@@ -101,7 +93,7 @@ export function useModelProfiles({ setState, setNotice, getCloudToken }: UseMode
       setModelProfileBusy(true)
       const profiles = await deleteModelProfile(token, profileId)
       setModelProfiles(profiles)
-      const fallbackProfile = pickFallbackProfile(profiles)
+      const fallbackProfile = pickFallbackChatProfile(profiles)
       setState((currentState) => {
         const deletingChatProfile = currentState.settings.modelProfileId === profileId
         const deletingTtsProfile = currentState.settings.voice.ttsProfileId === profileId

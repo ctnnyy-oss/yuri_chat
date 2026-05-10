@@ -29,6 +29,7 @@ import {
   upsertConversation,
 } from '../services/memoryEngine'
 import { requestModelEmbeddings } from '../services/modelProfiles'
+import { chooseAssistantDeliveryMode } from '../services/messageDelivery'
 import { addMemoryEventToState, applyAgentActionsToState, enqueueAgentTaskActions } from './agentActions'
 import { countDirectProactiveTurnsSinceLastUser, countGroupProactiveTurnsSinceLastUser, getConversationMessageKey, getDirectProactiveDelayMs, getGroupProactiveDelayMs } from './chatProactiveTiming'
 
@@ -365,6 +366,14 @@ export function useChat({ state, setState, setNotice, character, conversation, p
         const result = await requestAssistantReply(requestBundle, nextState.settings)
         assistantMessage = {
           ...createMessage('assistant', result.reply),
+          deliveryMode: chooseAssistantDeliveryMode({
+            character,
+            content: result.reply,
+            conversationMessages: nextConversation.messages,
+            scope: 'direct',
+            settings: nextState.settings,
+            triggerMessage: userMessage,
+          }),
           agent: result.agent,
         }
       }
