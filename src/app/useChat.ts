@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppState, CharacterCard, ChatMessage, ConversationState } from '../domain/types'
 import { requestAssistantReply } from '../services/chatApi'
 import { getSavedCloudToken, isCloudSyncConfigured } from '../services/cloudSync'
+import { generateDirectChatProactiveTurn, generateDirectChatReply } from '../services/directChatEngine'
 import {
   generateGroupChatProactiveTurn,
   generateGroupChatReplies,
@@ -29,6 +30,7 @@ import {
 } from '../services/memoryEngine'
 import { requestModelEmbeddings } from '../services/modelProfiles'
 import { addMemoryEventToState, applyAgentActionsToState, enqueueAgentTaskActions } from './agentActions'
+import { countDirectProactiveTurnsSinceLastUser, countGroupProactiveTurnsSinceLastUser, getConversationMessageKey, getDirectProactiveDelayMs, getGroupProactiveDelayMs } from './chatProactiveTiming'
 
 interface UseChatDeps {
   state: AppState
@@ -46,6 +48,9 @@ export function useChat({ state, setState, setNotice, character, conversation, p
   const proactiveTimerRef = useRef<number | null>(null)
   const proactiveInFlightRef = useRef(false)
   const lastProactiveAttemptKeyRef = useRef('')
+  const directProactiveTimerRef = useRef<number | null>(null)
+  const directProactiveInFlightRef = useRef(false)
+  const lastDirectProactiveAttemptKeyRef = useRef('')
   const chatAlert = chatAlertState?.conversationId === conversation.id ? chatAlertState.message : ''
 
   const runGroupProactiveTurn = useCallback(
@@ -53,7 +58,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
       if (proactivePaused) return
       if (!isGroupCharacter(character) || isSending || proactiveInFlightRef.current) return
       if (!force && (!state.settings.groupChatHumanMode || !state.settings.groupChatProactiveMode)) return
-      if (!force && countProactiveTurnsSinceLastUser(conversation.messages) >= 2) return
+      if (!force && countGroupProactiveTurnsSinceLastUser(conversation.messages) >= 2) return
 
       const attemptKey = getConversationMessageKey(conversation.messages)
       proactiveInFlightRef.current = true
@@ -95,6 +100,54 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     [character, conversation, isSending, proactivePaused, setNotice, setState, state],
   )
 
+  const runDirectProactiveTurn = useCallback(
+    async ({ force = true }: { force?: boolean } = {}) => {
+      if (proactivePaused) return
+      if (isGroupCharacter(character) || isSending || directProactiveInFlightRef.current) return
+      if (!force && !state.settings.directChatProactiveMode) return
+      if (!force && countDirectProactiveTurnsSinceLastUser(conversation.messages) >= 1) return
+
+      const attemptKey = getConversationMessageKey(conversation.messages)
+      directProactiveInFlightRef.current = true
+      setChatAlertState(null)
+      setIsSending(true)
+      setNotice(force ? `${character.name}正在想要不要主动开口` : `${character.name}安静了一会儿`)
+
+      try {
+        const baseBundle = buildPromptBundle(state)
+        const turn = await generateDirectChatProactiveTurn({
+          character,
+          conversation,
+          bundle: baseBundle,
+          settings: state.settings,
+          requestReply: requestAssistantReply,
+          force,
+        })
+
+        if (!turn.message) {
+          lastDirectProactiveAttemptKeyRef.current = attemptKey
+          setNotice(turn.skippedReason ?? `${character.name}暂时没有主动发消息`)
+          return
+        }
+
+        const repliedConversation = updateConversationSummary({
+          ...conversation,
+          messages: [...conversation.messages, turn.message],
+          updatedAt: nowIso(),
+        })
+        setState((currentState) => upsertConversation(currentState, repliedConversation))
+        setNotice(`${character.name}主动发来了一条消息`)
+      } catch (error) {
+        setChatAlertState({ conversationId: conversation.id, message: formatChatFailure(error) })
+        setNotice('模型代理没有接通')
+      } finally {
+        directProactiveInFlightRef.current = false
+        setIsSending(false)
+      }
+    },
+    [character, conversation, isSending, proactivePaused, setNotice, setState, state],
+  )
+
   useEffect(() => {
     if (proactiveTimerRef.current !== null) {
       window.clearTimeout(proactiveTimerRef.current)
@@ -105,7 +158,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     if (!state.settings.groupChatHumanMode || !state.settings.groupChatProactiveMode) return
     if (isSending || proactiveInFlightRef.current) return
     if (conversation.messages.length === 0) return
-    if (countProactiveTurnsSinceLastUser(conversation.messages) >= 2) return
+    if (countGroupProactiveTurnsSinceLastUser(conversation.messages) >= 2) return
     if (typeof document !== 'undefined' && document.hidden) return
 
     const attemptKey = getConversationMessageKey(conversation.messages)
@@ -114,7 +167,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     proactiveTimerRef.current = window.setTimeout(() => {
       proactiveTimerRef.current = null
       void runGroupProactiveTurn({ force: false })
-    }, getProactiveDelayMs(conversation.id, conversation.messages))
+    }, getGroupProactiveDelayMs(conversation.id, conversation.messages))
 
     return () => {
       if (proactiveTimerRef.current !== null) {
@@ -131,6 +184,43 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     runGroupProactiveTurn,
     state.settings.groupChatHumanMode,
     state.settings.groupChatProactiveMode,
+  ])
+
+  useEffect(() => {
+    if (directProactiveTimerRef.current !== null) {
+      window.clearTimeout(directProactiveTimerRef.current)
+      directProactiveTimerRef.current = null
+    }
+    if (isGroupCharacter(character)) return
+    if (proactivePaused) return
+    if (!state.settings.directChatProactiveMode) return
+    if (isSending || directProactiveInFlightRef.current) return
+    if (conversation.messages.length === 0) return
+    if (countDirectProactiveTurnsSinceLastUser(conversation.messages) >= 1) return
+    if (typeof document !== 'undefined' && document.hidden) return
+
+    const attemptKey = getConversationMessageKey(conversation.messages)
+    if (lastDirectProactiveAttemptKeyRef.current === attemptKey) return
+
+    directProactiveTimerRef.current = window.setTimeout(() => {
+      directProactiveTimerRef.current = null
+      void runDirectProactiveTurn({ force: false })
+    }, getDirectProactiveDelayMs(conversation.id, conversation.messages))
+
+    return () => {
+      if (directProactiveTimerRef.current !== null) {
+        window.clearTimeout(directProactiveTimerRef.current)
+        directProactiveTimerRef.current = null
+      }
+    }
+  }, [
+    character,
+    conversation.id,
+    conversation.messages,
+    isSending,
+    proactivePaused,
+    runDirectProactiveTurn,
+    state.settings.directChatProactiveMode,
   ])
 
   async function handleSend() {
@@ -250,10 +340,28 @@ export function useChat({ state, setState, setNotice, character, conversation, p
         return
       }
 
-      const result = await requestAssistantReply(requestBundle, nextState.settings)
-      const assistantMessage = {
-        ...createMessage('assistant', result.reply),
-        agent: result.agent,
+      let assistantMessage: ChatMessage
+      if (nextState.settings.directChatHumanMode) {
+        const directTurn = await generateDirectChatReply({
+          character,
+          conversation: nextConversation,
+          userMessage,
+          bundle: requestBundle,
+          settings: nextState.settings,
+          requestReply: requestAssistantReply,
+        })
+        if (!directTurn.message) {
+          setState(nextStateWithUsage)
+          setNotice(directTurn.skippedReason ?? `${character.name}暂时没有回复`)
+          return
+        }
+        assistantMessage = directTurn.message
+      } else {
+        const result = await requestAssistantReply(requestBundle, nextState.settings)
+        assistantMessage = {
+          ...createMessage('assistant', result.reply),
+          agent: result.agent,
+        }
       }
       const repliedConversation = {
         ...nextConversation,
@@ -273,12 +381,12 @@ export function useChat({ state, setState, setNotice, character, conversation, p
       )
       const { state: stateWithAgentActions, appliedLabels } = applyAgentActionsToState(
         repliedState,
-        result.agent?.actions,
+        assistantMessage.agent?.actions,
         { character, conversation: nextConversation, userMessage },
       )
       setState(stateWithAgentActions)
       setNotice(appliedLabels.length > 0 ? `已执行：${appliedLabels.slice(0, 2).join(' / ')}` : '回复完成')
-      void enqueueAgentTaskActions(result.agent?.actions)
+      void enqueueAgentTaskActions(assistantMessage.agent?.actions)
     } catch (error) {
       setState(nextStateWithUsage)
       setChatAlertState({ conversationId: conversation.id, message: formatChatFailure(error) })
@@ -302,41 +410,10 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     handleGroupProactiveTurn: () => {
       void runGroupProactiveTurn({ force: true })
     },
+    handleDirectProactiveTurn: () => {
+      void runDirectProactiveTurn({ force: true })
+    },
   }
-}
-
-function getConversationMessageKey(messages: ChatMessage[]): string {
-  const latestMessage = messages.at(-1)
-  return `${messages.length}:${latestMessage?.id ?? 'empty'}`
-}
-
-function countProactiveTurnsSinceLastUser(messages: ChatMessage[]): number {
-  const proactiveTurnIds = new Set<string>()
-
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index]
-    if (message.role === 'user') break
-    if (message.groupTurnKind === 'proactive') {
-      proactiveTurnIds.add(message.groupTurnId ?? message.id)
-    }
-  }
-
-  return proactiveTurnIds.size
-}
-
-function getProactiveDelayMs(conversationId: string, messages: ChatMessage[]): number {
-  const latestMessage = messages.at(-1)
-  const pulse = seededUnit(`${conversationId}:${messages.length}:${latestMessage?.id ?? 'empty'}:proactive-delay`)
-  return 10_000 + Math.round(pulse * 16_000)
-}
-
-function seededUnit(seed: string): number {
-  let hash = 2166136261
-  for (let index = 0; index < seed.length; index += 1) {
-    hash ^= seed.charCodeAt(index)
-    hash = Math.imul(hash, 16777619)
-  }
-  return (hash >>> 0) / 0xffffffff
 }
 
 function formatChatFailure(error: unknown): string {

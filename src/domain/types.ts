@@ -34,6 +34,8 @@ export interface ChatMessage {
   groupTurnId?: string
   groupTurnKind?: 'reactive' | 'proactive'
   groupReplyState?: 'reply' | 'silent'
+  directTurnId?: string
+  directTurnKind?: 'reactive' | 'proactive'
 }
 
 export interface CharacterCard {
@@ -135,6 +137,8 @@ export interface AppSettings {
   autoMemoryEnabled: boolean
   memoryConfidenceFloor: number
   showDevTrace: boolean
+  directChatHumanMode: boolean
+  directChatProactiveMode: boolean
   groupChatHumanMode: boolean
   groupChatProactiveMode: boolean
   groupChatMaxAutoReplies: number

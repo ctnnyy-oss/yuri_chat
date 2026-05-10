@@ -41,6 +41,7 @@ interface ChatPhoneProps {
   onMemoryFeedback: (memoryId: string, action: MemoryFeedbackAction) => void
   onSend: () => void
   onGroupProactive?: () => void
+  onDirectProactive?: () => void
   onShellAction?: (message: string) => void
 }
 
@@ -79,6 +80,7 @@ export function ChatPhone({
   onMemoryFeedback,
   onSend,
   onGroupProactive,
+  onDirectProactive,
   onShellAction,
 }: ChatPhoneProps) {
   const [activePanel, setActivePanel] = useState<ToolPanel>(null)
@@ -361,6 +363,18 @@ export function ChatPhone({
               disabled={isSending}
               onClick={onGroupProactive}
               title="让群里自己聊"
+              type="button"
+            >
+              <Sparkles size={23} />
+            </button>
+          )}
+          {onDirectProactive && (
+            <button
+              aria-label="让她主动说话"
+              className="composer-tool direct-proactive-tool"
+              disabled={isSending}
+              onClick={onDirectProactive}
+              title="让她主动说话"
               type="button"
             >
               <Sparkles size={23} />

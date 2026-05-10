@@ -4,7 +4,7 @@ import { normalizeMemories } from '../services/memoryEngine'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { agentRooms, createSeedState } from './seed'
 
-const currentStateVersion = 29
+const currentStateVersion = 30
 const legacyDefaultRoomId = 'room-yuri-nest'
 const currentDefaultRoomId = 'room-yuri-chat'
 
@@ -64,6 +64,8 @@ export function migrateAppState(state: AppState): AppState {
       customAccentColor: normalizeHexColor(sourceSettings.customAccentColor) ?? defaults.settings.customAccentColor,
       dataStorageMode: sourceSettings.dataStorageMode === 'local' ? 'local' : defaults.settings.dataStorageMode,
       maxOutputTokens: clampNumber(sourceSettings.maxOutputTokens, 512, 32768, defaults.settings.maxOutputTokens),
+      directChatHumanMode: sourceSettings.directChatHumanMode !== false,
+      directChatProactiveMode: sourceSettings.directChatProactiveMode !== false,
       groupChatHumanMode: sourceSettings.groupChatHumanMode !== false,
       groupChatProactiveMode: sourceSettings.groupChatProactiveMode !== false,
       groupChatMaxAutoReplies: clampNumber(

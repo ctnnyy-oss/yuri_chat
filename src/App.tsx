@@ -117,6 +117,7 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
     handleSelectCharacter,
     handleSend,
     handleGroupProactiveTurn,
+    handleDirectProactiveTurn,
     handleTestModelProfile,
     handleTrashMemory,
     handleTrashWorldNode,
@@ -316,6 +317,7 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
           onSelectCharacter={handleSelectCharacter}
           onSend={handleSend}
           onGroupProactive={isGroupCharacter(character) ? handleGroupProactiveTurn : undefined}
+          onDirectProactive={!isGroupCharacter(character) ? handleDirectProactiveTurn : undefined}
           onShellAction={showShellTip}
           settings={state.settings}
         />
