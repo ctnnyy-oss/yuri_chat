@@ -1,9 +1,24 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { MessageCircle, Plus, Save, Search, Trash2, X } from 'lucide-react'
+import { MessageCircle, Plus, Search, X } from 'lucide-react'
 import type { CharacterCard, CharacterVoiceProfile } from '../domain/types'
 import { analyzePersonaImport } from '../services/personaImport'
 import type { AppView } from './CharacterRail'
 import { MobileConfirmDialog } from './MobileConfirmDialog'
+import { DesktopRoleEditor } from './role/DesktopRoleEditor'
+import { RolePersonaMeter } from './role/RolePersonaMeter'
+import {
+  LONG_PRESS_MS,
+  blankRoleDraft,
+  buildVoiceProfileFromDraft,
+  isGroupCharacter,
+  roleMatchesQuery,
+  toManagedRole,
+  toRoleDraft,
+  useIsMobileViewport,
+  type ManagedRole,
+  type MobileEditorMode,
+  type RoleDraft,
+} from './role/rolePanelModel'
 
 interface QqFeaturePanelProps {
   activeView: AppView
@@ -17,109 +32,8 @@ interface QqFeaturePanelProps {
   onShellAction?: (message: string) => void
 }
 
-type ManagedRole = {
-  id: string
-  name: string
-  avatar: string
-  accent: string
-  relation: string
-  mood: string
-  persona: string
-  voiceProfile?: CharacterVoiceProfile
-  source: '内置' | '自定义'
-}
-
-type RoleDraft = {
-  name: string
-  relation: string
-  mood: string
-  persona: string
-  voiceDisplayName: string
-  voiceId: string
-  voicePrompt: string
-  voiceConsentConfirmed: boolean
-}
-
-type MobileEditorMode = 'closed' | 'create' | 'view'
-
-const LONG_PRESS_MS = 560
-const MOBILE_VIEWPORT_QUERY = '(max-width: 760px)'
-
-function useIsMobileViewport() {
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(MOBILE_VIEWPORT_QUERY).matches,
-  )
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const mediaQuery = window.matchMedia(MOBILE_VIEWPORT_QUERY)
-    const handler = (event: MediaQueryListEvent) => setIsMobile(event.matches)
-    mediaQuery.addEventListener('change', handler)
-    return () => mediaQuery.removeEventListener('change', handler)
-  }, [])
-  return isMobile
-}
-
 function MobileStatusBar() {
   return null
-}
-
-function isCustomRole(character: CharacterCard) {
-  return character.id.startsWith('character_') || character.tags.includes('自定义角色')
-}
-
-function isGroupCharacter(character: CharacterCard) {
-  return character.relationship === '群聊'
-}
-
-function toManagedRole(character: CharacterCard): ManagedRole {
-  return {
-    id: character.id,
-    name: character.name,
-    avatar: character.avatar,
-    accent: character.accent,
-    relation: character.relationship,
-    mood: character.mood,
-    persona: character.personaSource ?? character.systemPrompt,
-    voiceProfile: character.voiceProfile,
-    source: isCustomRole(character) ? '自定义' : '内置',
-  }
-}
-
-function toRoleDraft(role?: ManagedRole): RoleDraft {
-  return {
-    name: role?.name ?? '',
-    relation: role?.relation ?? '角色',
-    mood: role?.mood ?? '',
-    persona: role?.persona ?? '',
-    voiceDisplayName: role?.voiceProfile?.displayName ?? '',
-    voiceId: role?.voiceProfile?.providerVoiceId ?? '',
-    voicePrompt: role?.voiceProfile?.stylePrompt ?? '',
-    voiceConsentConfirmed: Boolean(role?.voiceProfile?.consentConfirmed),
-  }
-}
-
-function blankRoleDraft(): RoleDraft {
-  return { name: '', relation: '角色', mood: '', persona: '', voiceDisplayName: '', voiceId: '', voicePrompt: '', voiceConsentConfirmed: false }
-}
-
-function roleMatchesQuery(role: ManagedRole, query: string) {
-  if (!query) return true
-  return [role.name, role.relation, role.mood].join(' ').toLowerCase().includes(query)
-}
-
-function buildVoiceProfileFromDraft(draft: RoleDraft): CharacterVoiceProfile | undefined {
-  const providerVoiceId = draft.voiceId.trim()
-  const displayName = draft.voiceDisplayName.trim() || providerVoiceId
-  const stylePrompt = draft.voicePrompt.trim()
-  if (!providerVoiceId && !displayName && !stylePrompt) return undefined
-  return {
-    displayName: displayName || '自定义音色',
-    providerVoiceId,
-    stylePrompt,
-    source: 'custom',
-    consentConfirmed: draft.voiceConsentConfirmed,
-    updatedAt: new Date().toISOString(),
-  }
 }
 
 export function QqFeaturePanel({
@@ -299,22 +213,6 @@ export function QqFeaturePanel({
         ? '内置角色'
         : '编辑角色'
   const editorEditable = mobileEditorMode === 'create' || canEditSelectedRole
-  const personaQuality = (
-    <div className="persona-import-meter" aria-label="人设导入质量">
-      <div>
-        <strong>人设导入质量</strong>
-        <span>{personaAnalysis.score}%</span>
-      </div>
-      <p>系统会把自然语言整理成身份、关系、经历、说话方式、情绪模式、边界和互动规则，再和长期记忆一起使用。</p>
-      {personaAnalysis.strengths.length > 0 && (
-        <small>已覆盖：{personaAnalysis.strengths.join(' / ')}</small>
-      )}
-      {personaAnalysis.missing.length > 0 && (
-        <small>可补：{personaAnalysis.missing.slice(0, 2).join('；')}</small>
-      )}
-    </div>
-  )
-
   return (
     <main className="workspace qq-feature-workspace">
       <section
@@ -333,116 +231,18 @@ export function QqFeaturePanel({
           )}
         </header>
         <div className="role-manager-grid">
-          <section className="role-detail" aria-label="角色详情">
-            <div className="role-detail-head">
-              <span className="avatar" style={{ '--avatar-accent': selectedRole?.accent ?? '#ef9ac6' } as CSSProperties}>
-                {selectedRole?.avatar ?? '角'}
-              </span>
-              <div>
-                <strong>{selectedRole?.name ?? '新角色'}</strong>
-                <small>{selectedRole?.source === '内置' ? '只读参考' : '可以编辑'}</small>
-              </div>
-            </div>
-            <p>{selectedRole?.persona ?? '点新增角色后填写人设。'}</p>
-            <div className="role-editor-fields">
-              <label>
-                名称
-                <input
-                  disabled={!editorEditable}
-                  value={roleDraft.name}
-                  onChange={(event) => updateDraft('name', event.target.value)}
-                  placeholder="比如：姐姐 / 恋人 / 原创角色"
-                />
-              </label>
-              <label>
-                关系
-                <input
-                  disabled={!editorEditable}
-                  value={roleDraft.relation}
-                  onChange={(event) => updateDraft('relation', event.target.value)}
-                  placeholder="姐姐、恋人、朋友、角色"
-                />
-              </label>
-              <label>
-                氛围
-                <input
-                  disabled={!editorEditable}
-                  value={roleDraft.mood}
-                  onChange={(event) => updateDraft('mood', event.target.value)}
-                  placeholder="温柔、傲娇、绿茶、忠犬..."
-                />
-              </label>
-              <label>
-                人设导入
-                <textarea
-                  disabled={!editorEditable}
-                  value={roleDraft.persona}
-                  onChange={(event) => updateDraft('persona', event.target.value)}
-                  placeholder="可以直接粘贴自然语言。越包含经历、说话方式、情绪模式、边界和相处规则，越像真人。"
-                />
-              </label>
-              <label>
-                音色名
-                <input
-                  disabled={!editorEditable}
-                  value={roleDraft.voiceDisplayName}
-                  onChange={(event) => updateDraft('voiceDisplayName', event.target.value)}
-                  placeholder="比如：温柔姐姐音 / 自定义音色"
-                />
-              </label>
-              <label>
-                音色 ID
-                <input
-                  disabled={!editorEditable}
-                  value={roleDraft.voiceId}
-                  onChange={(event) => updateDraft('voiceId', event.target.value)}
-                  placeholder="供应商里的 voice_id；克隆训练在供应商后台完成"
-                />
-              </label>
-              <label>
-                声音风格
-                <textarea
-                  disabled={!editorEditable}
-                  value={roleDraft.voicePrompt}
-                  onChange={(event) => updateDraft('voicePrompt', event.target.value)}
-                  placeholder="自然聊天、轻声、清晰、不要播音腔；也可以写角色语气。"
-                />
-              </label>
-              <label className="voice-consent-row">
-                <span>
-                  已确认授权
-                  <small>只保存本人或明确授权的音色；不要仿冒现实人物或未授权角色。</small>
-                </span>
-                <input
-                  checked={roleDraft.voiceConsentConfirmed}
-                  disabled={!editorEditable}
-                  onChange={(event) => updateDraft('voiceConsentConfirmed', event.target.checked)}
-                  type="checkbox"
-                />
-              </label>
-              {personaQuality}
-            </div>
-            <div className="role-template-list role-action-list">
-              {mobileEditorMode === 'create' ? (
-                <button onClick={addRoleFromDraft} type="button">
-                  <Plus size={17} />
-                  <span>创建角色</span>
-                </button>
-              ) : null}
-              {canEditSelectedRole && (
-                <>
-                  <button onClick={saveSelectedRole} type="button">
-                    <Save size={17} />
-                    <span>保存角色</span>
-                  </button>
-                  <button className="danger-role-action" onClick={deleteSelectedRole} type="button">
-                    <Trash2 size={17} />
-                    <span>删除角色</span>
-                  </button>
-                </>
-              )}
-            </div>
-          </section>
+          <DesktopRoleEditor
+            canEditSelectedRole={canEditSelectedRole}
+            editorEditable={editorEditable}
+            mobileEditorMode={mobileEditorMode}
+            personaAnalysis={personaAnalysis}
+            roleDraft={roleDraft}
+            selectedRole={selectedRole}
+            onAddRole={addRoleFromDraft}
+            onDeleteRole={deleteSelectedRole}
+            onSaveRole={saveSelectedRole}
+            onUpdateDraft={updateDraft}
+          />
         </div>
       </section>
 
@@ -601,7 +401,7 @@ export function QqFeaturePanel({
                     type="checkbox"
                   />
                 </label>
-                {personaQuality}
+                <RolePersonaMeter analysis={personaAnalysis} />
               </div>
               <footer>
                 {mobileEditorMode === 'create' && (

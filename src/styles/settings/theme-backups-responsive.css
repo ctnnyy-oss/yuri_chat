@@ -1,0 +1,390 @@
+﻿/* ── 主题色板 ── */
+
+.theme-swatches {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.swatch-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--feature-field, var(--panel));
+  color: var(--ink);
+  padding: 9px 12px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  transition: all var(--duration-fast) var(--ease-smooth);
+  box-shadow: var(--shadow-xs);
+}
+
+.swatch-button-custom {
+  position: relative;
+  overflow: hidden;
+}
+
+.swatch-button-custom input[type='color'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.swatch-button:hover {
+  border-color: var(--line);
+  background: var(--middle-hover, var(--pink-50));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.swatch-button.active {
+  border-color: var(--pink-400);
+  background: var(--middle-active, var(--pink-100));
+  box-shadow: inset 3px 0 0 var(--pink-500), var(--shadow-xs);
+}
+
+.swatch-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.7),
+    0 2px 8px rgba(96, 68, 80, 0.18);
+}
+
+.custom-color-control {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--feature-field, var(--pink-50));
+  padding: 12px 16px;
+}
+
+.custom-color-control.active {
+  border-color: var(--pink-400);
+  box-shadow: inset 4px 0 0 var(--pink-500), var(--shadow-xs);
+}
+
+.custom-color-control strong,
+.custom-color-control small {
+  display: block;
+}
+
+.custom-color-control > span {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.custom-color-control strong {
+  color: var(--ink);
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+.custom-color-control small {
+  overflow-wrap: anywhere;
+}
+
+.custom-color-control input[type='color'] {
+  width: 52px;
+  height: 36px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  cursor: pointer;
+  padding: 4px;
+  box-shadow: var(--shadow-xs);
+}
+
+/* ── 保留时长选择 ── */
+
+.retention-button {
+  display: grid;
+  gap: 4px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  padding: 12px 14px;
+  text-align: left;
+  transition: background var(--duration-fast) var(--ease-smooth);
+}
+
+.retention-button:hover {
+  background: var(--middle-hover, var(--pink-100));
+}
+
+.retention-button.active {
+  background: linear-gradient(135deg, var(--middle-active, var(--pink-100)), var(--feature-field, var(--pink-50)));
+  box-shadow: inset 4px 0 0 var(--pink-400);
+}
+
+.retention-button strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.retention-button small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* ── 设置操作按钮组 ── */
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settings-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 12px;
+}
+
+.settings-actions button:hover:not(:disabled) {
+  background: var(--middle-hover, var(--pink-50));
+  border-color: var(--line);
+  transform: translateY(-1px);
+}
+
+.settings-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* 第一颗按钮：粉色填充 */
+.settings-actions button:first-child:not(.danger-button) {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: var(--grad-pink);
+  color: #fff;
+  font-weight: 800;
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--rose) 30%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.settings-actions button:first-child:not(.danger-button):hover {
+  filter: brightness(1.04);
+  box-shadow:
+    0 12px 26px color-mix(in srgb, var(--rose) 38%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* ── 文件选择 / 危险按钮 ── */
+
+.file-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-full);
+  background: var(--feature-field, var(--panel));
+  color: var(--ink-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 7px 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.file-button:hover {
+  background: var(--middle-hover, var(--pink-50));
+  border-color: var(--line);
+  transform: translateY(-1px);
+}
+
+.file-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.danger-button {
+  color: var(--pink-700);
+  border-color: var(--line-soft);
+}
+
+.danger-button:hover {
+  background: var(--middle-active, var(--pink-100));
+  border-color: var(--line);
+  color: var(--pink-700);
+}
+
+/* ── 云端备份面板 ── */
+
+.cloud-backup-panel {
+  display: grid;
+  gap: var(--space-md);
+  border-top: 1px solid var(--line-soft);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+}
+
+.cloud-backup-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.cloud-backup-head strong,
+.cloud-backup-head span {
+  display: block;
+}
+
+.cloud-backup-head strong {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.cloud-backup-head span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+  margin-top: 3px;
+}
+
+.compact-actions {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+/* ── 备份项 ── */
+
+.backup-list > small {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 10px 14px;
+}
+
+.backup-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  transition: background var(--duration-fast) var(--ease-smooth);
+}
+
+.backup-item:hover {
+  background: var(--middle-hover, var(--pink-100));
+}
+
+.backup-item strong,
+.backup-item span,
+.backup-item small {
+  display: block;
+}
+
+.backup-item strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.backup-item span,
+.backup-item small {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.backup-item small {
+  font-size: 11px;
+}
+
+.backup-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.backup-actions button {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-full);
+  background: var(--feature-field, var(--panel));
+  color: var(--ink-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 13px;
+  transition: all var(--duration-fast) var(--ease-smooth);
+  box-shadow: var(--shadow-xs);
+  min-height: 32px;
+}
+
+.backup-actions button:hover {
+  background: var(--middle-hover, var(--pink-50));
+  border-color: var(--line);
+  transform: translateY(-1px);
+}
+
+.backup-actions .model-active-button {
+  border-color: rgba(184, 238, 216, 0.58);
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+}
+
+@media (max-width: 760px) {
+  .model-profile-editor,
+  .model-generation-section .model-form-grid,
+  .model-profile-meta,
+  .theme-swatches {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .model-current-strip,
+  .model-profile-item,
+  .backup-item {
+    align-items: stretch;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .model-current-actions,
+  .backup-actions {
+    justify-content: flex-start;
+  }
+
+  .model-diagnostic-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .voice-model-layout,
+  .voice-config-grid,
+  .voice-toggle-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .voice-toggle-grid .toggle-row:last-child {
+    grid-column: auto;
+  }
+}

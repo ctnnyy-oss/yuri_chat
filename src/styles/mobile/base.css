@@ -1,0 +1,550 @@
+﻿/* ═══════════════════════════════════════════════════
+   百合小窝 — Mobile Responsive
+   苹果 iOS 风：底部 Dock 导航 + 全屏工作区
+   ═══════════════════════════════════════════════════ */
+
+/* ── ≤ 760px：移动端 ── */
+
+@media (max-width: 760px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+    background: #f6f6f8;
+  }
+
+  .desktop-titlebar {
+    display: none;
+  }
+
+  .left-panel { display: none; }
+
+  .workspace {
+    grid-row: 1;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--panel);
+  }
+
+  .workspace-header {
+    padding: 10px 14px;
+    min-height: 60px;
+  }
+
+  .phone-contact {
+    gap: 10px;
+  }
+
+  .phone-contact .avatar.large {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    font-size: 16px;
+  }
+
+  .phone-contact strong {
+    font-size: 16.5px;
+    line-height: 1.2;
+  }
+
+  .phone-contact span {
+    font-size: 11.5px;
+    line-height: 1.25;
+  }
+
+  /* 详情页 */
+  .detail-workspace {
+    height: 100dvh;
+    min-height: 0;
+    padding: 14px 14px calc(112px + env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  .detail-workspace > .workspace-title { margin-bottom: 12px; }
+
+  .workspace-title {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .workspace-title h2 {
+    font-size: 20px;
+    line-height: 1.18;
+  }
+
+  .workspace-title p {
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+
+  .workspace-title-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+  }
+
+  /* 卡片 */
+  .memory-insight,
+  .space-overview,
+  .core-cp-section,
+  .memory-guardian,
+  .candidate-review,
+  .diagnostic-column,
+  .settings-section,
+  .memory-item,
+  .room-list-panel,
+  .room-chat-panel,
+  .moment-card {
+    border-radius: var(--radius-lg);
+    padding: 16px;
+  }
+
+  /* 网格折叠 */
+  .detail-grid,
+  .model-layout,
+  .model-form-grid,
+  .cloud-token-box,
+  .memory-diagnostics,
+  .guardian-columns,
+  .archive-meta-grid,
+  .archive-body,
+  .insight-columns,
+  .scope-grid,
+  .backup-item {
+    grid-template-columns: 1fr;
+  }
+
+  /* 2 列网格 */
+  .insight-grid,
+  .space-stats,
+  .guardian-lanes,
+  .model-status-grid,
+  .cloud-meta-strip,
+  .retention-options,
+  .archive-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .insight-stat,
+  .space-stat,
+  .guardian-lane,
+  .model-status-grid span,
+  .cloud-meta-strip span {
+    min-height: 68px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .insight-stat:nth-child(odd),
+  .space-stat:nth-child(odd),
+  .guardian-lane:nth-child(odd),
+  .model-status-grid span:nth-child(odd),
+  .cloud-meta-strip span:nth-child(odd) {
+    border-right: 1px solid var(--line-soft);
+  }
+
+  .archive-metric {
+    border-right: 0;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .archive-metric:nth-child(odd) {
+    border-right: 1px solid var(--line-soft);
+  }
+
+  .backup-actions {
+    justify-content: flex-start;
+  }
+
+  .compact-actions {
+    justify-content: flex-start;
+  }
+
+  .model-current-strip {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .model-picker-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .model-current-strip {
+    display: grid;
+  }
+
+  .model-current-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .model-current-actions button {
+    width: 100%;
+  }
+
+  .model-profile-meta {
+    gap: 7px;
+  }
+
+  .model-profile-meta div {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .model-profile-item .backup-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 7px;
+    width: 100%;
+  }
+
+  .model-profile-item .backup-actions button {
+    width: 100%;
+    min-width: 0;
+    padding: 5px 8px;
+  }
+
+  .model-picker-row button {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .room-chat-head {
+    gap: 8px;
+    padding: 14px;
+  }
+
+  .room-member-chips {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .room-member-chip {
+    flex: 0 0 auto;
+  }
+
+  .room-message-list > .empty-state {
+    min-height: 220px;
+    border-radius: var(--radius-lg);
+    padding: 28px 18px;
+  }
+
+  .room-message-list > .empty-state::before {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 12px;
+    font-size: 30px;
+  }
+
+  .social-layout:has(> .room-chat-panel .empty-state) .room-chat-panel {
+    min-height: 0;
+  }
+
+  .model-settings-stack {
+    gap: 12px;
+  }
+
+  .model-segmented button {
+    font-size: 12px;
+    min-height: 34px;
+  }
+
+  .model-profile-item {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 10px;
+    padding: 13px 14px;
+  }
+
+  .model-profile-item .backup-actions {
+    justify-content: flex-start;
+  }
+
+  .model-warning,
+  .cloud-status-line {
+    overflow-wrap: anywhere;
+  }
+
+  .scope-editor-head {
+    display: grid;
+  }
+
+  .scope-editor-head span {
+    text-align: left;
+  }
+
+  /* 全屏弹窗 */
+  .archive-backdrop {
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .archive-modal {
+    width: 100%;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .archive-main-text {
+    grid-column: auto;
+  }
+
+  .archive-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    padding: var(--space-md) 16px;
+  }
+
+  .status-pill { display: none; }
+
+  .edit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .item-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .mini-action {
+    justify-content: center;
+    min-width: 0;
+    min-height: 36px;
+    font-size: 11.5px;
+    padding: 5px 10px;
+    text-align: center;
+  }
+
+  .mini-action span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .candidate-card-head strong,
+  .item-head strong {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
+
+  .candidate-card p,
+  .memory-item p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 5;
+  }
+
+  .candidate-card footer,
+  .memory-item footer {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .candidate-card,
+  .memory-item {
+    padding: 16px;
+  }
+
+  .candidate-card {
+    display: grid;
+    gap: 10px;
+  }
+
+  /* CP 卡片 */
+  .core-cp-head {
+    display: grid;
+  }
+
+  .core-cp-count {
+    width: fit-content;
+    min-width: 70px;
+  }
+
+  .core-cp-summary {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: flex-start;
+    padding: 14px;
+  }
+
+  .core-cp-summary-tags {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+
+  .core-cp-summary-main small {
+    white-space: normal;
+  }
+
+  .core-cp-card-body {
+    padding: 14px;
+  }
+
+  .core-cp-characters,
+  .core-cp-footer {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 短桌面：高度紧凑 ── */
+
+@media (max-height: 820px) and (min-width: 761px) {
+  .app-shell {
+    gap: 0;
+    padding: 0;
+  }
+
+  .left-panel {
+    padding: 0;
+  }
+
+  .brand-block {
+    margin-bottom: 8px;
+    padding-bottom: 10px;
+  }
+
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+  }
+
+  .brand-block h1 {
+    font-size: 17px;
+  }
+
+  .primary-nav {
+    gap: 1px;
+    padding: 6px 0;
+  }
+
+  .nav-button,
+  .character-button {
+    padding: 6px 10px;
+  }
+
+  .nav-button small {
+    display: none;
+  }
+
+  .panel-section {
+    padding-top: 6px;
+  }
+
+  .section-title {
+    margin-bottom: 4px;
+  }
+
+  .status-card {
+    margin: 6px 4px 0;
+    padding: 8px 12px;
+  }
+
+  .sidebar-footnote {
+    display: none;
+  }
+}
+
+/* ── 极窄屏 ── */
+
+@media (max-width: 420px) {
+  .memory-meta {
+    gap: 4px;
+  }
+
+  .memory-meta span {
+    font-size: 9.5px;
+    padding: 2px 8px;
+  }
+
+  .item-actions {
+    gap: 4px;
+  }
+
+  .mini-action {
+    font-size: 11px;
+    padding: 4px 9px;
+    gap: 4px;
+  }
+
+  .mini-action svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .trace-feedback-row button {
+    font-size: 10px;
+    padding: 3px 9px;
+    min-height: 24px;
+  }
+
+  .insight-stat,
+  .space-stat,
+  .guardian-lane,
+  .archive-metric {
+    padding: 8px 10px;
+  }
+
+  .insight-stat strong,
+  .space-stat strong,
+  .guardian-lane strong {
+    font-size: 18px;
+  }
+
+  .guardian-score strong {
+    font-size: 22px;
+  }
+
+  .settings-actions {
+    gap: 6px;
+  }
+
+  .settings-actions button {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .model-current-actions {
+    gap: 6px;
+  }
+
+  .retention-options {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-title h2 {
+    font-size: 19px;
+  }
+
+  .workspace-title-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .backup-actions button {
+    font-size: 11px;
+    padding: 4px 11px;
+  }
+
+  .candidate-card-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+

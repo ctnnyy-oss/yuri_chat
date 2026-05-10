@@ -1,0 +1,401 @@
+﻿/* Theme unification: mobile follows the desktop pink skin instead of the default blue QQ skin. */
+@media (max-width: 760px) {
+  .mobile-message-list {
+    background: color-mix(in srgb, var(--rose) 12%, var(--panel-soft));
+  }
+
+  .mobile-message-thread-list,
+  .mobile-nav,
+  .composer {
+    background: rgba(255, 253, 254, 0.98);
+  }
+
+  .mobile-message-search,
+  .mobile-feature-search {
+    background: var(--feature-field, rgba(255, 255, 255, 0.82));
+  }
+
+  .mobile-nav-item.active,
+  .mobile-nav-item.active svg,
+  .composer-tool.active,
+  .emoji-tabs b,
+  .mobile-contact-tabs button.active {
+    color: var(--pink-500);
+  }
+
+  .composer-tool.active {
+    background: var(--rose-ghost);
+  }
+
+  .mobile-message-thread.active,
+  .mobile-contact-tabs button.active {
+    background: var(--panel);
+  }
+
+  .system-avatar::before,
+  .channel-avatar::before {
+    background:
+      radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.58), transparent 28%),
+      var(--grad-bubble);
+  }
+
+  .system-avatar,
+  .channel-avatar {
+    color: #fff;
+  }
+
+  .message-user,
+  .composer-send:not(:disabled) {
+    background: var(--grad-bubble);
+  }
+
+  .message-user::before {
+    border-left-color: var(--pink-400);
+  }
+
+  .composer-send {
+    background: var(--feature-field, color-mix(in srgb, var(--rose) 10%, var(--panel-soft)));
+  }
+
+  .chat-tool-panel {
+    background: var(--panel-soft);
+  }
+
+  .chat-workspace,
+  .chat-workspace > .mobile-status-bar,
+  .chat-topbar {
+    background: color-mix(in srgb, var(--rose) 8%, var(--panel-soft));
+  }
+
+  .mobile-feature-page {
+    background: var(--canvas);
+  }
+}
+
+/* Mobile interaction polish: real profile editing, group creation, and role sheets. */
+@media (max-width: 760px) {
+  .qq-feature-workspace {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .mobile-feature-page {
+    width: 100vw;
+    max-width: 100%;
+  }
+
+  .mobile-message-search,
+  .mobile-feature-search {
+    box-sizing: border-box;
+    justify-content: flex-start;
+    padding: 0 18px;
+  }
+
+  .mobile-message-search input,
+  .mobile-feature-search input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+
+  .mobile-message-profile {
+    flex: 1 1 auto;
+  }
+
+  .mobile-profile-avatar-button {
+    flex: 0 0 auto;
+    border-radius: 18px;
+  }
+
+  .mobile-profile-name-button {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+    text-align: left;
+  }
+
+  .mobile-profile-name-button small {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .visually-hidden-file {
+    position: fixed;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .avatar > img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: inherit;
+  }
+
+  .avatar:has(> img)::before {
+    display: none;
+  }
+
+  .mobile-empty-hint {
+    min-height: 92px;
+    display: grid;
+    place-items: center;
+    color: #969aa3;
+    font-size: 15px;
+  }
+
+  .mobile-group-sheet-backdrop,
+  .mobile-role-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 42;
+    display: flex;
+    align-items: flex-end;
+    background: rgba(28, 22, 26, 0.28);
+  }
+
+  .mobile-group-sheet,
+  .mobile-role-sheet {
+    width: 100%;
+    max-height: min(82dvh, 720px);
+    display: grid;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    border-radius: 22px 22px 0 0;
+    background: var(--panel);
+    box-shadow: 0 -18px 44px rgba(74, 46, 58, 0.18);
+    overflow: hidden;
+  }
+
+  .mobile-role-sheet {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+
+  .mobile-group-sheet,
+  .mobile-role-sheet {
+    margin-bottom: calc(64px + env(safe-area-inset-bottom));
+    max-height: min(74dvh, 650px);
+  }
+
+  .mobile-group-sheet > header,
+  .mobile-role-sheet > header {
+    min-height: 58px;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    align-items: center;
+    padding: 4px 12px 0;
+    border-bottom: 1px solid rgba(28, 28, 32, 0.07);
+  }
+
+  .mobile-group-sheet > header strong,
+  .mobile-role-sheet > header strong {
+    justify-self: center;
+    color: #17181b;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .mobile-group-sheet > header button,
+  .mobile-role-sheet > header button {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: #29242a;
+  }
+
+  .mobile-group-name {
+    min-height: 48px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    margin: 14px 18px 10px;
+    border-radius: 14px;
+    background: var(--feature-field, var(--panel-soft));
+    color: var(--muted);
+    padding: 0 14px;
+  }
+
+  .mobile-group-name input,
+  .mobile-role-fields input,
+  .mobile-role-fields textarea {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+  }
+
+  .mobile-group-search {
+    margin-bottom: 8px;
+    background: var(--feature-field, var(--panel-soft));
+  }
+
+  .mobile-group-member-list {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+
+  .mobile-group-member-list button {
+    width: 100%;
+    min-height: 74px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) 30px;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 20px;
+    text-align: left;
+  }
+
+  .mobile-group-member-list button.selected {
+    background: var(--middle-active, var(--pink-50));
+  }
+
+  .mobile-group-member-list .avatar {
+    width: 52px;
+    height: 52px;
+    flex-basis: 52px;
+    box-shadow: none;
+  }
+
+  .mobile-group-member-list strong,
+  .mobile-role-hero strong {
+    display: block;
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .mobile-group-member-list small,
+  .mobile-role-hero small {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .mobile-group-member-list b {
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #d9d9df;
+    border-radius: 50%;
+    color: var(--pink-500);
+  }
+
+  .mobile-group-sheet footer {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 22px max(8px, env(safe-area-inset-bottom));
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .role-mobile-list {
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-role-hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px 8px;
+  }
+
+  .mobile-role-hero .avatar {
+    width: 58px;
+    height: 58px;
+    flex-basis: 58px;
+    box-shadow: none;
+  }
+
+  .mobile-role-fields {
+    min-height: 0;
+    display: grid;
+    gap: 10px;
+    overflow-y: auto;
+    padding: 14px 18px;
+  }
+
+  .mobile-role-fields label {
+    display: grid;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .mobile-role-fields input,
+  .mobile-role-fields textarea {
+    min-height: 44px;
+    border-radius: 13px;
+    background: var(--feature-field, var(--panel-soft));
+    padding: 0 12px;
+    font-weight: 500;
+  }
+
+  .mobile-role-fields textarea {
+    min-height: 132px;
+    padding: 12px;
+    line-height: 1.55;
+    resize: vertical;
+  }
+
+  .mobile-role-fields .persona-import-meter {
+    border-radius: 13px;
+    padding: 12px;
+  }
+
+  .mobile-role-fields input:disabled,
+  .mobile-role-fields textarea:disabled,
+  .role-editor-fields input:disabled,
+  .role-editor-fields textarea:disabled {
+    color: #50525a;
+    opacity: 1;
+  }
+
+  .mobile-role-sheet footer {
+    display: flex;
+    gap: 10px;
+    padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(28, 28, 32, 0.07);
+  }
+
+  .mobile-role-sheet footer span {
+    color: #8f939b;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .primary-mobile-role-action,
+  .danger-mobile-role-action {
+    flex: 1 1 0;
+    min-height: 44px;
+    border-radius: 14px;
+    font-weight: 800;
+  }
+
+  .primary-mobile-role-action {
+    background: var(--grad-bubble);
+    color: #fff;
+  }
+
+  .danger-mobile-role-action {
+    background: var(--middle-active, var(--pink-50));
+    color: #c73d5a;
+  }
+}
+

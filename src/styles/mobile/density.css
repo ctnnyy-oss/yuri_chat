@@ -1,0 +1,475 @@
+﻿/* Third-pass mobile density polish: remove fake island and pull UI out of "large text" scale. */
+@media (max-width: 760px) {
+  .mobile-status-bar {
+    grid-template-columns: 72px minmax(0, 1fr);
+    min-height: 32px;
+    padding: 0 18px;
+    font-size: 12px;
+  }
+
+  .mobile-status-bar b {
+    font-size: 15.5px;
+    font-weight: 700;
+  }
+
+  .mobile-dynamic-island {
+    display: none;
+  }
+
+  .mobile-signal {
+    grid-column: 2;
+    justify-self: end;
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+
+  .mobile-message-list {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--rose) 14%, var(--panel-soft));
+  }
+
+  .mobile-message-header {
+    min-height: 92px;
+    padding: 8px 18px 12px;
+  }
+
+  .mobile-message-profile {
+    gap: 12px;
+  }
+
+  .mobile-self-avatar {
+    width: 52px;
+    height: 52px;
+    flex-basis: 52px;
+    font-size: 18px;
+    box-shadow: none;
+  }
+
+  .mobile-message-profile strong {
+    font-size: 23px;
+    font-weight: 500;
+  }
+
+  .mobile-message-profile small {
+    font-size: 13px;
+  }
+
+  .mobile-message-plus {
+    width: 42px;
+    height: 42px;
+  }
+
+  .mobile-message-plus svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .mobile-message-search,
+  .mobile-feature-search {
+    height: 45px;
+    margin: 0 18px 16px;
+    border-radius: 16px;
+  }
+
+  .mobile-message-search svg,
+  .mobile-feature-search svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mobile-message-search input,
+  .mobile-feature-search input {
+    width: 64px;
+    font-size: 18px;
+  }
+
+  .mobile-device-row {
+    min-height: 60px;
+    gap: 14px;
+    padding: 0 22px;
+    font-size: 17px;
+  }
+
+  .mobile-device-row svg {
+    width: 25px;
+    height: 25px;
+  }
+
+  .mobile-message-thread {
+    min-height: 86px;
+    gap: 14px;
+    padding: 10px 18px;
+  }
+
+  .mobile-thread-avatar {
+    width: 58px;
+    height: 58px;
+    flex-basis: 58px;
+    font-size: 18px;
+    box-shadow: none;
+  }
+
+  .mobile-thread-avatar b {
+    top: -6px;
+    right: -7px;
+    min-width: 24px;
+    height: 22px;
+    font-size: 12px;
+  }
+
+  .mobile-thread-copy strong {
+    font-size: 20px;
+    font-weight: 500;
+  }
+
+  .mobile-thread-copy small {
+    margin-top: 4px;
+    font-size: 14.5px;
+  }
+
+  .mobile-thread-meta {
+    gap: 12px;
+  }
+
+  .mobile-thread-meta time {
+    font-size: 13px;
+  }
+
+  .mobile-nav {
+    min-height: 64px;
+    padding: 6px 10px calc(5px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-nav-item {
+    gap: 2px;
+    font-size: 12.5px;
+  }
+
+  .mobile-nav-item svg {
+    width: 27px;
+    height: 27px;
+  }
+
+  .chat-workspace {
+    grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+  }
+
+  .chat-topbar {
+    min-height: 58px;
+    padding: 0 16px 6px;
+  }
+
+  .mobile-chat-back svg,
+  .mobile-menu-button svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .chat-topbar-text strong {
+    font-size: 24px;
+    font-weight: 500;
+  }
+
+  .chat-time-separator {
+    padding: 14px 0 10px;
+    font-size: 15px;
+  }
+
+  .chat-row {
+    padding: 4px 16px;
+    gap: 10px;
+  }
+
+  .chat-row-avatar {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    font-size: 15px;
+    box-shadow: none;
+  }
+
+  .message {
+    max-width: min(77%, 480px);
+    padding: 10px 13px;
+    border-radius: 11px;
+  }
+
+  .message p {
+    font-size: 17px;
+    line-height: 1.44;
+  }
+
+  .sticker-message {
+    width: 54px;
+    height: 54px;
+    font-size: 29px;
+  }
+
+  .composer {
+    min-height: 132px;
+    padding: 8px 16px calc(10px + env(safe-area-inset-bottom));
+    gap: 8px;
+  }
+
+  .composer.with-tool-panel {
+    min-height: 390px;
+  }
+
+  .composer-entry {
+    min-height: 50px;
+    gap: 12px;
+  }
+
+  .composer textarea {
+    min-height: 42px;
+    border-radius: 16px;
+    padding: 8px 12px;
+    font-size: 16px;
+  }
+
+  .composer-send {
+    width: 74px;
+    height: 46px;
+    border-radius: 15px;
+    font-size: 17px;
+  }
+
+  .composer-toolbar {
+    min-height: 45px;
+  }
+
+  .composer-tool {
+    width: 42px;
+    height: 42px;
+  }
+
+  .composer-tool svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .chat-tool-panel {
+    min-height: 242px;
+    margin: 0 -16px calc(-10px - env(safe-area-inset-bottom));
+    padding: 16px 22px calc(56px + env(safe-area-inset-bottom));
+  }
+
+  .chat-tool-panel h3 {
+    font-size: 17px;
+  }
+
+  .emoji-grid {
+    gap: 13px 18px;
+  }
+
+  .emoji-grid button {
+    font-size: 32px;
+  }
+
+  .emoji-grid.compact button {
+    font-size: 24px;
+  }
+
+  .emoji-tabs {
+    min-height: 48px;
+  }
+
+  .chat-side-drawer {
+    padding: 0 16px 22px;
+  }
+
+  .chat-side-drawer header {
+    min-height: 58px;
+  }
+
+  .chat-side-drawer header strong {
+    font-size: 22px;
+  }
+
+  .chat-info-hero .avatar {
+    width: 64px;
+    height: 64px;
+    flex-basis: 64px;
+    font-size: 20px;
+  }
+
+  .chat-info-hero strong {
+    font-size: 24px;
+  }
+
+  .mobile-feature-header {
+    min-height: 90px;
+    padding: 8px 18px 12px;
+  }
+
+  .mobile-feature-header > .avatar {
+    width: 52px;
+    height: 52px;
+    flex-basis: 52px;
+    font-size: 18px;
+    box-shadow: none;
+  }
+
+  .mobile-feature-header strong {
+    font-size: 23px;
+    font-weight: 500;
+  }
+
+  .mobile-feature-header button svg,
+  .mobile-header-icons svg {
+    width: 27px;
+    height: 27px;
+  }
+
+  .possible-friends {
+    margin: 0 14px 12px;
+    border-radius: 14px;
+  }
+
+  .possible-title {
+    min-height: 50px;
+    padding: 0 16px;
+    font-size: 17px;
+  }
+
+  .possible-row {
+    min-height: 74px;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  .possible-row .avatar,
+  .mobile-contact-list .avatar,
+  .mobile-channel-list .avatar {
+    width: 54px;
+    height: 54px;
+    flex-basis: 54px;
+    font-size: 18px;
+    box-shadow: none;
+  }
+
+  .possible-row strong,
+  .mobile-contact-list strong,
+  .mobile-channel-list strong {
+    font-size: 19px;
+  }
+
+  .possible-row p,
+  .mobile-contact-list small,
+  .mobile-channel-list small {
+    font-size: 14px;
+  }
+
+  .mobile-contact-tabs {
+    margin: 10px 16px;
+  }
+
+  .mobile-contact-tabs button {
+    font-size: 12px;
+  }
+
+  .mobile-contact-group {
+    min-height: 54px;
+    padding: 0 20px;
+    font-size: 17px;
+  }
+
+  .mobile-contact-list > button:not(.mobile-contact-group),
+  .mobile-channel-list button {
+    min-height: 78px;
+    gap: 14px;
+    padding: 10px 20px;
+  }
+
+  .mobile-profile-card {
+    gap: 14px;
+    margin: 0 16px 10px;
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .mobile-profile-card .avatar {
+    width: 72px;
+    height: 72px;
+    flex-basis: 72px;
+    font-size: 22px;
+  }
+
+  .mobile-profile-card strong {
+    font-size: 24px;
+  }
+
+  .mobile-profile-card small {
+    font-size: 15px;
+  }
+
+  .mobile-profile-card p span {
+    font-size: 12px;
+  }
+
+  .mobile-profile-entries > button,
+  .settings-account,
+  .settings-single,
+  .mobile-settings-list section button {
+    min-height: 64px;
+    gap: 16px;
+    padding: 0 20px;
+    font-size: 19px;
+  }
+
+  .mobile-settings-list h3,
+  .mobile-settings-list small {
+    font-size: 14px;
+  }
+
+  .avatar {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.34);
+  }
+
+  .avatar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background:
+      radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.72), transparent 30%),
+      radial-gradient(circle at 78% 74%, color-mix(in srgb, var(--avatar-accent, #ef9bc3) 30%, transparent), transparent 42%),
+      conic-gradient(
+        from 150deg,
+        color-mix(in srgb, var(--avatar-accent, #ef9bc3) 34%, #fff),
+        color-mix(in srgb, var(--avatar-accent, #ef9bc3) 12%, #fff),
+        color-mix(in srgb, var(--avatar-accent, #ef9bc3) 24%, #f4f0ff),
+        color-mix(in srgb, var(--avatar-accent, #ef9bc3) 34%, #fff)
+      );
+  }
+
+  .avatar b {
+    z-index: 1;
+  }
+
+  .system-avatar::before,
+  .channel-avatar::before {
+    background:
+      radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.58), transparent 28%),
+      var(--grad-bubble);
+  }
+
+  .mobile-device-row {
+    display: none;
+  }
+
+  .mobile-message-header {
+    min-height: 86px;
+  }
+
+  .mobile-message-search,
+  .mobile-feature-search {
+    margin-bottom: 12px;
+  }
+}
+

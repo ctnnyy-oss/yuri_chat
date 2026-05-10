@@ -1,0 +1,323 @@
+﻿/* Mobile chat deletion and composer polish. */
+@media (max-width: 760px) {
+  .mobile-profile-name-button {
+    display: block;
+  }
+
+  .chat-workspace {
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    min-height: 100dvh;
+  }
+
+  .message-list {
+    min-height: 0;
+  }
+
+  .composer {
+    grid-template-rows: auto auto !important;
+    align-content: end;
+    min-height: auto !important;
+    padding: 10px 16px calc(14px + env(safe-area-inset-bottom)) !important;
+    gap: 10px;
+  }
+
+  .composer.with-tool-panel {
+    grid-template-rows: auto auto auto !important;
+    min-height: auto !important;
+  }
+
+  .composer-entry {
+    order: 1;
+  }
+
+  .composer-toolbar {
+    order: 2;
+    min-height: 44px;
+  }
+
+  .chat-tool-panel {
+    order: 3;
+    min-height: 188px !important;
+    max-height: 238px;
+    overflow-y: auto;
+    margin: 0 -16px calc(-14px - env(safe-area-inset-bottom)) !important;
+    padding: 14px 20px calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .app-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 22px;
+    background: rgba(42, 28, 36, 0.34);
+    backdrop-filter: blur(5px);
+  }
+
+  .app-confirm-dialog {
+    width: min(100%, 342px);
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    border: 1px solid var(--line-soft);
+    border-radius: 22px;
+    background: var(--feature-card, var(--panel));
+    padding: 22px 20px 16px;
+    box-shadow: 0 22px 54px rgba(117, 43, 78, 0.24);
+    color: var(--ink);
+    text-align: center;
+  }
+
+  .app-confirm-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--rose-ghost);
+    color: var(--pink-500);
+  }
+
+  .app-confirm-dialog.danger .app-confirm-icon {
+    background: var(--middle-active, var(--pink-50));
+    color: #d84d74;
+  }
+
+  .app-confirm-dialog strong {
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .app-confirm-dialog p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .app-confirm-dialog div {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .app-confirm-dialog button {
+    min-height: 44px;
+    border-radius: 14px;
+    font-weight: 800;
+  }
+
+  .app-confirm-cancel {
+    background: var(--feature-field, var(--panel-soft));
+    color: var(--muted);
+  }
+
+  .app-confirm-submit {
+    background: var(--grad-bubble);
+    color: #fff;
+  }
+
+  .app-confirm-dialog.danger .app-confirm-submit {
+    background: #e45f8f;
+  }
+}
+
+/* Final mobile shell correction: feature pages use one real viewport column and the same theme skin. */
+@media (max-width: 760px) {
+  .app-shell,
+  .app-shell.feature-mode,
+  .app-shell.chat-mode {
+    --desktop-sidebar-width: 100%;
+    width: 100vw;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    background: var(--canvas);
+  }
+
+  .workspace,
+  .detail-workspace {
+    grid-column: 1;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .detail-workspace {
+    padding: 14px 14px calc(104px + env(safe-area-inset-bottom));
+    background: var(
+      --feature-bg,
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--rose) 14%, var(--panel-soft)),
+        color-mix(in srgb, var(--rose) 5%, var(--panel))
+      )
+    );
+  }
+
+  .detail-workspace > .workspace-title,
+  .detail-workspace > .detail-actions,
+  .detail-workspace > .memory-insight,
+  .detail-workspace > .space-overview,
+  .detail-workspace > .memory-guardian,
+  .detail-workspace > .core-cp-section,
+  .detail-workspace > .candidate-review,
+  .detail-workspace > .memory-diagnostics,
+  .detail-workspace > .panel-stack,
+  .detail-workspace > .settings-stack,
+  .detail-workspace > .empty-state {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .workspace-title {
+    min-width: 0;
+  }
+
+  .workspace-title > div:last-child {
+    min-width: 0;
+  }
+
+  .workspace-title p {
+    overflow-wrap: anywhere;
+  }
+
+  .qq-feature-workspace,
+  .mobile-feature-page,
+  .mobile-message-list {
+    background: var(
+      --feature-bg,
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--rose) 15%, var(--panel-soft)),
+        color-mix(in srgb, var(--rose) 5%, var(--panel))
+      )
+    );
+  }
+
+  .mobile-feature-header,
+  .mobile-feature-header.centered,
+  .mobile-message-thread-list,
+  .mobile-nav,
+  .composer {
+    background: var(--feature-card, color-mix(in srgb, var(--rose) 5%, var(--panel)));
+  }
+
+  .mobile-nav {
+    border-top-color: var(--line-soft);
+  }
+
+  .mobile-message-search,
+  .mobile-feature-search {
+    background: var(--feature-field, color-mix(in srgb, var(--rose) 6%, var(--panel)));
+  }
+
+  .chat-workspace,
+  .chat-workspace > .mobile-status-bar,
+  .chat-topbar {
+    background: var(--feature-bg, color-mix(in srgb, var(--rose) 8%, var(--panel-soft)));
+  }
+
+  .model-picker-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .model-picker-row button {
+    width: 100%;
+  }
+
+  .settings-stack {
+    padding-right: 0;
+  }
+
+  .theme-swatches {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .swatch-button {
+    min-width: 0;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 8px;
+  }
+
+  .swatch-dot {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+
+  .swatch-button > span:not(.swatch-dot) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 761px) {
+  .app-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    background: rgba(42, 28, 36, 0.28);
+  }
+
+  .app-confirm-dialog {
+    width: min(360px, calc(100vw - 48px));
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    border-radius: 18px;
+    background: var(--feature-card, var(--panel));
+    padding: 22px 20px 16px;
+    box-shadow: 0 22px 54px rgba(117, 43, 78, 0.2);
+    text-align: center;
+  }
+
+  .app-confirm-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--rose-ghost);
+    color: var(--pink-500);
+  }
+
+  .app-confirm-dialog p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .app-confirm-dialog div {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .app-confirm-dialog button {
+    min-height: 42px;
+    border-radius: 12px;
+    font-weight: 800;
+  }
+
+  .app-confirm-cancel {
+    background: var(--feature-field, var(--panel-soft));
+    color: var(--muted);
+  }
+
+  .app-confirm-submit {
+    background: var(--grad-bubble);
+    color: #fff;
+  }
+}

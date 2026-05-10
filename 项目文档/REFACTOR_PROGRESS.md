@@ -371,3 +371,58 @@ npm run build          # VITE_BASE_PATH=/yuri-chat/，dist/index.html 已确认 
 - 浏览器内 fetch `/api/model/profiles` 返回 200 且有服务器默认配置；fetch `/api/cloud/state` 返回 200。
 - IndexedDB 实测数据库名仍为 `yuri-nest`，localStorage 旧 key `yuri-nest-cloud-token` 可读，未创建 `yuri-chat-cloud-token`。
 - 追加真实旧站探路：保存云端口令后旧快照缺 `trash.conversations` 会触发 `undefined.filter`，本地已补旧形状兼容；模型页显示默认档案但聊天未自动使用它会走 local-demo，本地已自动启用默认/第一组可用模型；桌面端删除角色确认框被移动端容器隐藏，本地已移到共用层并用浏览器验证弹窗出现、确认删除后角色消失。
+
+## 第六阶段（2026-05-10，架构舒适线归零 + 真实试玩前收口）
+
+> 妹妹追加要求：先继续完成“防屎山”的拆分整理，再进入真实线上账号试玩。姐姐本轮先把所有 `audit:architecture` 观察项清零，避免只看浏览器不看代码、或只看代码不真实游玩。
+
+### 20. CSS 四位数硬上限拆分
+
+- `src/styles/chat.css` 变成 5 行门面，拆到 `src/styles/chat/`：
+  - `workspace.css`
+  - `composer.css`
+  - `qq-shell.css`
+  - `feature-pages.css`
+  - `polish.css`
+- `src/styles/mobile.css` 变成 6 行门面，拆到 `src/styles/mobile/`：
+  - `base.css`
+  - `dock.css`
+  - `qq-shell.css`
+  - `density.css`
+  - `theme-and-roles.css`
+  - `chat-polish.css`
+- `src/styles/settings.css` 变成 3 行门面，拆到 `src/styles/settings/`。
+- `src/styles/memory.css` 变成 2 行门面，拆到 `src/styles/memory-panel/`。
+
+本轮没有重写视觉，只保持原顺序拆分，降低样式回归风险。
+
+### 21. 前端复合组件拆分
+
+- `ChatPhone.tsx`：764 行 -> 464 行。
+  - 新增 `src/components/chat/useChatPhoneMedia.ts`，集中处理摄像头、文件入口、语音听写、录音、语音通话和清理副作用。
+- `QqFeaturePanel.tsx`：641 行 -> 419 行。
+  - 新增 `src/components/role/rolePanelModel.ts`、`DesktopRoleEditor.tsx`、`RolePersonaMeter.tsx`。
+- `SettingsPanel.tsx`：591 行 -> 489 行。
+  - 新增 `src/components/settings/PreferenceSettings.tsx`。
+- `CharacterRail.tsx`：570 行 -> 470 行。
+  - 新增 `src/components/characterRailModel.ts`，收纳导航配置、会话时间、未读数和群聊判断。
+
+### 22. 服务层瘦身
+
+- `groupChatEngine.ts`：700 行 -> 222 行。
+  - 新增 `src/services/groupChatHelpers.ts`，收纳候选排序、群聊 prompt、回复清洗、重复回复过滤和群消息创建。
+- `memoryCore.ts`：557 行 -> 384 行。
+  - 新增 `src/services/memoryRecords.ts`，收纳长期记忆创建和版本快照/修订。
+- `useChat.ts`：510 行 -> 452 行。
+  - 新增 `src/app/chatFailure.ts`，集中模型代理失败提示文案。
+- `server/userAccounts.mjs`：598 行 -> 500 行以内。
+  - 新增 `server/userAccountStore.mjs`，收纳账号表结构初始化和旧表迁移。
+
+### 验证
+
+```
+npx tsc -b                  # 通过
+npm run audit:architecture  # all watched files are inside the recommended comfort zone
+```
+
+下一步继续跑完整验证：`npm run lint`、`npm run test:agent`、`npm run test:memory`、`npm run build`，然后进入真实线上账号试玩。

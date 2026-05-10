@@ -38,6 +38,15 @@
 - `server/agent/utils.mjs`：facade，re-export `helpers/` 子目录里 8 个文件（time / tools / url / html / text / math / http / weather）的通用工具函数。
 - `server/platform.mjs`：facade，re-export `platform/` 子目录的 db / tasks / worker / connectors 四个模块；任务入队后由 facade 统一调用 worker，避免子模块循环依赖。
 - `src/components/agent/taskPanel`：Agent 任务页的子组件边界。`AgentTaskPanel.tsx` 只负责状态刷新、任务排序和页面编排；后台平台控制台、任务卡片、状态标签 helper 都放在子目录里。
+- `src/components/chat/useChatPhoneMedia.ts`：聊天页的摄像头、文件入口、语音听写、录音和语音通话状态集中在这里。`ChatPhone.tsx` 不再直接管理设备能力，后续接真实图片上传、OCR 或 TTS/ASR 供应商时优先扩展这个 hook。
+- `src/components/role`：角色管理页的桌面编辑器、人设质量条和角色草稿模型。`QqFeaturePanel.tsx` 只保留页面状态、移动端长按和删除确认流程。
+- `src/components/settings/PreferenceSettings.tsx`：输入习惯、字号和主题色从设置总页拆出，`SettingsPanel.tsx` 继续负责云同步、备份、语音和记忆相关设置。
+- `src/components/characterRailModel.ts`：左侧导航、会话列表静态配置、时间/未读/群聊判断工具，避免 `CharacterRail.tsx` 同时承担配置表和渲染逻辑。
+- `src/services/groupChatEngine.ts`：群聊入口只保留反应式回复和主动回复流程；候选成员排序、群聊 prompt、回复清洗、重复回复过滤和群消息创建放在 `src/services/groupChatHelpers.ts`。
+- `src/services/memoryRecords.ts`：长期记忆创建和版本快照/修订工具；`memoryCore.ts` 继续处理记忆合并、去重、格式化和主题关系判断。
+- `src/app/chatFailure.ts`：聊天模型代理错误的人类可读文案，供聊天 hook 复用。
+- `server/userAccountStore.mjs`：账号表结构初始化和旧 users 表迁移；`server/userAccounts.mjs` 专注注册、登录、验证码、session 和公开用户形状。
+- `src/styles/chat.css`、`mobile.css`、`settings.css`、`memory.css` 现在是样式门面，按页面职责导入 `src/styles/chat/`、`mobile/`、`settings/`、`memory-panel/` 子文件。样式仍保持原导入顺序，但不再把四位数 CSS 堆在单文件里。
 
 ## 关键原则
 

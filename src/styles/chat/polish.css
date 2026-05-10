@@ -1,0 +1,148 @@
+﻿/* Final desktop override: the current QQ shell uses QqFeaturePanel, not the older feature-body layout above. */
+@media (min-width: 761px) {
+  .qq-feature-workspace {
+    display: block;
+    min-width: 0;
+    min-height: 0;
+    background: var(
+      --feature-bg,
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--rose) 22%, var(--panel-soft)),
+        color-mix(in srgb, var(--rose) 6%, var(--panel))
+      )
+    );
+  }
+
+  .qq-desktop-feature {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    background: var(
+      --feature-bg,
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--rose) 22%, var(--panel-soft)),
+        color-mix(in srgb, var(--rose) 6%, var(--panel))
+      )
+    );
+  }
+
+  .qq-desktop-empty {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+  }
+}
+
+/* Third-pass chat texture polish. */
+@media (min-width: 761px) {
+  .chat-topbar {
+    min-height: 68px;
+    background: rgba(255, 250, 253, 0.88);
+  }
+
+  .chat-topbar-text strong {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .chat-topbar-text span {
+    font-size: 11.5px;
+  }
+
+  .chat-topbar-actions button {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .chat-topbar-actions button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .message-list {
+    padding: 16px 0 18px;
+    background:
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--rose) 18%, var(--panel-soft)),
+        color-mix(in srgb, var(--rose) 5%, var(--panel))
+      ),
+      var(--canvas);
+  }
+
+  .message-column {
+    gap: 8px;
+  }
+
+  .chat-row {
+    padding: 4px 24px;
+    gap: 10px;
+  }
+
+  .chat-row-avatar {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    font-size: 13px;
+    box-shadow: none;
+  }
+
+  .message {
+    max-width: min(58%, 640px);
+    padding: 9px 13px;
+    border-radius: 9px;
+    box-shadow: none;
+  }
+
+  .message p {
+    font-size: 14px;
+    line-height: 1.58;
+  }
+
+.message-user {
+    background: var(--grad-bubble);
+  }
+
+  .message-user::before {
+    border-left-color: var(--pink-400);
+  }
+
+  .sticker-message {
+    width: 46px;
+    height: 46px;
+    font-size: 25px;
+  }
+
+  .composer {
+    min-height: 124px;
+    padding: 8px 20px 14px;
+    background: rgba(255, 253, 254, 0.96);
+  }
+
+  .composer-entry {
+    min-height: 48px;
+  }
+
+  .composer textarea {
+    min-height: 38px;
+    font-size: 14px;
+  }
+
+  .composer-tool {
+    width: 31px;
+    height: 30px;
+  }
+}
+
+@media (max-width: 760px) {
+  .chat-topbar-text strong {
+    letter-spacing: 0;
+  }
+
+  .message {
+    box-shadow: none;
+  }
+}
