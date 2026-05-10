@@ -376,6 +376,15 @@ function buildGroupPromptBundle({
         ].join('\n'),
         category: 'summary',
       },
+      ...(triggerMessage
+        ? [
+            {
+              title: mode === 'proactive-start' ? '最近最后一条消息' : '本轮触发消息',
+              content: `${lastSpeakerName}：${triggerMessage.content}`,
+              category: 'summary' as const,
+            },
+          ]
+        : []),
       {
         title: `${member.name} 的本轮发言判断`,
         content: [
@@ -418,6 +427,7 @@ function buildGroupUserInstruction(member: CharacterCard, mode: GroupPromptMode,
   if (mode === 'proactive-reply') {
     return [
       `刚才 ${lastSpeakerName || '群里有人'} 主动发了一句，轮到你判断：${member.name} 要不要自然接话。`,
+      '先看“本轮触发消息”，只在你自然会接这一句话时回复；不要被更早的话题带跑。',
       `如果不自然接话，只输出 ${GROUP_SILENCE_MARKER}。`,
       `如果要接话，直接输出 ${member.name} 的一条群消息，不要写名字前缀，不要替其他人发言。`,
     ].join('\n')
@@ -425,6 +435,7 @@ function buildGroupUserInstruction(member: CharacterCard, mode: GroupPromptMode,
 
   return [
     `现在轮到你判断：${member.name} 要不要在群里接话。`,
+    '先看“本轮触发消息”，只在你自然会接这一句话时回复；不要被更早的话题带跑。',
     `如果不自然接话，只输出 ${GROUP_SILENCE_MARKER}。`,
     `如果要接话，直接输出 ${member.name} 的一条群消息，不要写名字前缀，不要替其他人发言。`,
   ].join('\n')
