@@ -89,7 +89,8 @@ export function SettingsPanel({
         icon={<Settings2 size={20} />}
         title="设置"
       />
-      <section className="settings-stack">
+      <section className="settings-stack settings-page-stack">
+        <div className="settings-top-grid">
         <div className="settings-section">
           <div className="settings-section-title">
             <Keyboard size={18} />
@@ -170,6 +171,10 @@ export function SettingsPanel({
           </div>
         </div>
 
+        </div>
+
+        <div className="settings-balanced-grid">
+          <div className="settings-column-stack">
         <div className="settings-section">
           <div className="settings-section-title">
             <Sparkles size={18} />
@@ -312,6 +317,8 @@ export function SettingsPanel({
           </div>
         </div>
 
+          </div>
+          <div className="settings-column-stack">
         <div className="settings-section">
           <div className="settings-section-title">
             <Database size={18} />
@@ -573,6 +580,8 @@ export function SettingsPanel({
               />
             </label>
           )}
+        </div>
+          </div>
         </div>
       </section>
     </>

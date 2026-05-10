@@ -294,7 +294,7 @@ export function ModelAndDataPanel({
         )}
 
         <div className="model-layout">
-          <div className="model-side-stack">
+          <div className="model-side-stack model-primary-stack">
             <ModelProfileEditor
               actionNotice={modelActionNotice}
               canFetchCatalog={draftController.canFetchCatalog}
@@ -312,9 +312,47 @@ export function ModelAndDataPanel({
               onTestDraft={draftController.handleTestDraft}
               selectedPresetId={draftController.selectedPresetId}
             />
+
+            <section className="settings-section model-column model-generation-section">
+              <GenerationSettings onUpdateSettings={onUpdateSettings} settings={settings} />
+            </section>
+
+            <ModelCurrentStrip
+              activeProfile={activeProfile}
+              modelBackendHint={modelBackendHint}
+              modelProfileBusy={modelProfileBusy}
+              onFetchCatalog={handleFetchActiveCatalog}
+              onTestProfile={handleTestActiveProfile}
+            />
+
+            <section className="settings-section model-diagnostics-section">
+              <div className="settings-section-title">
+                <Activity size={18} />
+                <span>一键巡检</span>
+              </div>
+              <p className="section-note">只检查连接状态，不创建角色、不写入聊天记录，也不会展示密钥。</p>
+              <div className="model-diagnostic-list">
+                {diagnostics.map((item) => (
+                  <div className={`model-diagnostic-item ${item.status}`} key={item.id}>
+                    <span className="model-diagnostic-icon">{getDiagnosticIcon(item.status)}</span>
+                    <span>
+                      <strong>{item.label}</strong>
+                      <small>{item.detail}</small>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="settings-actions">
+                <button disabled={diagnosticBusy || modelProfileBusy} onClick={handleRunDiagnostics} type="button">
+                  <Activity size={15} />
+                  {diagnosticBusy ? '巡检中' : '开始巡检'}
+                </button>
+              </div>
+              <p className="section-note">{diagnosticSummary}</p>
+            </section>
           </div>
 
-          <div className="model-side-stack">
+          <div className="model-side-stack model-secondary-stack">
             <VoiceModelSettings modelProfiles={modelProfiles} onUpdateSettings={onUpdateSettings} settings={settings} />
             <section className="settings-section model-column model-saved-section">
               <SavedModelProfiles
@@ -328,44 +366,6 @@ export function ModelAndDataPanel({
             </section>
           </div>
         </div>
-
-        <section className="settings-section model-column model-generation-section">
-          <GenerationSettings onUpdateSettings={onUpdateSettings} settings={settings} />
-        </section>
-
-        <ModelCurrentStrip
-          activeProfile={activeProfile}
-          modelBackendHint={modelBackendHint}
-          modelProfileBusy={modelProfileBusy}
-          onFetchCatalog={handleFetchActiveCatalog}
-          onTestProfile={handleTestActiveProfile}
-        />
-
-        <section className="settings-section model-diagnostics-section">
-          <div className="settings-section-title">
-            <Activity size={18} />
-            <span>一键巡检</span>
-          </div>
-          <p className="section-note">只检查连接状态，不创建角色、不写入聊天记录，也不会展示密钥。</p>
-          <div className="model-diagnostic-list">
-            {diagnostics.map((item) => (
-              <div className={`model-diagnostic-item ${item.status}`} key={item.id}>
-                <span className="model-diagnostic-icon">{getDiagnosticIcon(item.status)}</span>
-                <span>
-                  <strong>{item.label}</strong>
-                  <small>{item.detail}</small>
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="settings-actions">
-            <button disabled={diagnosticBusy || modelProfileBusy} onClick={handleRunDiagnostics} type="button">
-              <Activity size={15} />
-              {diagnosticBusy ? '巡检中' : '开始巡检'}
-            </button>
-          </div>
-          <p className="section-note">{diagnosticSummary}</p>
-        </section>
       </section>
     </>
   )
