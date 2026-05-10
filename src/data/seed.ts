@@ -388,7 +388,7 @@ export function createSeedState(): AppState {
   }))
 
   return {
-    version: 30,
+    version: 31,
     activeCharacterId: characters[0].id,
     characters,
     conversations,
@@ -430,6 +430,20 @@ export function createSeedState(): AppState {
       groupChatHumanMode: true,
       groupChatProactiveMode: true,
       groupChatMaxAutoReplies: 3,
+      voice: {
+        inputEnabled: true,
+        assistantPlaybackEnabled: true,
+        autoPlayAssistantVoice: false,
+        provider: 'openai-compatible',
+        ttsModel: 'gpt-4o-mini-tts',
+        defaultVoiceId: 'coral',
+        defaultVoiceLabel: 'Coral',
+        defaultStylePrompt: '自然、亲近、清晰，像聊天语音一样，不要播音腔。',
+        speechRate: 1,
+        browserFallbackEnabled: true,
+        callModeEnabled: true,
+        customVoiceConsentRequired: true,
+      },
     },
   }
 }

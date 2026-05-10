@@ -6,17 +6,22 @@ import {
   Image,
   Mic,
   Paperclip,
+  PhoneCall,
   Plus,
   Send,
   Smile,
   Sparkles,
+  Square,
+  X,
 } from 'lucide-react'
 import type {
   AppSettings,
   CharacterCard,
   ChatMessage,
+  ChatMessageVoice,
   LongTermMemory,
   MemoryUsageLog,
+  SendMessageOptions,
 } from '../domain/types'
 import type { MemoryFeedbackAction } from '../services/memoryFeedback'
 import { buildMessageMemoryTrace } from '../services/memoryTrace'
@@ -39,7 +44,7 @@ interface ChatPhoneProps {
   onBackToList?: () => void
   onSelectCharacter: (characterId: string) => void
   onMemoryFeedback: (memoryId: string, action: MemoryFeedbackAction) => void
-  onSend: () => void
+  onSend: (options?: SendMessageOptions) => void | Promise<void>
   onGroupProactive?: () => void
   onDirectProactive?: () => void
   onShellAction?: (message: string) => void
@@ -62,6 +67,10 @@ type SpeechWindow = Window & {
   SpeechRecognition?: new () => BrowserSpeechRecognition
   webkitSpeechRecognition?: new () => BrowserSpeechRecognition
 }
+
+type RecordingPurpose = 'message' | 'call'
+
+const maxRecordingMs = 45_000
 
 export function ChatPhone({
   character,
@@ -86,6 +95,13 @@ export function ChatPhone({
   const [activePanel, setActivePanel] = useState<ToolPanel>(null)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [cameraError, setCameraError] = useState('')
+  const [voicePanelOpen, setVoicePanelOpen] = useState(false)
+  const [voiceCallOpen, setVoiceCallOpen] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingPurpose, setRecordingPurpose] = useState<RecordingPurpose>('message')
+  const [recordingDurationMs, setRecordingDurationMs] = useState(0)
+  const [voiceTranscript, setVoiceTranscript] = useState('')
+  const [voiceError, setVoiceError] = useState('')
   const messageListRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -93,6 +109,15 @@ export function ChatPhone({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraStreamRef = useRef<MediaStream | null>(null)
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recordingStreamRef = useRef<MediaStream | null>(null)
+  const recordingChunksRef = useRef<BlobPart[]>([])
+  const recordingStartedAtRef = useRef(0)
+  const recordingTimerRef = useRef<number | null>(null)
+  const voiceTranscriptRef = useRef('')
+  const latestAssistantMessageId = useMemo(() => {
+    return [...messages].reverse().find((message) => message.role === 'assistant')?.id ?? ''
+  }, [messages])
   const traceByAssistantMessageId = useMemo(() => {
     return new Map(
       memoryUsageLogs
@@ -221,6 +246,148 @@ export function ChatPhone({
     onShellAction?.('正在听妹妹说话...')
   }
 
+  function clearRecordingTimer() {
+    if (recordingTimerRef.current === null) return
+    window.clearInterval(recordingTimerRef.current)
+    recordingTimerRef.current = null
+  }
+
+  function stopRecordingStream() {
+    recordingStreamRef.current?.getTracks().forEach((track) => track.stop())
+    recordingStreamRef.current = null
+  }
+
+  function startRecordingRecognition() {
+    const SpeechRecognition =
+      (window as SpeechWindow).SpeechRecognition ?? (window as SpeechWindow).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setVoiceError('浏览器没有提供语音转文字；这条可以保存为语音，但角色只能读到文字转写。')
+      return
+    }
+
+    recognitionRef.current?.stop()
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'zh-CN'
+    recognition.interimResults = false
+    recognition.continuous = true
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? '')
+        .join('')
+        .trim()
+      if (!transcript) return
+      voiceTranscriptRef.current = transcript
+      setVoiceTranscript(transcript)
+    }
+    recognition.onerror = () => {
+      setVoiceError('语音转写没有接通；可以重试，或先用文字发给角色。')
+    }
+    recognition.onend = () => {
+      if (recognitionRef.current === recognition) recognitionRef.current = null
+    }
+    recognitionRef.current = recognition
+    recognition.start()
+  }
+
+  async function beginVoiceRecording(purpose: RecordingPurpose) {
+    if (!settings.voice.inputEnabled) {
+      onShellAction?.('设置里还没有开启语音输入')
+      return
+    }
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setVoiceError('当前浏览器不支持网页录音，可以先用听写输入。')
+      return
+    }
+
+    try {
+      setVoiceError('')
+      setVoiceTranscript('')
+      voiceTranscriptRef.current = ''
+      setRecordingPurpose(purpose)
+      recordingChunksRef.current = []
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+      const recorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = recorder
+      recordingStreamRef.current = stream
+      recordingStartedAtRef.current = Date.now()
+      setRecordingDurationMs(0)
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordingChunksRef.current.push(event.data)
+      }
+      recorder.onstop = () => {
+        clearRecordingTimer()
+        stopRecordingStream()
+        setIsRecording(false)
+      }
+      recorder.start()
+      setIsRecording(true)
+      startRecordingRecognition()
+      recordingTimerRef.current = window.setInterval(() => {
+        const duration = Date.now() - recordingStartedAtRef.current
+        setRecordingDurationMs(duration)
+        if (duration >= maxRecordingMs) void finishVoiceRecording(true)
+      }, 250)
+    } catch {
+      setVoiceError('麦克风没有接通，请检查浏览器权限。')
+      stopRecordingStream()
+      clearRecordingTimer()
+      setIsRecording(false)
+    }
+  }
+
+  async function finishVoiceRecording(send: boolean) {
+    const recorder = mediaRecorderRef.current
+    recognitionRef.current?.stop()
+    recognitionRef.current = null
+    if (!recorder || recorder.state === 'inactive') {
+      stopRecordingStream()
+      clearRecordingTimer()
+      setIsRecording(false)
+      return
+    }
+
+    const chunks = recordingChunksRef.current
+    const durationMs = Math.max(recordingDurationMs, Date.now() - recordingStartedAtRef.current)
+    await new Promise<void>((resolve) => {
+      recorder.addEventListener('stop', () => resolve(), { once: true })
+      recorder.stop()
+    })
+    mediaRecorderRef.current = null
+    if (!send) {
+      onShellAction?.('语音已取消')
+      return
+    }
+
+    const transcript = voiceTranscriptRef.current.trim()
+    if (!transcript) {
+      setVoiceError('这次没有拿到文字转写，先不发给角色；妹妹可以重录或用听写输入。')
+      return
+    }
+
+    const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
+    const voice: ChatMessageVoice = {
+      kind: 'recorded',
+      dataUrl: await blobToDataUrl(blob),
+      mimeType: blob.type || 'audio/webm',
+      durationMs,
+      transcript,
+      createdAt: new Date().toISOString(),
+    }
+    await onSend({ content: transcript, voice })
+    setVoiceTranscript('')
+    voiceTranscriptRef.current = ''
+    if (recordingPurpose === 'call') onShellAction?.('语音已发出，等角色接话')
+  }
+
+  function blobToDataUrl(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onerror = () => reject(new Error('语音文件读取失败'))
+      reader.onload = () => resolve(String(reader.result || ''))
+      reader.readAsDataURL(blob)
+    })
+  }
+
   useEffect(() => {
     messageListRef.current?.scrollTo({
       top: messageListRef.current.scrollHeight,
@@ -235,7 +402,15 @@ export function ChatPhone({
   }, [cameraOpen])
 
   useEffect(() => {
-    return () => stopCameraStream()
+    return () => {
+      stopCameraStream()
+      recognitionRef.current?.stop()
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop()
+      }
+      stopRecordingStream()
+      clearRecordingTimer()
+    }
   }, [])
 
   return (
@@ -267,6 +442,13 @@ export function ChatPhone({
             ))}
           </select>
         </div>
+        {settings.voice.callModeEnabled && (
+          <div className="chat-topbar-actions">
+            <button aria-label="语音通话" onClick={() => setVoiceCallOpen(true)} title="语音通话" type="button">
+              <PhoneCall size={20} />
+            </button>
+          </div>
+        )}
       </header>
 
       <div className="message-list" ref={messageListRef}>
@@ -285,6 +467,11 @@ export function ChatPhone({
               characters={characters}
               previousMessage={messages[index - 1] ?? null}
               showDevTrace={settings.showDevTrace}
+              settings={settings}
+              autoPlayVoice={
+                message.id === latestAssistantMessageId &&
+                (voiceCallOpen || settings.voice.autoPlayAssistantVoice)
+              }
               memoryTrace={message.role === 'assistant' ? traceByAssistantMessageId.get(message.id) : undefined}
               onMemoryFeedback={onMemoryFeedback}
             />
@@ -310,7 +497,7 @@ export function ChatPhone({
       </div>
 
       <form
-        className={`composer ${activePanel ? 'with-tool-panel' : ''}`}
+        className={`composer ${activePanel || voicePanelOpen ? 'with-tool-panel' : ''}`}
         onSubmit={(event) => {
           event.preventDefault()
           onSend()
@@ -353,7 +540,16 @@ export function ChatPhone({
           </button>
         </div>
         <div className="composer-toolbar" aria-label="快捷工具">
-          <button aria-label="语音" className="composer-tool" onClick={startVoiceInput} title="语音" type="button">
+          <button
+            aria-label="语音"
+            className={`composer-tool ${voicePanelOpen ? 'active' : ''}`}
+            onClick={() => {
+              setActivePanel(null)
+              setVoicePanelOpen((open) => !open)
+            }}
+            title="语音"
+            type="button"
+          >
             <Mic size={24} />
           </button>
           {onGroupProactive && (
@@ -427,6 +623,47 @@ export function ChatPhone({
           </button>
         </div>
 
+        {voicePanelOpen && (
+          <section className="chat-tool-panel voice-tool-panel" aria-label="语音工具">
+            <div className="voice-tool-head">
+              <strong>语音</strong>
+              <span>{isRecording ? formatDuration(recordingDurationMs) : '录音会同时转成文字给角色理解'}</span>
+            </div>
+            <div className="voice-transcript-preview">
+              {voiceTranscript || (isRecording ? '正在听妹妹说话...' : '可以录一条语音消息，也可以只听写到输入框。')}
+            </div>
+            {voiceError && <p className="voice-error">{voiceError}</p>}
+            <div className="voice-tool-actions">
+              {isRecording && recordingPurpose === 'message' ? (
+                <>
+                  <button className="voice-record-button danger" onClick={() => void finishVoiceRecording(false)} type="button">
+                    <X size={18} />
+                    取消
+                  </button>
+                  <button className="voice-record-button primary" onClick={() => void finishVoiceRecording(true)} type="button">
+                    <Square size={17} />
+                    发送语音
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="voice-record-button primary"
+                  disabled={isRecording}
+                  onClick={() => void beginVoiceRecording('message')}
+                  type="button"
+                >
+                  <Mic size={18} />
+                  录语音消息
+                </button>
+              )}
+              <button className="voice-record-button" disabled={isRecording} onClick={startVoiceInput} type="button">
+                <Mic size={18} />
+                听写到输入框
+              </button>
+            </div>
+          </section>
+        )}
+
         {(activePanel === 'emoji' || activePanel === 'sticker' || activePanel === 'more') && (
           <ChatToolPanels
             panel={activePanel}
@@ -468,6 +705,39 @@ export function ChatPhone({
           ref={fileInputRef}
           type="file"
         />
+        {voiceCallOpen && (
+          <div className="voice-call-layer" role="dialog" aria-label={`与${character.name}语音通话`}>
+            <section className="voice-call-panel" style={{ '--avatar-accent': character.accent } as CSSProperties}>
+              <button aria-label="关闭语音通话" className="voice-call-close" onClick={() => setVoiceCallOpen(false)} type="button">
+                <X size={22} />
+              </button>
+              <span className="voice-call-avatar">{character.avatar}</span>
+              <strong>{character.name}</strong>
+              <small>{isRecording && recordingPurpose === 'call' ? `正在收音 ${formatDuration(recordingDurationMs)}` : '回合式语音通话'}</small>
+              <p>{voiceTranscript || (isRecording && recordingPurpose === 'call' ? '姐姐正在听...' : '点麦克风说一句，结束后角色会按聊天记忆接话并朗读。')}</p>
+              {voiceError && <em>{voiceError}</em>}
+              <div className="voice-call-actions">
+                {isRecording && recordingPurpose === 'call' ? (
+                  <>
+                    <button onClick={() => void finishVoiceRecording(false)} type="button">
+                      <X size={20} />
+                      取消
+                    </button>
+                    <button className="primary" onClick={() => void finishVoiceRecording(true)} type="button">
+                      <Square size={18} />
+                      结束并发送
+                    </button>
+                  </>
+                ) : (
+                  <button className="primary" disabled={isSending} onClick={() => void beginVoiceRecording('call')} type="button">
+                    <Mic size={22} />
+                    开始说话
+                  </button>
+                )}
+              </div>
+            </section>
+          </div>
+        )}
         {cameraOpen && (
           <div className="camera-capture-layer" role="dialog" aria-label="拍摄照片">
             <section className="camera-capture-panel">
@@ -483,4 +753,11 @@ export function ChatPhone({
       </form>
     </main>
   )
+}
+
+function formatDuration(durationMs: number): string {
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }

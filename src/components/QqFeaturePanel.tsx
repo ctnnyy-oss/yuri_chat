@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { MessageCircle, Plus, Save, Search, Trash2, X } from 'lucide-react'
-import type { CharacterCard } from '../domain/types'
+import type { CharacterCard, CharacterVoiceProfile } from '../domain/types'
 import { analyzePersonaImport } from '../services/personaImport'
 import type { AppView } from './CharacterRail'
 import { MobileConfirmDialog } from './MobileConfirmDialog'
@@ -10,9 +10,9 @@ interface QqFeaturePanelProps {
   characters: CharacterCard[]
   activeCharacterId: string
   createRequestId: number
-  onCreateCharacter: (input: { name: string; relation: string; mood: string; persona: string }) => string
+  onCreateCharacter: (input: { name: string; relation: string; mood: string; persona: string; voiceProfile?: CharacterVoiceProfile }) => string
   onDeleteCharacter: (characterId: string) => boolean
-  onUpdateCharacter: (input: { id: string; name: string; relation: string; mood: string; persona: string }) => boolean
+  onUpdateCharacter: (input: { id: string; name: string; relation: string; mood: string; persona: string; voiceProfile?: CharacterVoiceProfile }) => boolean
   onOpenChat: (characterId: string) => void
   onShellAction?: (message: string) => void
 }
@@ -25,6 +25,7 @@ type ManagedRole = {
   relation: string
   mood: string
   persona: string
+  voiceProfile?: CharacterVoiceProfile
   source: '内置' | '自定义'
 }
 
@@ -33,6 +34,10 @@ type RoleDraft = {
   relation: string
   mood: string
   persona: string
+  voiceDisplayName: string
+  voiceId: string
+  voicePrompt: string
+  voiceConsentConfirmed: boolean
 }
 
 type MobileEditorMode = 'closed' | 'create' | 'view'
@@ -75,6 +80,7 @@ function toManagedRole(character: CharacterCard): ManagedRole {
     relation: character.relationship,
     mood: character.mood,
     persona: character.personaSource ?? character.systemPrompt,
+    voiceProfile: character.voiceProfile,
     source: isCustomRole(character) ? '自定义' : '内置',
   }
 }
@@ -85,16 +91,35 @@ function toRoleDraft(role?: ManagedRole): RoleDraft {
     relation: role?.relation ?? '角色',
     mood: role?.mood ?? '',
     persona: role?.persona ?? '',
+    voiceDisplayName: role?.voiceProfile?.displayName ?? '',
+    voiceId: role?.voiceProfile?.providerVoiceId ?? '',
+    voicePrompt: role?.voiceProfile?.stylePrompt ?? '',
+    voiceConsentConfirmed: Boolean(role?.voiceProfile?.consentConfirmed),
   }
 }
 
 function blankRoleDraft(): RoleDraft {
-  return { name: '', relation: '角色', mood: '', persona: '' }
+  return { name: '', relation: '角色', mood: '', persona: '', voiceDisplayName: '', voiceId: '', voicePrompt: '', voiceConsentConfirmed: false }
 }
 
 function roleMatchesQuery(role: ManagedRole, query: string) {
   if (!query) return true
   return [role.name, role.relation, role.mood].join(' ').toLowerCase().includes(query)
+}
+
+function buildVoiceProfileFromDraft(draft: RoleDraft): CharacterVoiceProfile | undefined {
+  const providerVoiceId = draft.voiceId.trim()
+  const displayName = draft.voiceDisplayName.trim() || providerVoiceId
+  const stylePrompt = draft.voicePrompt.trim()
+  if (!providerVoiceId && !displayName && !stylePrompt) return undefined
+  return {
+    displayName: displayName || '自定义音色',
+    providerVoiceId,
+    stylePrompt,
+    source: 'custom',
+    consentConfirmed: draft.voiceConsentConfirmed,
+    updatedAt: new Date().toISOString(),
+  }
 }
 
 export function QqFeaturePanel({
@@ -158,7 +183,7 @@ export function QqFeaturePanel({
     startCreateRole()
   }, [createRequestId])
 
-  function updateDraft(field: keyof RoleDraft, value: string) {
+  function updateDraft<K extends keyof RoleDraft>(field: K, value: RoleDraft[K]) {
     setRoleDraft((draft) => ({ ...draft, [field]: value }))
   }
 
@@ -173,6 +198,7 @@ export function QqFeaturePanel({
       relation: roleDraft.relation.trim() || '角色',
       mood: roleDraft.mood.trim() || '等待补全',
       persona: roleDraft.persona.trim() || '还没有导入人设。',
+      voiceProfile: buildVoiceProfileFromDraft(roleDraft),
     })
     setSelectedRoleId(roleId)
     setMobileEditorMode('view')
@@ -254,7 +280,14 @@ export function QqFeaturePanel({
       onShellAction?.('内置三对 CP 是只读参考模板，不能直接修改')
       return
     }
-    if (onUpdateCharacter({ id: selectedRole.id, ...roleDraft })) {
+    if (onUpdateCharacter({
+      id: selectedRole.id,
+      name: roleDraft.name,
+      relation: roleDraft.relation,
+      mood: roleDraft.mood,
+      persona: roleDraft.persona,
+      voiceProfile: buildVoiceProfileFromDraft(roleDraft),
+    })) {
       onShellAction?.('角色设定已保存')
     }
   }
@@ -346,6 +379,45 @@ export function QqFeaturePanel({
                   value={roleDraft.persona}
                   onChange={(event) => updateDraft('persona', event.target.value)}
                   placeholder="可以直接粘贴自然语言。越包含经历、说话方式、情绪模式、边界和相处规则，越像真人。"
+                />
+              </label>
+              <label>
+                音色名
+                <input
+                  disabled={!editorEditable}
+                  value={roleDraft.voiceDisplayName}
+                  onChange={(event) => updateDraft('voiceDisplayName', event.target.value)}
+                  placeholder="比如：温柔姐姐音 / 自定义音色"
+                />
+              </label>
+              <label>
+                音色 ID
+                <input
+                  disabled={!editorEditable}
+                  value={roleDraft.voiceId}
+                  onChange={(event) => updateDraft('voiceId', event.target.value)}
+                  placeholder="供应商里的 voice_id；克隆训练在供应商后台完成"
+                />
+              </label>
+              <label>
+                声音风格
+                <textarea
+                  disabled={!editorEditable}
+                  value={roleDraft.voicePrompt}
+                  onChange={(event) => updateDraft('voicePrompt', event.target.value)}
+                  placeholder="自然聊天、轻声、清晰、不要播音腔；也可以写角色语气。"
+                />
+              </label>
+              <label className="voice-consent-row">
+                <span>
+                  已确认授权
+                  <small>只保存本人或明确授权的音色；不要仿冒现实人物或未授权角色。</small>
+                </span>
+                <input
+                  checked={roleDraft.voiceConsentConfirmed}
+                  disabled={!editorEditable}
+                  onChange={(event) => updateDraft('voiceConsentConfirmed', event.target.checked)}
+                  type="checkbox"
                 />
               </label>
               {personaQuality}
@@ -488,6 +560,45 @@ export function QqFeaturePanel({
                     onChange={(event) => updateDraft('persona', event.target.value)}
                     placeholder="粘贴角色资料、聊天样例、经历、说话方式、边界"
                     value={roleDraft.persona}
+                  />
+                </label>
+                <label>
+                  音色名
+                  <input
+                    disabled={!editorEditable}
+                    onChange={(event) => updateDraft('voiceDisplayName', event.target.value)}
+                    placeholder="自定义音色名称"
+                    value={roleDraft.voiceDisplayName}
+                  />
+                </label>
+                <label>
+                  音色 ID
+                  <input
+                    disabled={!editorEditable}
+                    onChange={(event) => updateDraft('voiceId', event.target.value)}
+                    placeholder="供应商 voice_id"
+                    value={roleDraft.voiceId}
+                  />
+                </label>
+                <label>
+                  声音风格
+                  <textarea
+                    disabled={!editorEditable}
+                    onChange={(event) => updateDraft('voicePrompt', event.target.value)}
+                    placeholder="轻声、自然、清晰、像真实聊天"
+                    value={roleDraft.voicePrompt}
+                  />
+                </label>
+                <label className="voice-consent-row">
+                  <span>
+                    已确认授权
+                    <small>只用本人或明确授权音色。</small>
+                  </span>
+                  <input
+                    checked={roleDraft.voiceConsentConfirmed}
+                    disabled={!editorEditable}
+                    onChange={(event) => updateDraft('voiceConsentConfirmed', event.target.checked)}
+                    type="checkbox"
                   />
                 </label>
                 {personaQuality}

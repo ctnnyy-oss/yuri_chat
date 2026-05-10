@@ -20,11 +20,33 @@ export * from './agentTypes'
 
 export type MessageRole = 'user' | 'assistant'
 
+export type VoiceProviderKind = 'browser' | 'openai-compatible'
+
+export interface ChatMessageVoice {
+  kind: 'recorded'
+  dataUrl: string
+  mimeType: string
+  durationMs: number
+  transcript?: string
+  createdAt: string
+}
+
+export interface CharacterVoiceProfile {
+  displayName: string
+  providerVoiceId: string
+  stylePrompt: string
+  source: 'built-in' | 'custom' | 'cloned'
+  consentConfirmed: boolean
+  updatedAt: string
+}
+
 export interface ChatMessage {
   id: string
   role: MessageRole
   content: string
   createdAt: string
+  inputMode?: 'text' | 'voice'
+  voice?: ChatMessageVoice
   memoryCaptured?: boolean
   agent?: AgentRunSummary
   authorCharacterId?: string
@@ -53,6 +75,7 @@ export interface CharacterCard {
   personaSource?: string
   personaProfile?: CharacterPersonaProfile
   groupMemberIds?: string[]
+  voiceProfile?: CharacterVoiceProfile
 }
 
 export interface CharacterPersonaProfile {
@@ -142,6 +165,27 @@ export interface AppSettings {
   groupChatHumanMode: boolean
   groupChatProactiveMode: boolean
   groupChatMaxAutoReplies: number
+  voice: VoiceSettings
+}
+
+export interface VoiceSettings {
+  inputEnabled: boolean
+  assistantPlaybackEnabled: boolean
+  autoPlayAssistantVoice: boolean
+  provider: VoiceProviderKind
+  ttsModel: string
+  defaultVoiceId: string
+  defaultVoiceLabel: string
+  defaultStylePrompt: string
+  speechRate: number
+  browserFallbackEnabled: boolean
+  callModeEnabled: boolean
+  customVoiceConsentRequired: boolean
+}
+
+export interface SendMessageOptions {
+  content?: string
+  voice?: ChatMessageVoice
 }
 
 export interface AppState {

@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AppState, CharacterCard, ChatMessage, ConversationState } from '../domain/types'
+import type { AppState, CharacterCard, ChatMessage, ConversationState, SendMessageOptions } from '../domain/types'
 import { requestAssistantReply } from '../services/chatApi'
 import { getSavedCloudToken, isCloudSyncConfigured } from '../services/cloudSync'
 import { generateDirectChatProactiveTurn, generateDirectChatReply } from '../services/directChatEngine'
@@ -223,12 +223,16 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     state.settings.directChatProactiveMode,
   ])
 
-  async function handleSend() {
-    const content = draft.trim()
+  async function handleSend(options: SendMessageOptions = {}) {
+    const content = (options.content ?? draft).trim()
     if (!content || isSending) return
     setChatAlertState(null)
 
-    const userMessage = createMessage('user', content)
+    const userMessage = {
+      ...createMessage('user', content),
+      inputMode: options.voice ? 'voice' : 'text',
+      voice: options.voice,
+    } satisfies ChatMessage
     const nextConversation = updateConversationSummary({
       ...conversation,
       messages: [...conversation.messages, userMessage],
@@ -291,7 +295,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     }
 
     setState(nextStateWithUsage)
-    setDraft('')
+    if (!options.content) setDraft('')
     setIsSending(true)
     setNotice(
       keptMemory

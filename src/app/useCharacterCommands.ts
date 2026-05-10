@@ -15,6 +15,7 @@ interface CharacterDraftInput {
   relation: string
   mood: string
   persona: string
+  voiceProfile?: CharacterCard['voiceProfile']
   groupMemberIds?: string[]
 }
 
@@ -52,6 +53,7 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
       systemPrompt: buildCharacterSystemPrompt(personaInput),
       personaSource: persona,
       personaProfile: buildPersonaProfile(personaInput),
+      voiceProfile: normalizeVoiceProfile(input.voiceProfile),
       greeting: `${name}已经加入百合小窝。`,
     }
     setState((currentState) => ({
@@ -108,6 +110,7 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
               systemPrompt: buildCharacterSystemPrompt(personaInput),
               personaSource: persona,
               personaProfile: buildPersonaProfile(personaInput),
+              voiceProfile: normalizeVoiceProfile(input.voiceProfile),
               greeting: `${name}已经加入百合小窝。`,
               tags: ['自定义角色', relation, name],
             }
@@ -177,4 +180,20 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
 function dedupeIds(ids: string[] | undefined): string[] {
   if (!Array.isArray(ids)) return []
   return [...new Set(ids.map((id) => id.trim()).filter(Boolean))]
+}
+
+function normalizeVoiceProfile(profile: CharacterCard['voiceProfile']): CharacterCard['voiceProfile'] {
+  if (!profile) return undefined
+  const displayName = profile.displayName.trim()
+  const providerVoiceId = profile.providerVoiceId.trim()
+  const stylePrompt = profile.stylePrompt.trim()
+  if (!displayName && !providerVoiceId && !stylePrompt) return undefined
+  return {
+    displayName: displayName || providerVoiceId || '自定义音色',
+    providerVoiceId,
+    stylePrompt,
+    source: profile.source,
+    consentConfirmed: Boolean(profile.consentConfirmed),
+    updatedAt: profile.updatedAt || nowIso(),
+  }
 }

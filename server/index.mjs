@@ -33,6 +33,7 @@ import {
   getBaseUrl,
   getModel,
 } from './modelProvider.mjs'
+import { callTextToSpeech } from './voiceProvider.mjs'
 import {
   deleteModelProfile,
   getModelSecretConfigurationIssue,
@@ -314,6 +315,16 @@ app.post('/api/model/embeddings', requireAccountAuth, async (request, response) 
     })
   } catch (error) {
     response.status(502).json({ error: error instanceof Error ? error.message : 'embedding 生成失败' })
+  }
+})
+
+app.post('/api/voice/speech', requireAccountAuth, chatRateLimiter, async (request, response) => {
+  try {
+    const profile = resolveRuntimeProfileForChat(request.body?.settings, request.user)
+    const result = await callTextToSpeech(request.body ?? {}, profile)
+    response.json({ ok: true, ...result })
+  } catch (error) {
+    response.status(502).json({ error: error instanceof Error ? error.message : '语音生成失败。' })
   }
 })
 

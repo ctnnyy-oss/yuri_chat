@@ -4,7 +4,7 @@ import { normalizeMemories } from '../services/memoryEngine'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { agentRooms, createSeedState } from './seed'
 
-const currentStateVersion = 30
+const currentStateVersion = 31
 const legacyDefaultRoomId = 'room-yuri-nest'
 const currentDefaultRoomId = 'room-yuri-chat'
 
@@ -74,6 +74,7 @@ export function migrateAppState(state: AppState): AppState {
         4,
         defaults.settings.groupChatMaxAutoReplies,
       ),
+      voice: normalizeVoiceSettings(sourceSettings.voice, defaults.settings.voice),
     },
   }
 
@@ -266,4 +267,34 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
   const numericValue = Number(value)
   if (!Number.isFinite(numericValue)) return fallback
   return Math.min(max, Math.max(min, numericValue))
+}
+
+function normalizeVoiceSettings(value: unknown, fallback: AppState['settings']['voice']): AppState['settings']['voice'] {
+  const source = value && typeof value === 'object' ? value as Partial<AppState['settings']['voice']> : {}
+  return {
+    ...fallback,
+    ...source,
+    inputEnabled: source.inputEnabled !== false,
+    assistantPlaybackEnabled: source.assistantPlaybackEnabled !== false,
+    autoPlayAssistantVoice: Boolean(source.autoPlayAssistantVoice),
+    provider: source.provider === 'browser' ? 'browser' : 'openai-compatible',
+    ttsModel: normalizeShortText(source.ttsModel, fallback.ttsModel, 120),
+    defaultVoiceId: normalizeShortText(source.defaultVoiceId, fallback.defaultVoiceId, 80),
+    defaultVoiceLabel: normalizeShortText(source.defaultVoiceLabel, fallback.defaultVoiceLabel, 80),
+    defaultStylePrompt: normalizeLongText(source.defaultStylePrompt, fallback.defaultStylePrompt, 360),
+    speechRate: clampNumber(source.speechRate, 0.65, 1.35, fallback.speechRate),
+    browserFallbackEnabled: source.browserFallbackEnabled !== false,
+    callModeEnabled: source.callModeEnabled !== false,
+    customVoiceConsentRequired: source.customVoiceConsentRequired !== false,
+  }
+}
+
+function normalizeShortText(value: unknown, fallback: string, maxLength: number): string {
+  const text = typeof value === 'string' ? value.trim() : ''
+  return (text || fallback).slice(0, maxLength)
+}
+
+function normalizeLongText(value: unknown, fallback: string, maxLength: number): string {
+  const text = typeof value === 'string' ? value.trim() : ''
+  return (text || fallback).slice(0, maxLength)
 }

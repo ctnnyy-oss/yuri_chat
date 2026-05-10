@@ -1,7 +1,10 @@
 import type { CSSProperties } from 'react'
-import type { AgentAction, AgentRunSummary, AgentToolStatus, CharacterCard, ChatMessage } from '../domain/types'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Loader2, Volume2 } from 'lucide-react'
+import type { AgentAction, AgentRunSummary, AgentToolStatus, AppSettings, CharacterCard, ChatMessage } from '../domain/types'
 import type { MemoryFeedbackAction } from '../services/memoryFeedback'
 import type { MessageMemoryTrace } from '../services/memoryTrace'
+import { requestSpeechAudio, speakWithBrowserVoice, stopBrowserSpeech } from '../services/voiceApi'
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -9,6 +12,8 @@ interface MessageBubbleProps {
   characters?: CharacterCard[]
   previousMessage: ChatMessage | null
   showDevTrace: boolean
+  settings: AppSettings
+  autoPlayVoice?: boolean
   memoryTrace?: MessageMemoryTrace
   onMemoryFeedback?: (memoryId: string, action: MemoryFeedbackAction) => void
 }
@@ -22,6 +27,8 @@ export function MessageBubble({
   characters,
   previousMessage,
   showDevTrace,
+  settings,
+  autoPlayVoice = false,
   onMemoryFeedback,
 }: MessageBubbleProps) {
   const content = formatDisplayText(message.content)
@@ -35,6 +42,10 @@ export function MessageBubble({
   const isGroupAssistant = !isUser && Boolean(message.authorCharacterId || message.authorName)
   const showAvatar = getMessageIdentity(previousMessage, character) !== getMessageIdentity(message, character)
   const showTimeSeparator = shouldShowTimeSeparator(previousMessage, message)
+  const speakerVoiceProfile = assistantCharacter?.voiceProfile ?? character.voiceProfile
+  const voiceSpeakerName = assistantName
+  const canPlayAssistantVoice = !isUser && settings.voice.assistantPlaybackEnabled && Boolean(content.trim())
+  const canPlayRecordedVoice = isUser && message.voice?.kind === 'recorded'
 
   return (
     <>
@@ -52,13 +63,127 @@ export function MessageBubble({
         </span>
         <article className={`message message-${message.role}`}>
           {isGroupAssistant && showAvatar && <strong className="message-author-name">{assistantName}</strong>}
+          {canPlayRecordedVoice && <RecordedVoicePlayer message={message} />}
           <p>{content}</p>
+          {canPlayAssistantVoice && (
+            <AssistantVoicePlayer
+              autoPlay={autoPlayVoice}
+              characterName={voiceSpeakerName}
+              content={content}
+              settings={settings}
+              voiceProfile={speakerVoiceProfile}
+            />
+          )}
           {showDevTrace && message.agent && <AgentTrace trace={message.agent} />}
           {showDevTrace && memoryTrace && <MemoryTrace onMemoryFeedback={onMemoryFeedback} trace={memoryTrace} />}
         </article>
       </div>
     </>
   )
+}
+
+function RecordedVoicePlayer({ message }: { message: ChatMessage }) {
+  if (!message.voice?.dataUrl) return null
+  return (
+    <div className="message-voice-card">
+      <audio controls preload="metadata" src={message.voice.dataUrl} />
+      <small>语音消息 · {formatVoiceDuration(message.voice.durationMs)}</small>
+    </div>
+  )
+}
+
+function AssistantVoicePlayer({
+  autoPlay,
+  characterName,
+  content,
+  settings,
+  voiceProfile,
+}: {
+  autoPlay: boolean
+  characterName: string
+  content: string
+  settings: AppSettings
+  voiceProfile?: CharacterCard['voiceProfile']
+}) {
+  const [audioUrl, setAudioUrl] = useState('')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'playing' | 'error'>('idle')
+  const [error, setError] = useState('')
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const autoPlayedRef = useRef(false)
+
+  const playVoice = useCallback(async () => {
+    if (!content.trim()) return
+    setError('')
+
+    if (audioUrl) {
+      stopBrowserSpeech()
+      audioRef.current?.pause()
+      const audio = new Audio(audioUrl)
+      audioRef.current = audio
+      setStatus('playing')
+      audio.onended = () => setStatus('idle')
+      audio.onerror = () => setStatus('error')
+      await audio.play()
+      return
+    }
+
+    if (settings.voice.provider === 'browser') {
+      const started = speakWithBrowserVoice(content, settings.voice.speechRate)
+      setStatus(started ? 'playing' : 'error')
+      if (!started) setError('浏览器朗读不可用')
+      return
+    }
+
+    setStatus('loading')
+    try {
+      const result = await requestSpeechAudio({
+        text: content,
+        characterName,
+        characterVoice: voiceProfile,
+        settings,
+      })
+      setAudioUrl(result.audioUrl)
+      stopBrowserSpeech()
+      const audio = new Audio(result.audioUrl)
+      audioRef.current = audio
+      setStatus('playing')
+      audio.onended = () => setStatus('idle')
+      audio.onerror = () => setStatus('error')
+      await audio.play()
+    } catch (speechError) {
+      if (settings.voice.browserFallbackEnabled && speakWithBrowserVoice(content, settings.voice.speechRate)) {
+        setStatus('playing')
+        setError('TTS 未接通，已用浏览器朗读')
+        return
+      }
+      setStatus('error')
+      setError(speechError instanceof Error ? speechError.message : '语音生成失败')
+    }
+  }, [audioUrl, characterName, content, settings, voiceProfile])
+
+  useEffect(() => {
+    if (!autoPlay || autoPlayedRef.current) return
+    autoPlayedRef.current = true
+    void playVoice()
+  }, [autoPlay, playVoice])
+
+  const loading = status === 'loading'
+  return (
+    <div className="assistant-voice-row">
+      <button disabled={loading} onClick={() => void playVoice()} type="button">
+        {loading ? <Loader2 size={15} /> : <Volume2 size={15} />}
+        <span>{loading ? '生成中' : voiceProfile?.displayName || settings.voice.defaultVoiceLabel || '语音'}</span>
+      </button>
+      {error && <small>{error}</small>}
+    </div>
+  )
+}
+
+function formatVoiceDuration(durationMs: number): string {
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
 function getMessageIdentity(message: ChatMessage | null, character: CharacterCard): string {
