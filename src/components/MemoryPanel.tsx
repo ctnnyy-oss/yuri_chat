@@ -389,6 +389,7 @@ export function MemoryPanel({
           cloudStatus={cloudStatus}
           cloudSyncConfigured={cloudSyncConfigured}
           localBackups={localBackups}
+          modelProfiles={modelProfiles}
           onConnectCloud={onConnectCloud}
           onCreateCloudBackup={onCreateCloudBackup}
           onCreateLocalBackup={onCreateLocalBackup}

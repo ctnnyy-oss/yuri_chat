@@ -75,16 +75,19 @@ export function useModelProfiles({ setState, setNotice, getCloudToken }: UseMode
       setModelProfileStatus('正在保存模型配置...')
       const result = await saveModelProfile(token, profile)
       setModelProfiles(result.profiles)
-      setState((currentState) => ({
-        ...currentState,
-        settings: normalizeTrashRetentionSettings({
-          ...currentState.settings,
-          modelProfileId: result.profile.id,
-          model: result.profile.model,
-        }),
-      }))
-      setModelProfileStatus(`已保存并启用：${result.profile.name}`)
-      setNotice('模型配置已保存')
+      const shouldActivate = profile.isDefault !== false
+      if (shouldActivate) {
+        setState((currentState) => ({
+          ...currentState,
+          settings: normalizeTrashRetentionSettings({
+            ...currentState.settings,
+            modelProfileId: result.profile.id,
+            model: result.profile.model,
+          }),
+        }))
+      }
+      setModelProfileStatus(shouldActivate ? `已保存并启用：${result.profile.name}` : `已保存备用档案：${result.profile.name}`)
+      setNotice(shouldActivate ? '模型配置已保存' : '备用模型档案已保存')
     } catch (error) {
       setModelProfileStatus(error instanceof Error ? error.message : '保存模型配置失败')
     } finally {
@@ -99,17 +102,24 @@ export function useModelProfiles({ setState, setNotice, getCloudToken }: UseMode
       const profiles = await deleteModelProfile(token, profileId)
       setModelProfiles(profiles)
       const fallbackProfile = pickFallbackProfile(profiles)
-      setState((currentState) => ({
-        ...currentState,
-        settings:
-          currentState.settings.modelProfileId === profileId
-            ? normalizeTrashRetentionSettings({
-                ...currentState.settings,
-                modelProfileId: fallbackProfile?.id ?? '',
-                model: fallbackProfile?.model ?? currentState.settings.model,
-              })
-            : currentState.settings,
-      }))
+      setState((currentState) => {
+        const deletingChatProfile = currentState.settings.modelProfileId === profileId
+        const deletingTtsProfile = currentState.settings.voice.ttsProfileId === profileId
+        if (!deletingChatProfile && !deletingTtsProfile) return currentState
+
+        return {
+          ...currentState,
+          settings: normalizeTrashRetentionSettings({
+            ...currentState.settings,
+            modelProfileId: deletingChatProfile ? fallbackProfile?.id ?? '' : currentState.settings.modelProfileId,
+            model: deletingChatProfile ? fallbackProfile?.model ?? currentState.settings.model : currentState.settings.model,
+            voice: {
+              ...currentState.settings.voice,
+              ttsProfileId: deletingTtsProfile ? '' : currentState.settings.voice.ttsProfileId,
+            },
+          }),
+        }
+      })
       setModelProfileStatus('模型配置已删除')
       setNotice('模型配置已删除')
     } catch (error) {

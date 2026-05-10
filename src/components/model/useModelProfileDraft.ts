@@ -111,6 +111,10 @@ export function useModelProfileDraft({
     await onSaveModelProfile({ ...draft, name: buildProfileName(draft), isDefault: true, enabled: true })
   }
 
+  async function handleSaveProfileAsSpare() {
+    await onSaveModelProfile({ ...draft, name: buildProfileName(draft), isDefault: false, enabled: true })
+  }
+
   async function handleTestDraft() {
     await onTestModelProfile({ profile: { ...draft, name: buildProfileName(draft) } })
   }
@@ -159,6 +163,7 @@ export function useModelProfileDraft({
     handlePresetChange,
     resetCatalog,
     handleSaveProfile,
+    handleSaveProfileAsSpare,
     handleTestDraft,
     loadProfileIntoDraft,
     modelOptions,

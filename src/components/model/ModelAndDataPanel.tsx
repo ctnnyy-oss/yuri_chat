@@ -301,6 +301,7 @@ export function ModelAndDataPanel({
             onPresetChange={draftController.handlePresetChange}
             onResetCatalog={draftController.resetCatalog}
             onSaveProfile={draftController.handleSaveProfile}
+            onSaveProfileAsSpare={draftController.handleSaveProfileAsSpare}
             onTestDraft={draftController.handleTestDraft}
             selectedPresetId={draftController.selectedPresetId}
           />

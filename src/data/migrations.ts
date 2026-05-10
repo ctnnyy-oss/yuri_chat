@@ -4,7 +4,7 @@ import { normalizeMemories } from '../services/memoryEngine'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { agentRooms, createSeedState } from './seed'
 
-const currentStateVersion = 31
+const currentStateVersion = 32
 const legacyDefaultRoomId = 'room-yuri-nest'
 const currentDefaultRoomId = 'room-yuri-chat'
 
@@ -278,6 +278,7 @@ function normalizeVoiceSettings(value: unknown, fallback: AppState['settings']['
     assistantPlaybackEnabled: source.assistantPlaybackEnabled !== false,
     autoPlayAssistantVoice: Boolean(source.autoPlayAssistantVoice),
     provider: source.provider === 'browser' ? 'browser' : 'openai-compatible',
+    ttsProfileId: normalizeShortText(source.ttsProfileId, fallback.ttsProfileId, 120),
     ttsModel: normalizeShortText(source.ttsModel, fallback.ttsModel, 120),
     defaultVoiceId: normalizeShortText(source.defaultVoiceId, fallback.defaultVoiceId, 80),
     defaultVoiceLabel: normalizeShortText(source.defaultVoiceLabel, fallback.defaultVoiceLabel, 80),

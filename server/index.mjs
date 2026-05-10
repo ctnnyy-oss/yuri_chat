@@ -40,6 +40,7 @@ import {
   hasApiKey,
   listModelProfiles,
   resolveRuntimeProfileForChat,
+  resolveRuntimeProfileForSpeech,
   resolveRuntimeProfileForModelCatalog,
   resolveRuntimeProfileForTest,
   upsertModelProfile,
@@ -320,7 +321,7 @@ app.post('/api/model/embeddings', requireAccountAuth, async (request, response) 
 
 app.post('/api/voice/speech', requireAccountAuth, chatRateLimiter, async (request, response) => {
   try {
-    const profile = resolveRuntimeProfileForChat(request.body?.settings, request.user)
+    const profile = resolveRuntimeProfileForSpeech(request.body?.settings, request.user)
     const result = await callTextToSpeech(request.body ?? {}, profile)
     response.json({ ok: true, ...result })
   } catch (error) {

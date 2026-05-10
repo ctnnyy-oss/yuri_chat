@@ -97,6 +97,20 @@ export function resolveRuntimeProfileForChat(settings, account) {
   return null
 }
 
+export function resolveRuntimeProfileForSpeech(settings, account) {
+  const dataUserId = normalizeDataUserId(getAccountUserId(account))
+  const selectedProfileId = settings?.voice?.ttsProfileId
+  if (selectedProfileId && selectedProfileId !== serverEnvProfileId) {
+    return storedProfileToRuntime(readStoredModelProfile(selectedProfileId, dataUserId))
+  }
+
+  if (selectedProfileId === serverEnvProfileId) {
+    throw new Error('语音模型也需要在模型页保存自己的 API Key。')
+  }
+
+  return resolveRuntimeProfileForChat(settings, account)
+}
+
 export function resolveRuntimeProfileForTest(input, account) {
   const dataUserId = normalizeDataUserId(getAccountUserId(account))
   if (input.profile) {

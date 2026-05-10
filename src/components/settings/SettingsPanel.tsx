@@ -13,7 +13,7 @@ import {
   Type,
   Volume2,
 } from 'lucide-react'
-import type { AccentTheme, AppSettings, LocalBackupSummary } from '../../domain/types'
+import type { AccentTheme, AppSettings, LocalBackupSummary, ModelProfileSummary } from '../../domain/types'
 import type { CloudBackupSummary, CloudMetadata } from '../../services/cloudSync'
 import { RetentionButton, WorkspaceTitle } from '../memory/atoms'
 import {
@@ -36,6 +36,7 @@ interface SettingsPanelProps {
   cloudStatus: string
   cloudSyncConfigured: boolean
   localBackups: LocalBackupSummary[]
+  modelProfiles: ModelProfileSummary[]
   onConnectCloud: () => void
   onCreateCloudBackup: () => void
   onCreateLocalBackup: () => void
@@ -60,6 +61,7 @@ export function SettingsPanel({
   cloudStatus,
   cloudSyncConfigured,
   localBackups,
+  modelProfiles,
   onConnectCloud,
   onCreateCloudBackup,
   onCreateLocalBackup,
@@ -83,6 +85,22 @@ export function SettingsPanel({
   const hiddenLocalBackupCount = Math.max(0, localBackups.length - visibleLocalBackups.length)
   const selectedAccentTheme =
     settings.accentTheme === 'white' || settings.accentTheme === 'custom' ? settings.accentTheme : 'sakura'
+  const activeChatProfile = modelProfiles.find((profile) => profile.id === settings.modelProfileId)
+  const openAiCompatibleProfiles = modelProfiles.filter((profile) => profile.kind === 'openai-compatible')
+  const selectedTtsProfile = openAiCompatibleProfiles.find((profile) => profile.id === settings.voice.ttsProfileId)
+  const selectedTtsProfileId = selectedTtsProfile ? settings.voice.ttsProfileId : ''
+  const voiceModelLabel =
+    settings.voice.provider === 'browser'
+      ? '浏览器朗读'
+      : selectedTtsProfile?.name ?? activeChatProfile?.name ?? '沿用聊天模型档案'
+  const voiceModelDetail =
+    settings.voice.provider === 'browser'
+      ? '不请求云端 TTS，使用当前设备自带声音'
+      : selectedTtsProfile
+        ? `${selectedTtsProfile.model} / ${selectedTtsProfile.baseUrl}`
+        : activeChatProfile
+          ? `${activeChatProfile.model} / ${activeChatProfile.baseUrl}`
+          : '模型页还没有可用档案'
 
   return (
     <>
@@ -230,69 +248,27 @@ export function SettingsPanel({
           </label>
         </div>
 
-        <div className="settings-section">
+        <div className="settings-section voice-settings-section">
           <div className="settings-section-title">
             <Volume2 size={18} />
             <span>语音功能</span>
           </div>
-          <label className="toggle-row">
-            <span>
-              <strong>语音输入</strong>
-              <small>聊天里可以录音发送，也会尽量转成文字给角色理解</small>
-            </span>
-            <input
-              checked={settings.voice.inputEnabled}
-              onChange={(event) =>
-                onUpdateSettings({ ...settings, voice: { ...settings.voice, inputEnabled: event.target.checked } })
-              }
-              type="checkbox"
-            />
-          </label>
-          <label className="toggle-row">
-            <span>
-              <strong>角色语音播放</strong>
-              <small>角色文字回复旁会出现朗读按钮；供应商不支持 TTS 时可自动退回浏览器朗读</small>
-            </span>
-            <input
-              checked={settings.voice.assistantPlaybackEnabled}
-              onChange={(event) =>
-                onUpdateSettings({
-                  ...settings,
-                  voice: { ...settings.voice, assistantPlaybackEnabled: event.target.checked },
-                })
-              }
-              type="checkbox"
-            />
-          </label>
-          <label className="toggle-row">
-            <span>
-              <strong>回复后自动播放</strong>
-              <small>打开后角色回复会直接出声；语音通话中会自动播放最新回复</small>
-            </span>
-            <input
-              checked={settings.voice.autoPlayAssistantVoice}
-              onChange={(event) =>
-                onUpdateSettings({
-                  ...settings,
-                  voice: { ...settings.voice, autoPlayAssistantVoice: event.target.checked },
-                })
-              }
-              type="checkbox"
-            />
-          </label>
-          <label className="toggle-row">
-            <span>
-              <strong>语音通话入口</strong>
-              <small>聊天顶栏显示电话按钮；当前是回合式通话，后续可升级 Realtime</small>
-            </span>
-            <input
-              checked={settings.voice.callModeEnabled}
-              onChange={(event) =>
-                onUpdateSettings({ ...settings, voice: { ...settings.voice, callModeEnabled: event.target.checked } })
-              }
-              type="checkbox"
-            />
-          </label>
+
+          <div className="voice-model-layout">
+            <article className="voice-model-card">
+              <span className="voice-model-kicker">LLM</span>
+              <strong>聊天模型</strong>
+              <small>{activeChatProfile?.name ?? '模型页选择的当前聊天档案'}</small>
+              <p>{activeChatProfile ? `${activeChatProfile.model} / ${activeChatProfile.baseUrl}` : '还没有选定聊天模型档案'}</p>
+            </article>
+            <article className="voice-model-card tts-card">
+              <span className="voice-model-kicker">TTS</span>
+              <strong>语音模型</strong>
+              <small>{voiceModelLabel}</small>
+              <p>{voiceModelDetail}</p>
+            </article>
+          </div>
+
           <div className="voice-provider-grid">
             <button
               className={settings.voice.provider === 'openai-compatible' ? 'active' : ''}
@@ -311,42 +287,83 @@ export function SettingsPanel({
               浏览器朗读
             </button>
           </div>
+
           <label className="text-control">
             <span>
-              <strong>TTS 模型</strong>
-              <small>OpenAI 兼容接口常见值：gpt-4o-mini-tts；中转站需支持 /audio/speech</small>
+              <strong>TTS 档案</strong>
+              <small>独立选择语音供应商；不选时沿用聊天模型档案</small>
             </span>
-            <input
+            <select
+              disabled={settings.voice.provider === 'browser'}
               onChange={(event) =>
-                onUpdateSettings({ ...settings, voice: { ...settings.voice, ttsModel: event.target.value } })
+                onUpdateSettings({ ...settings, voice: { ...settings.voice, ttsProfileId: event.target.value } })
               }
-              value={settings.voice.ttsModel}
-            />
+              value={selectedTtsProfileId}
+            >
+              <option value="">沿用当前聊天模型档案</option>
+              {openAiCompatibleProfiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name} / {profile.model}
+                </option>
+              ))}
+            </select>
           </label>
-          <label className="text-control">
-            <span>
-              <strong>默认音色 ID</strong>
-              <small>没有为角色单独配置音色时使用；也可填供应商里的自定义 voice_id</small>
-            </span>
-            <input
-              onChange={(event) =>
-                onUpdateSettings({ ...settings, voice: { ...settings.voice, defaultVoiceId: event.target.value } })
-              }
-              value={settings.voice.defaultVoiceId}
-            />
-          </label>
-          <label className="text-control">
-            <span>
-              <strong>默认音色名</strong>
-              <small>只用于界面显示</small>
-            </span>
-            <input
-              onChange={(event) =>
-                onUpdateSettings({ ...settings, voice: { ...settings.voice, defaultVoiceLabel: event.target.value } })
-              }
-              value={settings.voice.defaultVoiceLabel}
-            />
-          </label>
+
+          <div className="voice-config-grid">
+            <label className="text-control">
+              <span>
+                <strong>TTS 模型</strong>
+                <small>OpenAI 兼容常见值：gpt-4o-mini-tts</small>
+              </span>
+              <input
+                onChange={(event) =>
+                  onUpdateSettings({ ...settings, voice: { ...settings.voice, ttsModel: event.target.value } })
+                }
+                value={settings.voice.ttsModel}
+              />
+            </label>
+            <label className="text-control">
+              <span>
+                <strong>默认音色 ID</strong>
+                <small>也可填供应商里的自定义 voice_id</small>
+              </span>
+              <input
+                onChange={(event) =>
+                  onUpdateSettings({ ...settings, voice: { ...settings.voice, defaultVoiceId: event.target.value } })
+                }
+                value={settings.voice.defaultVoiceId}
+              />
+            </label>
+            <label className="text-control">
+              <span>
+                <strong>默认音色名</strong>
+                <small>只用于界面显示</small>
+              </span>
+              <input
+                onChange={(event) =>
+                  onUpdateSettings({ ...settings, voice: { ...settings.voice, defaultVoiceLabel: event.target.value } })
+                }
+                value={settings.voice.defaultVoiceLabel}
+              />
+            </label>
+            <label className="range-control">
+              <span>
+                <strong>语速</strong>
+                <small>{settings.voice.speechRate.toFixed(2)}x</small>
+              </span>
+              <input
+                max="1.35"
+                min="0.65"
+                onChange={(event) =>
+                  onUpdateSettings({ ...settings, voice: { ...settings.voice, speechRate: Number(event.target.value) } })
+                }
+                step="0.05"
+                type="range"
+                value={settings.voice.speechRate}
+              />
+            </label>
+          </div>
+
           <label className="text-control">
             <span>
               <strong>默认说话风格</strong>
@@ -359,38 +376,83 @@ export function SettingsPanel({
               value={settings.voice.defaultStylePrompt}
             />
           </label>
-          <label className="range-control">
-            <span>
-              <strong>语速</strong>
-              <small>{settings.voice.speechRate.toFixed(2)}x</small>
-            </span>
-            <input
-              max="1.35"
-              min="0.65"
-              onChange={(event) =>
-                onUpdateSettings({ ...settings, voice: { ...settings.voice, speechRate: Number(event.target.value) } })
-              }
-              step="0.05"
-              type="range"
-              value={settings.voice.speechRate}
-            />
-          </label>
-          <label className="toggle-row">
-            <span>
-              <strong>失败时浏览器朗读</strong>
-              <small>如果中转站暂不支持 TTS，仍然能听到角色声音，只是音色不克隆</small>
-            </span>
-            <input
-              checked={settings.voice.browserFallbackEnabled}
-              onChange={(event) =>
-                onUpdateSettings({
-                  ...settings,
-                  voice: { ...settings.voice, browserFallbackEnabled: event.target.checked },
-                })
-              }
-              type="checkbox"
-            />
-          </label>
+
+          <div className="voice-toggle-grid">
+            <label className="toggle-row">
+              <span>
+                <strong>语音输入</strong>
+                <small>录音消息会尽量转写给角色理解</small>
+              </span>
+              <input
+                checked={settings.voice.inputEnabled}
+                onChange={(event) =>
+                  onUpdateSettings({ ...settings, voice: { ...settings.voice, inputEnabled: event.target.checked } })
+                }
+                type="checkbox"
+              />
+            </label>
+            <label className="toggle-row">
+              <span>
+                <strong>角色语音播放</strong>
+                <small>角色文字回复旁显示朗读按钮</small>
+              </span>
+              <input
+                checked={settings.voice.assistantPlaybackEnabled}
+                onChange={(event) =>
+                  onUpdateSettings({
+                    ...settings,
+                    voice: { ...settings.voice, assistantPlaybackEnabled: event.target.checked },
+                  })
+                }
+                type="checkbox"
+              />
+            </label>
+            <label className="toggle-row">
+              <span>
+                <strong>回复后自动播放</strong>
+                <small>语音通话中会自动播放最新回复</small>
+              </span>
+              <input
+                checked={settings.voice.autoPlayAssistantVoice}
+                onChange={(event) =>
+                  onUpdateSettings({
+                    ...settings,
+                    voice: { ...settings.voice, autoPlayAssistantVoice: event.target.checked },
+                  })
+                }
+                type="checkbox"
+              />
+            </label>
+            <label className="toggle-row">
+              <span>
+                <strong>语音通话入口</strong>
+                <small>聊天顶栏显示电话按钮</small>
+              </span>
+              <input
+                checked={settings.voice.callModeEnabled}
+                onChange={(event) =>
+                  onUpdateSettings({ ...settings, voice: { ...settings.voice, callModeEnabled: event.target.checked } })
+                }
+                type="checkbox"
+              />
+            </label>
+            <label className="toggle-row">
+              <span>
+                <strong>失败时浏览器朗读</strong>
+                <small>TTS 不通时仍能听到声音</small>
+              </span>
+              <input
+                checked={settings.voice.browserFallbackEnabled}
+                onChange={(event) =>
+                  onUpdateSettings({
+                    ...settings,
+                    voice: { ...settings.voice, browserFallbackEnabled: event.target.checked },
+                  })
+                }
+                type="checkbox"
+              />
+            </label>
+          </div>
           <div className="voice-safety-note">
             <ShieldCheck size={17} />
             <span>音色克隆只接入已授权的供应商音色 ID；现实人物、亲友、角色声线都需要本人或权利方同意。</span>

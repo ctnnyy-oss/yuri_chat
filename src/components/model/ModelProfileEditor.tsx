@@ -15,6 +15,7 @@ interface ModelProfileEditorProps {
   onPresetChange: (presetId: string) => void
   onResetCatalog: () => void
   onSaveProfile: () => void
+  onSaveProfileAsSpare: () => void
   onTestDraft: () => void
   onDraftChange: Dispatch<SetStateAction<ModelProfileInput>>
   selectedPresetId: string
@@ -32,6 +33,7 @@ export function ModelProfileEditor({
   onPresetChange,
   onResetCatalog,
   onSaveProfile,
+  onSaveProfileAsSpare,
   onTestDraft,
   onDraftChange,
   selectedPresetId,
@@ -127,13 +129,17 @@ export function ModelProfileEditor({
 
       <small className="cloud-status-line">{catalogStatus || modelStatusText}</small>
       <small className="model-warning">
-        平台只是帮妹妹填默认地址，不会内置密钥；新配置必须有 Base URL 和 API Key，保存后下次直接选择。
+        平台只是帮妹妹填默认地址，不会内置密钥。聊天模型用“保存并启用”；只给语音用的 TTS 供应商用“仅保存档案”，再到设置里选择。
       </small>
 
       <div className="settings-actions">
         <button className="secondary-action" disabled={!canUseDraft} onClick={onSaveProfile} type="button">
           <Save size={15} />
           保存并启用
+        </button>
+        <button disabled={!canUseDraft} onClick={onSaveProfileAsSpare} type="button">
+          <Save size={15} />
+          仅保存档案
         </button>
         <button disabled={!canUseDraft} onClick={onTestDraft} type="button">
           <PlugZap size={15} />

@@ -388,7 +388,7 @@ export function createSeedState(): AppState {
   }))
 
   return {
-    version: 31,
+    version: 32,
     activeCharacterId: characters[0].id,
     characters,
     conversations,
@@ -435,6 +435,7 @@ export function createSeedState(): AppState {
         assistantPlaybackEnabled: true,
         autoPlayAssistantVoice: false,
         provider: 'openai-compatible',
+        ttsProfileId: '',
         ttsModel: 'gpt-4o-mini-tts',
         defaultVoiceId: 'coral',
         defaultVoiceLabel: 'Coral',

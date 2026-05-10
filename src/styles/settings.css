@@ -745,6 +745,76 @@
   width: 120px;
 }
 
+.voice-settings-section {
+  gap: 14px;
+}
+
+.voice-model-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.voice-model-card {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--rose) 9%, var(--feature-field, var(--panel))),
+      var(--feature-card, var(--panel))
+    );
+  padding: 14px 16px;
+  box-shadow: var(--shadow-xs);
+}
+
+.voice-model-card.tts-card {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, #b8eed8 28%, var(--feature-field, var(--panel))),
+      var(--feature-card, var(--panel))
+    );
+}
+
+.voice-model-kicker {
+  width: fit-content;
+  border-radius: var(--radius-full);
+  background: var(--middle-active, var(--pink-100));
+  color: var(--pink-700);
+  font-size: 10.5px;
+  font-weight: 950;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+}
+
+.tts-card .voice-model-kicker {
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+}
+
+.voice-model-card strong {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.voice-model-card small,
+.voice-model-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.voice-model-card p {
+  color: var(--ink-secondary);
+}
+
 .voice-provider-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -772,6 +842,31 @@
   background: var(--middle-active, var(--pink-100));
   color: var(--pink-700);
   box-shadow: inset 4px 0 0 var(--pink-500);
+}
+
+.voice-config-grid,
+.voice-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.voice-config-grid .text-control,
+.voice-config-grid .range-control,
+.voice-toggle-grid .toggle-row {
+  min-width: 0;
+}
+
+.voice-config-grid .range-control {
+  gap: var(--space-md);
+}
+
+.voice-toggle-grid .toggle-row {
+  padding: 11px 14px;
+}
+
+.voice-toggle-grid .toggle-row:last-child {
+  grid-column: 1 / -1;
 }
 
 .voice-safety-note {
@@ -1150,5 +1245,15 @@
 @media (max-width: 760px) {
   .model-diagnostic-list {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .voice-model-layout,
+  .voice-config-grid,
+  .voice-toggle-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .voice-toggle-grid .toggle-row:last-child {
+    grid-column: auto;
   }
 }

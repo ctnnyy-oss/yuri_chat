@@ -173,6 +173,7 @@ export interface VoiceSettings {
   assistantPlaybackEnabled: boolean
   autoPlayAssistantVoice: boolean
   provider: VoiceProviderKind
+  ttsProfileId: string
   ttsModel: string
   defaultVoiceId: string
   defaultVoiceLabel: string
