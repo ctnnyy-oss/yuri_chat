@@ -351,6 +351,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
           requestReply: requestAssistantReply,
         })
         if (!directTurn.message) {
+          lastDirectProactiveAttemptKeyRef.current = getConversationMessageKey(nextConversation.messages)
           setState(nextStateWithUsage)
           setNotice(directTurn.skippedReason ?? `${character.name}暂时没有回复`)
           return

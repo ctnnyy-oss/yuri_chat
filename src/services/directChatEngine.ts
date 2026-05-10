@@ -46,6 +46,15 @@ export async function generateDirectChatReply({
   settings,
   requestReply,
 }: GenerateDirectChatReplyInput): Promise<DirectChatTurnResult> {
+  if (shouldRespectNoReplyHint(userMessage.content)) {
+    return {
+      message: null,
+      silent: true,
+      callCount: 0,
+      skippedReason: `${character.name}已读了这句，没有继续打扰。`,
+    }
+  }
+
   const replyBundle = buildDirectPromptBundle({
     baseBundle: bundle,
     character,
@@ -337,6 +346,12 @@ function computeResponseDrive(
   if (recentAssistantReplies >= 3 && !asksQuestion && !workHook) drive -= 12
 
   return clampInteger(drive, 0, 100, 62)
+}
+
+function shouldRespectNoReplyHint(text: string): boolean {
+  const normalized = text.replace(/\s+/g, '')
+  if (!/不用回|不必回|可以不回|不用理|别回|不用接|不用回复|只是测试.*已读不回|已读不回逻辑/.test(normalized)) return false
+  return !/救命|难受|害怕|紧急|必须|一定要|帮我|怎么|为什么|能不能|可以吗|[?？]/.test(normalized)
 }
 
 function computeProactiveDrive(character: CharacterCard, conversation: ConversationState): number {

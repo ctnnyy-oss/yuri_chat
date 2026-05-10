@@ -40,6 +40,7 @@ export function getGroupProactiveDelayMs(conversationId: string, messages: ChatM
 export function getDirectProactiveDelayMs(conversationId: string, messages: ChatMessage[]): number {
   const latestMessage = messages.at(-1)
   const pulse = seededUnit(`${conversationId}:${messages.length}:${latestMessage?.id ?? 'empty'}:direct-proactive-delay`)
+  if (latestMessage?.role === 'assistant') return 60_000 + Math.round(pulse * 60_000)
   return 16_000 + Math.round(pulse * 24_000)
 }
 
