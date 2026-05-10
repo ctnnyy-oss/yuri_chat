@@ -281,6 +281,22 @@ for (const testCase of cases) {
 const score = passed / cases.length
 console.log(`Memory eval score: ${passed}/${cases.length} (${Math.round(score * 100)}%)`)
 
+const roleplayContextIds = getActiveMemories(memories, 'Rain keeps tapping on the old shop window. Do you still shelter lost writers?', {
+  characterId: 'custom-roleplay-character',
+  maxItems: 12,
+  recallMode: false,
+}).map((memory) => memory.id)
+const roleplaySuppressesProjectAnchors =
+  !roleplayContextIds.includes('architecture') &&
+  !roleplayContextIds.includes('model-provider') &&
+  !roleplayContextIds.includes('neutral-roadmap')
+if (!roleplaySuppressesProjectAnchors) {
+  console.error('FAIL roleplay context suppresses unrelated project anchors')
+  console.error(`  recalled: ${roleplayContextIds.join(', ')}`)
+} else {
+  console.log('PASS roleplay context suppresses unrelated project anchors')
+}
+
 const maintenanceReport = consolidateMemoryGarden(memories)
 const reflectionCandidate = maintenanceReport.memories.find(
   (memory) => memory.status === 'candidate' && memory.kind === 'reflection' && memory.title.includes('记忆系统'),

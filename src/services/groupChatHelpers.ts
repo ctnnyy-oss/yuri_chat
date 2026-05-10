@@ -186,6 +186,7 @@ export function buildGroupPromptBundle({
   const transcript = buildGroupTranscript(conversationMessages, group, members, userName, settings.maxContextMessages)
   const memberById = new Map(members.map((item) => [item.id, item]))
   const lastSpeakerName = triggerMessage ? getMessageAuthorName(triggerMessage, group, memberById, userName) : ''
+  const latestUserMessage = [...conversationMessages].reverse().find((message) => message.role === 'user')
 
   return {
     characterName: member.name,
@@ -206,6 +207,18 @@ export function buildGroupPromptBundle({
             {
               title: mode === 'proactive-start' ? '最近最后一条消息' : '本轮触发消息',
               content: `${lastSpeakerName}：${triggerMessage.content}`,
+              category: 'summary' as const,
+            },
+          ]
+        : []),
+      ...(latestUserMessage && latestUserMessage.id !== triggerMessage?.id
+        ? [
+            {
+              title: 'Latest user instruction',
+              content: [
+                `${userName}: ${latestUserMessage.content}`,
+                'Honor this over older topic drift. If the user asked to stop or change a topic, do not continue earlier props, actions, or callbacks unless they are mentioned again.',
+              ].join('\n'),
               category: 'summary' as const,
             },
           ]

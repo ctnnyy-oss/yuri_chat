@@ -10,6 +10,9 @@ import {
   isExplicitMemoryQuery,
   formatMemoryForPrompt,
   getMemoryGroupRank,
+  getKeywordOverlap,
+  getMemorySemanticSimilarity,
+  normalizeComparable,
   rehearseMemory,
   nowIso,
 } from './memoryCore'
@@ -57,7 +60,10 @@ export function getActiveMemories(
     .filter((memory) => (recallMode ? isMemoryRecallable(memory) : isMemoryMentionable(memory, query)))
     .filter((memory) => options.includeSensitive || memory.kind === 'taboo' || memory.kind === 'safety' || memory.sensitivity !== 'critical')
 
-  const groups = buildMemoryRetrievalGroups(normalized, query, recallMode)
+  const contextualMemories = normalized.filter((memory) =>
+    recallMode || shouldConsiderMemoryForContext(memory, query, options),
+  )
+  const groups = buildMemoryRetrievalGroups(contextualMemories, query, recallMode)
   const vectorHits = recallMode && shouldUseVectorRecall(query)
     ? getVectorRecallHits(normalized, query, { limit: 8, minSimilarity: 0.12 })
     : []
@@ -66,6 +72,7 @@ export function getActiveMemories(
   const embeddingHitScores = new Map(embeddingHits.map((hit) => [hit.memory.id, hit.similarity]))
   const selected: LongTermMemory[] = normalized
     .filter(isCoreMemoryAnchor)
+    .filter((memory) => shouldIncludeCoreMemoryAnchor(memory, query, recallMode, options))
     .sort((a, b) => scoreMemory(b, query) - scoreMemory(a, query))
     .slice(0, recallMode ? 6 : 4)
   const seen = new Set<string>()
@@ -116,6 +123,52 @@ export function getActiveMemories(
       return firstRank === secondRank ? scoreMemory(b, query) - scoreMemory(a, query) : firstRank - secondRank
     })
     .slice(0, options.maxItems ?? (recallMode ? 18 : 10))
+}
+
+function shouldIncludeCoreMemoryAnchor(
+  memory: LongTermMemory,
+  query: string,
+  recallMode: boolean,
+  options: MemoryRetrievalOptions,
+): boolean {
+  if (memory.kind === 'taboo' || memory.kind === 'safety') return true
+  if (recallMode) return true
+  return shouldConsiderMemoryForContext(memory, query, options)
+}
+
+function shouldConsiderMemoryForContext(
+  memory: LongTermMemory,
+  query: string,
+  options: MemoryRetrievalOptions,
+): boolean {
+  if (memory.kind === 'taboo' || memory.kind === 'safety') return true
+  if (isScopedToCurrentContext(memory, options)) return true
+  return hasStrictMemoryMatch(memory, query)
+}
+
+function isScopedToCurrentContext(memory: LongTermMemory, options: MemoryRetrievalOptions): boolean {
+  const scope = memory.scope
+  if (scope.kind === 'relationship' || scope.kind === 'character_private') {
+    return Boolean(options.characterId && scope.characterId === options.characterId)
+  }
+  if (scope.kind === 'conversation') {
+    return Boolean(options.conversationId && scope.conversationId === options.conversationId)
+  }
+  return false
+}
+
+function hasStrictMemoryMatch(memory: LongTermMemory, query: string): boolean {
+  const trimmedQuery = query.trim()
+  if (!trimmedQuery) return false
+
+  const text = `${memory.title} ${memory.body} ${memory.tags.join(' ')}`
+  const normalizedTitle = normalizeComparable(memory.title)
+  const normalizedQuery = normalizeComparable(trimmedQuery)
+  return (
+    getKeywordOverlap(text, trimmedQuery) > 0 ||
+    getMemorySemanticSimilarity(text, trimmedQuery) >= 0.22 ||
+    (normalizedTitle.length >= 4 && normalizedQuery.includes(normalizedTitle))
+  )
 }
 
 function getRecallSortScore(
