@@ -1,6 +1,13 @@
 // 工具识别器：判断用户消息是否需要触发某个 Agent 工具
 
+import { extractWeatherLocation, isFictionalWeatherLocation } from './detectors/queryParsers.mjs'
 import { hasUrl } from './utils.mjs'
+
+const WEATHER_TRIGGER_PATTERN = /天气|下雨|下雪|气温|温度|冷不冷|热不热|降雨|降水|雨伞|带伞|台风|空气质量/
+const REAL_WEATHER_HINT_PATTERN =
+  /查|看看|看下|搜|问问|想知道|真实|现实|当地|我这里|这边|那边|今天|明天|后天|现在|出门|通勤|上班|上学|学校|带伞|雨伞|天气预报|空气质量|台风/
+const ROLEPLAY_WEATHER_CONTEXT_PATTERN =
+  /旧书店|旧书馆|书店|店里|阁楼|窗外|房间|宿舍|教室|学院|书院|仙门|宗门|魔法学院|城堡|花园|小窝|梦里|文里|故事里|剧情里|场景里|你那里|你那边/
 
 export function shouldUseTimeTool(text) {
   return /几点|当前时间|现在(?:几点|是什么时间|时间)|日期|今天(?:是)?(?:几号|周几|星期几)|明天(?:是)?(?:几号|周几|星期几)|后天(?:是)?(?:几号|周几|星期几)|昨天(?:是)?(?:几号|周几|星期几)|星期几|周几|刚刚(?:几点|多久)|一会儿/.test(text)
@@ -13,7 +20,13 @@ export function shouldUseDateMathTool(text) {
 }
 
 export function shouldUseWeatherTool(text) {
-  return /天气|下雨|下雪|气温|温度|冷不冷|热不热|降雨|降水|雨伞|带伞|台风|空气质量/.test(text)
+  if (!WEATHER_TRIGGER_PATTERN.test(text)) return false
+
+  const location = extractWeatherLocation(text)
+  if (location && !isFictionalWeatherLocation(location)) return true
+  if (ROLEPLAY_WEATHER_CONTEXT_PATTERN.test(text)) return false
+
+  return REAL_WEATHER_HINT_PATTERN.test(text)
 }
 
 export function shouldUseSearchTool(text) {

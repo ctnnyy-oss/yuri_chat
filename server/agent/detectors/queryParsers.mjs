@@ -9,6 +9,9 @@ import {
   truncateToolText,
 } from '../utils.mjs'
 
+const FICTIONAL_WEATHER_LOCATION_PATTERN =
+  /旧书店|旧书馆|书店|店里|阁楼|窗外|房间|宿舍|教室|学院|书院|仙门|宗门|魔法学院|城堡|花园|小窝|梦里|文里|故事里|剧情里|场景里/
+
 export function extractWeatherLocation(text) {
   const known = Object.keys(KNOWN_LOCATION_COORDINATES).find((location) => text.includes(location))
   if (known) return known
@@ -32,7 +35,12 @@ export function cleanLocation(value) {
     .trim()
   if (cleaned.length < 2 || cleaned.length > 18) return ''
   if (/天气|下雨|下雪|气温|温度/.test(cleaned)) return ''
+  if (isFictionalWeatherLocation(cleaned)) return ''
   return cleaned
+}
+
+export function isFictionalWeatherLocation(value) {
+  return FICTIONAL_WEATHER_LOCATION_PATTERN.test(String(value || '').trim())
 }
 
 export function extractWeatherDayOffset(text) {

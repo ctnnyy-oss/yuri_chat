@@ -8,7 +8,7 @@ import {
   shouldRequireModelAuth,
 } from './auth.mjs'
 import { prepareAgentBundle } from './agentTools.mjs'
-import { shouldUseSearchTool, shouldUseTimeTool } from './agent/toolDetectors.mjs'
+import { shouldUseSearchTool, shouldUseTimeTool, shouldUseWeatherTool } from './agent/toolDetectors.mjs'
 import { CloudRevisionConflictError, closeCloudDatabaseForTests, readSnapshot, saveSnapshot } from './cloudStore.mjs'
 import { getModelSecretConfigurationIssue } from './modelProfiles.mjs'
 
@@ -318,6 +318,22 @@ function runDetectorRegression() {
     {
       name: 'tonight in creative phrasing does not require clock',
       run: () => !shouldUseTimeTool('如果妹妹今晚写百合卡住，你会怎么把她接住？'),
+    },
+    {
+      name: 'fictional roleplay rain does not call weather',
+      run: () => !shouldUseWeatherTool('今天旧书店下雨了吗？'),
+    },
+    {
+      name: 'character window rain does not call weather',
+      run: () => !shouldUseWeatherTool('你那边窗外是不是下雨了？'),
+    },
+    {
+      name: 'real city rain still calls weather',
+      run: () => shouldUseWeatherTool('姐姐查一下成都今天会不会下雨'),
+    },
+    {
+      name: 'plain real weather question still asks for location',
+      run: () => shouldUseWeatherTool('今天下雨了吗？'),
     },
   ]
 
