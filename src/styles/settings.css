@@ -324,7 +324,7 @@
 @media (min-width: 1180px) {
   .app-shell.compact-mode .settings-page-stack {
     grid-template-columns: minmax(0, 1fr);
-    max-width: 1520px;
+    max-width: none;
   }
 
   .app-shell.compact-mode .settings-top-grid {

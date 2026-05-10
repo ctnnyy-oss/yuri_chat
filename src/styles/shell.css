@@ -216,7 +216,7 @@
 .detail-workspace > .detail-actions  { margin-bottom: var(--space-md); }
 
 .app-shell.compact-mode .detail-workspace {
-  padding: clamp(20px, 2vw, 34px) clamp(22px, 2.4vw, 48px) 60px;
+  padding: clamp(18px, 1.6vw, 28px) clamp(10px, 1vw, 18px) 60px;
 }
 
 .app-shell.compact-mode .detail-workspace > .workspace-title,
