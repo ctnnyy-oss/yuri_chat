@@ -183,6 +183,7 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
         name: groupName,
         relation: '群聊',
         mood: groupText,
+        groupMemberIds: selectedMembers.map((item) => item.id),
         persona: `这是一个本地群聊：${groupName}。成员：${memberNames.length > 0 ? memberNames.join('、') : '暂未指定'}。聊天时保持每个角色的性格边界，不要把多人关系写串。`,
       })
     handleSelectCharacter(groupId)

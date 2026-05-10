@@ -277,6 +277,7 @@ export function ChatPhone({
               key={message.id}
               message={message}
               character={character}
+              characters={characters}
               previousMessage={messages[index - 1] ?? null}
               showDevTrace={settings.showDevTrace}
               memoryTrace={message.role === 'assistant' ? traceByAssistantMessageId.get(message.id) : undefined}

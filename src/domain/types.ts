@@ -27,6 +27,12 @@ export interface ChatMessage {
   createdAt: string
   memoryCaptured?: boolean
   agent?: AgentRunSummary
+  authorCharacterId?: string
+  authorName?: string
+  authorAvatar?: string
+  authorAccent?: string
+  groupTurnId?: string
+  groupReplyState?: 'reply' | 'silent'
 }
 
 export interface CharacterCard {
@@ -43,6 +49,7 @@ export interface CharacterCard {
   greeting: string
   personaSource?: string
   personaProfile?: CharacterPersonaProfile
+  groupMemberIds?: string[]
 }
 
 export interface CharacterPersonaProfile {
@@ -127,6 +134,8 @@ export interface AppSettings {
   autoMemoryEnabled: boolean
   memoryConfidenceFloor: number
   showDevTrace: boolean
+  groupChatHumanMode: boolean
+  groupChatMaxAutoReplies: number
 }
 
 export interface AppState {

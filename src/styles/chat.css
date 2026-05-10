@@ -221,6 +221,15 @@
   color: var(--ink);
 }
 
+.message-author-name {
+  display: block;
+  margin: 0 0 2px;
+  color: color-mix(in srgb, var(--rose-strong, var(--pink-600)) 62%, var(--muted));
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
 /* ── 气泡小尖角 (CSS 三角) ── */
 
 .message-assistant::before {

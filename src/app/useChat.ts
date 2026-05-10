@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { AppState, CharacterCard, ConversationState } from '../domain/types'
 import { requestAssistantReply } from '../services/chatApi'
 import { getSavedCloudToken, isCloudSyncConfigured } from '../services/cloudSync'
+import { generateGroupChatReplies, isGroupCharacter } from '../services/groupChatEngine'
 import {
   getMemoryEmbeddingInput,
   upsertMemoryEmbeddingRecordsFromVectors,
@@ -118,6 +119,44 @@ export function useChat({ state, setState, setNotice, character, conversation }:
     )
 
     try {
+      if (isGroupCharacter(character)) {
+        const groupTurn = await generateGroupChatReplies({
+          state: nextStateWithUsage,
+          group: character,
+          conversation: nextConversation,
+          userMessage,
+          requestReply: requestAssistantReply,
+        })
+        if (groupTurn.replies.length === 0) {
+          setState(nextStateWithUsage)
+          setNotice(groupTurn.skippedReason ?? '群里暂时安静了一下')
+          return
+        }
+
+        const firstReply = groupTurn.replies[0]
+        const repliedConversation = updateConversationSummary({
+          ...nextConversation,
+          messages: [...nextConversation.messages, ...groupTurn.replies],
+          updatedAt: nowIso(),
+        })
+        setState(
+          upsertConversation(
+            {
+              ...nextStateWithUsage,
+              memoryUsageLogs: attachAssistantToMemoryUsageLog(
+                nextStateWithUsage.memoryUsageLogs,
+                usageLog.id,
+                firstReply.id,
+              ),
+            },
+            repliedConversation,
+          ),
+        )
+        const silentHint = groupTurn.silentCount > 0 ? `（${groupTurn.silentCount} 位看过但没插话）` : ''
+        setNotice(`群里 ${groupTurn.replies.length} 位成员接话${silentHint}`)
+        return
+      }
+
       const result = await requestAssistantReply(requestBundle, nextState.settings)
       const assistantMessage = {
         ...createMessage('assistant', result.reply),

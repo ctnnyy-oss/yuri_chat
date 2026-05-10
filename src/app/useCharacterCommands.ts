@@ -15,6 +15,7 @@ interface CharacterDraftInput {
   relation: string
   mood: string
   persona: string
+  groupMemberIds?: string[]
 }
 
 export function useCharacterCommands({ state, setState, setNotice }: UseCharacterCommandsDeps) {
@@ -36,6 +37,7 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
     const persona = input.persona.trim() || '还没有导入人设。'
     const personaInput = { name, relation, mood, persona }
     const characterId = createId('character')
+    const groupMemberIds = dedupeIds(input.groupMemberIds).slice(0, 16)
     const character: CharacterCard = {
       id: characterId,
       name,
@@ -45,6 +47,7 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
       accent: '#ef9ac6',
       relationship: relation,
       mood,
+      groupMemberIds: groupMemberIds.length > 0 ? groupMemberIds : undefined,
       tags: ['自定义角色', relation, name],
       systemPrompt: buildCharacterSystemPrompt(personaInput),
       personaSource: persona,
@@ -169,4 +172,9 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
     handleUpdateCharacter,
     handleDeleteCharacter,
   }
+}
+
+function dedupeIds(ids: string[] | undefined): string[] {
+  if (!Array.isArray(ids)) return []
+  return [...new Set(ids.map((id) => id.trim()).filter(Boolean))]
 }

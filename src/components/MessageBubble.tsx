@@ -6,6 +6,7 @@ import type { MessageMemoryTrace } from '../services/memoryTrace'
 interface MessageBubbleProps {
   message: ChatMessage
   character: CharacterCard
+  characters?: CharacterCard[]
   previousMessage: ChatMessage | null
   showDevTrace: boolean
   memoryTrace?: MessageMemoryTrace
@@ -18,14 +19,21 @@ export function MessageBubble({
   memoryTrace,
   message,
   character,
+  characters,
   previousMessage,
   showDevTrace,
   onMemoryFeedback,
 }: MessageBubbleProps) {
   const content = formatDisplayText(message.content)
   const isUser = message.role === 'user'
-  const isSameRole = previousMessage?.role === message.role
-  const showAvatar = !isSameRole
+  const assistantCharacter = !isUser && message.authorCharacterId
+    ? characters?.find((item) => item.id === message.authorCharacterId)
+    : undefined
+  const assistantName = message.authorName ?? assistantCharacter?.name ?? character.name
+  const assistantAvatar = message.authorAvatar ?? assistantCharacter?.avatar ?? character.avatar
+  const assistantAccent = message.authorAccent ?? assistantCharacter?.accent ?? character.accent
+  const isGroupAssistant = !isUser && Boolean(message.authorCharacterId || message.authorName)
+  const showAvatar = getMessageIdentity(previousMessage, character) !== getMessageIdentity(message, character)
   const showTimeSeparator = shouldShowTimeSeparator(previousMessage, message)
 
   return (
@@ -38,11 +46,12 @@ export function MessageBubble({
       <div className={`chat-row ${isUser ? 'chat-row-user' : 'chat-row-assistant'}`}>
         <span
           className="chat-row-avatar"
-          style={{ '--avatar-accent': isUser ? 'var(--pink-400)' : character.accent, visibility: showAvatar ? 'visible' : 'hidden' } as CSSProperties}
+          style={{ '--avatar-accent': isUser ? 'var(--pink-400)' : assistantAccent, visibility: showAvatar ? 'visible' : 'hidden' } as CSSProperties}
         >
-          {isUser ? '我' : character.avatar}
+          {isUser ? '我' : assistantAvatar}
         </span>
         <article className={`message message-${message.role}`}>
+          {isGroupAssistant && showAvatar && <strong className="message-author-name">{assistantName}</strong>}
           <p>{content}</p>
           {showDevTrace && message.agent && <AgentTrace trace={message.agent} />}
           {showDevTrace && memoryTrace && <MemoryTrace onMemoryFeedback={onMemoryFeedback} trace={memoryTrace} />}
@@ -50,6 +59,12 @@ export function MessageBubble({
       </div>
     </>
   )
+}
+
+function getMessageIdentity(message: ChatMessage | null, character: CharacterCard): string {
+  if (!message) return ''
+  if (message.role === 'user') return 'user'
+  return message.authorCharacterId ?? message.authorName ?? character.id
 }
 
 function shouldShowTimeSeparator(prev: ChatMessage | null, current: ChatMessage): boolean {

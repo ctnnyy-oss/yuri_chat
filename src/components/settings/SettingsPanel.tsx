@@ -185,6 +185,33 @@ export function SettingsPanel({
               type="checkbox"
             />
           </label>
+          <label className="toggle-row">
+            <span>
+              <strong>拟真群聊响应</strong>
+              <small>群成员会各自判断是否接话；成员越多，模型消耗越高</small>
+            </span>
+            <input
+              checked={settings.groupChatHumanMode}
+              onChange={(event) => onUpdateSettings({ ...settings, groupChatHumanMode: event.target.checked })}
+              type="checkbox"
+            />
+          </label>
+          <label className="range-control">
+            <span>
+              <strong>每轮最多接话人数</strong>
+              <small>{settings.groupChatMaxAutoReplies} 位</small>
+            </span>
+            <input
+              max="4"
+              min="1"
+              onChange={(event) =>
+                onUpdateSettings({ ...settings, groupChatMaxAutoReplies: Number(event.target.value) })
+              }
+              step="1"
+              type="range"
+              value={settings.groupChatMaxAutoReplies}
+            />
+          </label>
         </div>
 
         <div className="settings-section">
