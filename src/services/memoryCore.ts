@@ -322,6 +322,40 @@ export function serializeMemoryScope(scope: MemoryScope): string {
 
 // ============ 冲突检测工具 ============
 
+const genericMemoryTopicTokens = new Set([
+  '妹妹',
+  '姐姐',
+  '百合',
+  '记忆',
+  '角色',
+  '聊天',
+  '项目',
+  '规则',
+  '事件',
+  '稳定',
+  '事实',
+  '当前',
+  '全局',
+  '用户',
+  '手动',
+  '整理',
+  '试玩',
+  '继续',
+  '希望',
+  '不要',
+  '可以',
+  '如果',
+  '作为',
+  '长期',
+  '未来',
+  '方便',
+  '今晚',
+  '一句',
+  '回答',
+  '生效',
+  '来源',
+])
+
 export function hasOppositePreference(first: LongTermMemory, second: LongTermMemory): boolean {
   if (!areMemoriesTopicallyRelated(first, second)) return false
 
@@ -336,10 +370,48 @@ export function hasOppositePreference(first: LongTermMemory, second: LongTermMem
 function areMemoriesTopicallyRelated(first: LongTermMemory, second: LongTermMemory): boolean {
   const firstText = `${first.title} ${first.body} ${first.tags.join(' ')}`
   const secondText = `${second.title} ${second.body} ${second.tags.join(' ')}`
+  const specificTopicOverlap = getSpecificTopicOverlap(first, second)
   const keywordOverlap = getKeywordOverlap(firstText, secondText)
   const semanticSimilarity = getMemorySemanticSimilarity(firstText, secondText)
 
-  return keywordOverlap >= 2 || semanticSimilarity >= 0.42
+  return specificTopicOverlap >= 1 && (keywordOverlap >= 2 || semanticSimilarity >= 0.42)
+}
+
+function getSpecificTopicOverlap(first: LongTermMemory, second: LongTermMemory): number {
+  const firstTopics = getSpecificTopicTokens(first)
+  const secondTopics = getSpecificTopicTokens(second)
+  let overlap = 0
+
+  firstTopics.forEach((topic) => {
+    if (secondTopics.has(topic)) overlap += 1
+  })
+
+  return overlap
+}
+
+function getSpecificTopicTokens(memory: LongTermMemory): Set<string> {
+  const tokens = new Set<string>()
+  const rawText = `${memory.title} ${memory.body} ${memory.tags.join(' ')}`.toLocaleLowerCase()
+  const chunks = rawText.match(/[a-z0-9]{2,}|\p{Script=Han}{2,}/gu) ?? []
+
+  chunks.forEach((chunk) => {
+    addSpecificTopic(tokens, chunk)
+
+    if (/^\p{Script=Han}+$/u.test(chunk)) {
+      for (let size = 2; size <= 4; size += 1) {
+        for (let index = 0; index <= chunk.length - size; index += 1) {
+          addSpecificTopic(tokens, chunk.slice(index, index + size))
+        }
+      }
+    }
+  })
+
+  return tokens
+}
+
+function addSpecificTopic(tokens: Set<string>, token: string) {
+  if (token.length < 2 || genericMemoryTopicTokens.has(token)) return
+  tokens.add(token)
 }
 
 function getPolarity(text: string): 'positive' | 'negative' | 'neutral' {
