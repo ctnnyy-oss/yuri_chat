@@ -145,12 +145,12 @@ function buildSummary(input: {
   lowConfidenceCount: number
 }): MemoryGuardianSummary {
   const penalty =
-    input.reviewCount * 6 +
-    input.candidateCount * 4 +
-    input.conflictCount * 8 +
-    input.missingSourceCount * 3 +
-    input.lowConfidenceCount * 5 +
-    input.workingCount * 2
+    Math.min(input.reviewCount * 3, 18) +
+    Math.min(input.candidateCount * 1.25, 18) +
+    Math.min(input.conflictCount * 6, 24) +
+    Math.min(input.missingSourceCount * 2, 10) +
+    Math.min(input.lowConfidenceCount * 4, 16) +
+    Math.min(input.workingCount * 1.5, 8)
   const activityBonus = Math.min(input.recentUsageCount * 2, 10)
   const healthScore = clamp(Math.round(100 - penalty + activityBonus), 0, 100)
 

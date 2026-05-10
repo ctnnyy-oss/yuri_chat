@@ -323,12 +323,23 @@ export function serializeMemoryScope(scope: MemoryScope): string {
 // ============ 冲突检测工具 ============
 
 export function hasOppositePreference(first: LongTermMemory, second: LongTermMemory): boolean {
+  if (!areMemoriesTopicallyRelated(first, second)) return false
+
   const firstPolarity = getPolarity(first.body)
   const secondPolarity = getPolarity(second.body)
   return (
     (firstPolarity === 'positive' && secondPolarity === 'negative') ||
     (firstPolarity === 'negative' && secondPolarity === 'positive')
   )
+}
+
+function areMemoriesTopicallyRelated(first: LongTermMemory, second: LongTermMemory): boolean {
+  const firstText = `${first.title} ${first.body} ${first.tags.join(' ')}`
+  const secondText = `${second.title} ${second.body} ${second.tags.join(' ')}`
+  const keywordOverlap = getKeywordOverlap(firstText, secondText)
+  const semanticSimilarity = getMemorySemanticSimilarity(firstText, secondText)
+
+  return keywordOverlap >= 2 || semanticSimilarity >= 0.42
 }
 
 function getPolarity(text: string): 'positive' | 'negative' | 'neutral' {
