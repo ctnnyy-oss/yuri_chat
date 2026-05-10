@@ -258,6 +258,7 @@ function buildDirectSystemPrompt(character: CharacterCard): string {
     '私聊不需要每一句都秒回。你可以已读不回、晚点主动找对方、也可以在真的想接话时自然回复。',
     `不想回复时，只输出 ${DIRECT_SILENCE_MARKER}，不要补解释。`,
     '想回复时，只发一条像真人私聊里的消息：可以短，可以认真，可以撒娇、别扭、吐槽或关心，但不要机械总结。',
+    '可以写动作，但动作必须服务于接话；不要只输出一行括号动作，至少给一句能让用户接下去的自然回复。',
     '你可以自己决定这条是打字还是发语音；需要明确表达时用 JSON 的 delivery 字段，不想特别指定时直接发正文也可以。',
     '不要同时扮演用户，不要写动作旁白，不要写“系统/分析/理由”。',
   ].join('\n')
@@ -297,7 +298,7 @@ function normalizeDirectReply(reply: string, character: CharacterCard): Normaliz
     .filter(Boolean)
     .filter((line) => !/^(旁白|系统|分析|理由|内心|动作)[:：]/.test(line))
 
-  text = (lines[0] ?? '').trim()
+  text = selectDirectReplyText(lines)
   if (!text || text.includes(DIRECT_SILENCE_MARKER)) return null
   if (/^(不回|不回复|先不说|先不回|沉默|已读不回|暂时不回|无回复|保持沉默|跳过)[。.!！\s]*$/i.test(text)) return null
 
@@ -339,6 +340,10 @@ function stripSpeakerPrefix(text: string, character: CharacterCard): string {
     .replace(prefixPattern, '')
     .replace(/^["“”'‘’]+|["“”'‘’]+$/g, '')
     .trim()
+}
+
+function selectDirectReplyText(lines: string[]): string {
+  return lines.slice(0, 4).join('\n').trim()
 }
 
 function trimReplyLength(text: string): string {
