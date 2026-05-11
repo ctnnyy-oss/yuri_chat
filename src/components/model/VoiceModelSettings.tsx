@@ -286,7 +286,7 @@ export function VoiceModelSettings({ modelProfiles, onUpdateSettings, settings }
         <label className="text-control">
           <span>
             <strong>TTS 模型</strong>
-            <small>例如 gpt-4o-mini-tts / mimo-v2.5-tts</small>
+            <small>例如 gpt-4o-mini-tts / mimo-v2.5-tts / seed-tts-2.0</small>
           </span>
           <input
             disabled={usingBrowserVoice}

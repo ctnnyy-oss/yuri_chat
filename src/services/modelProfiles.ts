@@ -121,6 +121,15 @@ export const modelProviderPresets: ModelProviderPreset[] = [
     model: 'mimo-v2.5-tts',
   },
   {
+    id: 'volcengine-doubao-tts',
+    label: '火山引擎豆包 TTS',
+    description: '豆包语音合成大模型。API Key 填 appid|access_token|seed-tts-2.0；右侧默认音色 ID 填 speaker/voice_type，小米档案可继续保留。',
+    group: 'official',
+    kind: 'openai-compatible',
+    baseUrl: 'https://openspeech.bytedance.com/api/v3/tts/unidirectional/sse',
+    model: 'seed-tts-2.0',
+  },
+  {
     id: 'anthropic',
     label: 'Anthropic 官方',
     description: 'Claude 官方 messages 接口，不走 OpenAI 格式。',

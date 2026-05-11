@@ -1,8 +1,13 @@
+import { randomUUID } from 'node:crypto'
 import { clampNumber } from './shared/utils.mjs'
 
 const maxSpeechCharacters = 3600
 const speechChunkCharacters = 220
 const defaultSpeechTimeoutMs = 75_000
+const volcengineDefaultV1Endpoint = 'https://openspeech.bytedance.com/api/v1/tts'
+const volcengineDefaultV3Endpoint = 'https://openspeech.bytedance.com/api/v3/tts/unidirectional/sse'
+const volcengineDefaultV1Voice = 'BV700_V2_streaming'
+const volcengineDefaultV3Voice = 'zh_female_cancan_uranus_bigtts'
 
 export async function callTextToSpeech(input, profile) {
   if (!profile) throw new Error('请先在模型页保存可用的聊天模型或 TTS 模型档案。')
@@ -14,12 +19,46 @@ export async function callTextToSpeech(input, profile) {
   const settings = input?.settings?.voice ?? {}
   const characterVoice = input?.characterVoice ?? {}
   const text = normalizeSpeechText(input?.text)
-  const model = normalizeShortText(settings.ttsModel, 'gpt-4o-mini-tts', 120)
+  const rawModel = normalizeShortText(settings.ttsModel, '', 120)
+  const model = rawModel || normalizeShortText(profile.model, 'gpt-4o-mini-tts', 120)
   const tuning = normalizeVoiceTuning(settings)
   const voiceId = resolveSpeechVoiceId(settings, characterVoice, tuning)
   const instructions = buildVoiceInstructions(input?.characterName, settings, characterVoice, tuning)
   const speed = tuning.speed
   const chunks = splitSpeechText(text)
+
+  if (isVolcengineSpeechProfile(profile, model)) {
+    const volcengineModel = isVolcengineResourceId(model)
+      ? model
+      : normalizeShortText(profile.model, 'seed-tts-2.0', 120)
+    const volcengineMode = shouldUseVolcengineV3(profile, volcengineModel) ? 'v3' : 'v1'
+    const volcengineVoiceId = resolveVolcengineVoiceId(voiceId, volcengineMode)
+    if (chunks.length > 1) {
+      const results = []
+      for (const chunk of chunks) {
+        results.push(await callVolcengineTextToSpeech({
+          profile,
+          model: volcengineModel,
+          voiceId: volcengineVoiceId,
+          text: chunk,
+          instructions,
+          tuning,
+          mode: volcengineMode,
+        }))
+      }
+      return mergeSpeechResults(results)
+    }
+
+    return callVolcengineTextToSpeech({
+      profile,
+      model: volcengineModel,
+      voiceId: volcengineVoiceId,
+      text,
+      instructions,
+      tuning,
+      mode: volcengineMode,
+    })
+  }
 
   if (chunks.length > 1) {
     const results = []
@@ -30,6 +69,104 @@ export async function callTextToSpeech(input, profile) {
   }
 
   return callSingleTextToSpeech({ profile, model, voiceId, text, instructions, speed })
+}
+
+async function callVolcengineTextToSpeech({ profile, model, voiceId, text, instructions, tuning, mode }) {
+  const config = parseVolcengineCredentials(profile.apiKey)
+  const endpoint = resolveVolcengineEndpoint(profile.baseUrl, mode)
+  if (mode === 'v3') {
+    return callVolcengineV3TextToSpeech({ profile, endpoint, config, model, voiceId, text, instructions, tuning })
+  }
+  return callVolcengineV1TextToSpeech({ profile, endpoint, config, model, voiceId, text, tuning })
+}
+
+async function callVolcengineV1TextToSpeech({ profile, endpoint, config, model, voiceId, text, tuning }) {
+  const response = await fetchWithTimeout(endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer;${config.token}`,
+      'Content-Type': 'application/json; charset=utf-8',
+    },
+    body: JSON.stringify({
+      app: {
+        appid: config.appid,
+        token: config.token,
+        cluster: config.cluster,
+      },
+      user: {
+        uid: `yuri-chat-${randomUUID()}`,
+      },
+      audio: {
+        voice: 'other',
+        voice_type: voiceId,
+        encoding: 'mp3',
+        rate: 24000,
+        speed_ratio: clampNumber(tuning.speed, 0.1, 2, 1),
+        volume_ratio: clampNumber(tuning.volume, 0.1, 3, 1),
+        pitch_ratio: clampNumber(tuning.pitch, 0.1, 3, 1),
+        ...buildVolcengineV1Emotion(tuning),
+      },
+      request: {
+        reqid: randomUUID(),
+        text,
+        text_type: 'plain',
+        operation: 'query',
+      },
+    }),
+  })
+
+  const detail = await response.text()
+  if (!response.ok) throw new Error(formatVolcengineProviderError(response.status, detail, profile, model))
+  const payload = parseJsonSafe(detail)
+  if (payload?.code !== 3000 || !payload?.data) {
+    throw new Error(formatVolcengineProviderPayloadError(payload, profile, model))
+  }
+
+  return normalizeVolcengineSpeechResult(payload.data, profile, model, voiceId)
+}
+
+async function callVolcengineV3TextToSpeech({ profile, endpoint, config, model, voiceId, text, instructions, tuning }) {
+  const resourceId = resolveVolcengineResourceId(config.resourceId || model)
+  const additions = buildVolcengineV3Additions(instructions, tuning)
+  const response = await fetchWithTimeout(endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer;${config.token}`,
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-Api-App-Id': config.appid,
+      'X-Api-Access-Key': config.token,
+      'X-Api-Resource-Id': resourceId,
+      'X-Api-Request-Id': randomUUID(),
+    },
+    body: JSON.stringify({
+      user: {
+        uid: `yuri-chat-${randomUUID()}`,
+      },
+      req_params: {
+        text,
+        speaker: voiceId,
+        model: normalizeVolcengineSynthesisModel(config.synthesisModel),
+        audio_params: {
+          format: 'mp3',
+          sample_rate: 24000,
+          speech_rate: formatVolcenginePercent(tuning.speed, -50, 100),
+          loudness_rate: formatVolcenginePercent(tuning.volume, -50, 100),
+          ...buildVolcengineV3Emotion(tuning),
+        },
+        additions: JSON.stringify(additions),
+      },
+    }),
+  })
+
+  const detail = await response.text()
+  if (!response.ok) throw new Error(formatVolcengineProviderError(response.status, detail, profile, resourceId))
+  const audioBase64 = extractVolcengineV3Audio(detail)
+  if (!audioBase64) {
+    const payload = parseJsonSafe(detail)
+    throw new Error(formatVolcengineProviderPayloadError(payload, profile, resourceId, detail))
+  }
+
+  return normalizeVolcengineSpeechResult(audioBase64, profile, resourceId, voiceId)
 }
 
 async function callSingleTextToSpeech({ profile, model, voiceId, text, instructions, speed }) {
@@ -177,6 +314,212 @@ function detectBase64AudioMimeType(base64) {
   if (base64.startsWith('T2dnUw')) return 'audio/ogg'
   if (base64.startsWith('ZkxhQw')) return 'audio/flac'
   return ''
+}
+
+function isVolcengineSpeechProfile(profile, model) {
+  const probe = `${profile.baseUrl || ''} ${profile.model || ''} ${model || ''}`.toLowerCase()
+  return /openspeech\.bytedance\.com|volcengine|doubao/.test(probe)
+    || isVolcengineResourceId(model)
+}
+
+function shouldUseVolcengineV3(profile, model) {
+  const probe = `${profile.baseUrl || ''} ${model || ''}`.toLowerCase()
+  return /\/api\/v3\/|seed-(tts|icl)-2|seed-tts|bigtts|volcengine-tts-v3/.test(probe)
+}
+
+function isVolcengineResourceId(value) {
+  return /^seed-(tts|icl)-/i.test(String(value || '').trim())
+}
+
+function parseVolcengineCredentials(apiKey) {
+  const raw = String(apiKey || '').trim()
+  const envConfig = {
+    appid: process.env.VOLCENGINE_TTS_APP_ID || process.env.VOLCENGINE_TTS_APPID || process.env.BYTEPLUS_SEED_SPEECH_APPID || '',
+    token: process.env.VOLCENGINE_TTS_TOKEN || process.env.VOLCENGINE_TTS_API_KEY || process.env.BYTEPLUS_SEED_SPEECH_API_KEY || '',
+    cluster: process.env.VOLCENGINE_TTS_CLUSTER || process.env.VOLCENGINE_TTS_CLUSTER_ID || 'volcano_tts',
+    resourceId: process.env.VOLCENGINE_TTS_RESOURCE_ID || '',
+    synthesisModel: process.env.VOLCENGINE_TTS_MODEL || '',
+  }
+  const parsed = raw ? parseVolcengineCredentialText(raw) : {}
+  const config = {
+    appid: parsed.appid || envConfig.appid,
+    token: parsed.token || envConfig.token,
+    cluster: parsed.cluster || envConfig.cluster || 'volcano_tts',
+    resourceId: parsed.resourceId || envConfig.resourceId,
+    synthesisModel: parsed.synthesisModel || envConfig.synthesisModel,
+  }
+
+  if (!config.appid || !config.token) {
+    throw new Error('火山引擎豆包 TTS 需要 AppID 和 Access Token。模型档案的 API Key 可以填 appid|access_token|resource_id，例如第三段填 seed-tts-2.0；小米档案会继续保留不受影响。')
+  }
+  return config
+}
+
+function parseVolcengineCredentialText(raw) {
+  const json = parseJsonSafe(raw)
+  if (json && typeof json === 'object') {
+    return normalizeVolcengineCredentialMap(json)
+  }
+
+  if (/appid|app_id|token|access[_-]?token|resource|cluster/i.test(raw) && /[:=]/.test(raw)) {
+    const entries = {}
+    raw.split(/[;\n,]+/).forEach((piece) => {
+      const match = piece.match(/^\s*([^:=]+)\s*[:=]\s*(.+?)\s*$/)
+      if (match) entries[match[1].trim()] = match[2].trim()
+    })
+    return normalizeVolcengineCredentialMap(entries)
+  }
+
+  const parts = raw.split('|').map((part) => part.trim()).filter(Boolean)
+  if (parts.length >= 2) {
+    return {
+      appid: parts[0],
+      token: normalizeBearerToken(parts[1]),
+      cluster: parts[2] && !isVolcengineResourceId(parts[2]) ? parts[2] : '',
+      resourceId: parts.find((part) => isVolcengineResourceId(part)) || '',
+      synthesisModel: parts.find((part) => /^seed-tts-2\.0-(expressive|standard)$/i.test(part)) || '',
+    }
+  }
+
+  return { token: normalizeBearerToken(raw) }
+}
+
+function normalizeVolcengineCredentialMap(value) {
+  return {
+    appid: String(value.appid ?? value.appId ?? value.app_id ?? value['X-Api-App-Id'] ?? '').trim(),
+    token: normalizeBearerToken(value.token ?? value.accessToken ?? value.access_token ?? value.apiKey ?? value.key ?? value['X-Api-Access-Key'] ?? ''),
+    cluster: String(value.cluster ?? value.clusterId ?? value.cluster_id ?? '').trim(),
+    resourceId: String(value.resourceId ?? value.resource_id ?? value['X-Api-Resource-Id'] ?? '').trim(),
+    synthesisModel: String(value.synthesisModel ?? value.model ?? '').trim(),
+  }
+}
+
+function normalizeBearerToken(value) {
+  return String(value || '').trim().replace(/^Bearer\s*;\s*/i, '').replace(/^Bearer\s+/i, '').trim()
+}
+
+function resolveVolcengineEndpoint(baseUrl, mode) {
+  const trimmed = String(baseUrl || '').replace(/\/+$/, '')
+  if (/\/api\/v[13]\/tts/i.test(trimmed)) return trimmed
+  if (/openspeech\.bytedance\.com/i.test(trimmed)) {
+    return mode === 'v3' ? volcengineDefaultV3Endpoint : volcengineDefaultV1Endpoint
+  }
+  return mode === 'v3' ? volcengineDefaultV3Endpoint : volcengineDefaultV1Endpoint
+}
+
+function resolveVolcengineVoiceId(voiceId, mode) {
+  const normalized = normalizeShortText(voiceId, '', 120)
+  if (mode === 'v3') {
+    if (/^S_|_bigtts$/i.test(normalized)) return normalized
+    return volcengineDefaultV3Voice
+  }
+  if (/^(S_|BV|VC_|zh_)/i.test(normalized)) return normalized
+  return volcengineDefaultV1Voice
+}
+
+function resolveVolcengineResourceId(value) {
+  const resourceId = normalizeShortText(value, 'seed-tts-2.0', 80)
+  return isVolcengineResourceId(resourceId) ? resourceId : 'seed-tts-2.0'
+}
+
+function normalizeVolcengineSynthesisModel(value) {
+  const model = normalizeShortText(value, 'seed-tts-2.0-expressive', 80)
+  if (/^seed-tts-2\.0-(expressive|standard)$/i.test(model)) return model
+  return 'seed-tts-2.0-expressive'
+}
+
+function formatVolcenginePercent(value, min, max) {
+  return Math.round(clampNumber((Number(value) - 1) * 100, min, max, 0))
+}
+
+function buildVolcengineV1Emotion(tuning) {
+  const emotion = mapVolcengineEmotion(tuning.emotion)
+  return emotion ? { emotion } : {}
+}
+
+function buildVolcengineV3Emotion(tuning) {
+  const emotion = mapVolcengineEmotion(tuning.emotion)
+  return emotion ? { emotion } : {}
+}
+
+function mapVolcengineEmotion(value) {
+  const map = {
+    cheerful: 'happy',
+    shy: 'comfort',
+    soft: 'lovey-dovey',
+    fragile: 'sad',
+    nervous: 'tension',
+    sad: 'sad',
+    angry: 'angry',
+  }
+  return map[value] || ''
+}
+
+function buildVolcengineV3Additions(instructions, tuning) {
+  return {
+    context_texts: [instructions].filter(Boolean).slice(0, 1),
+    post_process: {
+      pitch: Math.round(clampNumber((tuning.pitch - 1) * 24, -12, 12, 0)),
+    },
+  }
+}
+
+function extractVolcengineV3Audio(detail) {
+  const direct = parseJsonSafe(detail)
+  if (direct?.data && (direct.code === 0 || direct.code === 20000000)) return String(direct.data)
+  if (direct?.result?.audio) return String(direct.result.audio)
+  if (direct?.audio) return String(direct.audio)
+
+  const chunks = []
+  let error = ''
+  for (const line of String(detail || '').split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed.startsWith('data:')) continue
+    const payload = parseJsonSafe(trimmed.slice(5).trim())
+    if (!payload) continue
+    if (payload.data && (payload.code === 0 || payload.code === 20000000)) {
+      chunks.push(String(payload.data))
+      continue
+    }
+    if (payload.code && payload.code !== 0 && payload.code !== 20000000) {
+      error = payload.message || payload.error || `code ${payload.code}`
+    }
+  }
+  if (error && chunks.length === 0) throw new Error(`火山引擎豆包 TTS 返回错误：${error}`)
+  return chunks.length ? Buffer.concat(chunks.map((chunk) => Buffer.from(chunk, 'base64'))).toString('base64') : ''
+}
+
+function normalizeVolcengineSpeechResult(audioBase64, profile, model, voiceId) {
+  return {
+    audioBase64: normalizeAudioData(audioBase64, 'mp3').audioBase64,
+    mimeType: 'audio/mpeg',
+    provider: profile.name || '火山引擎豆包 TTS',
+    model,
+    voiceId,
+  }
+}
+
+function formatVolcengineProviderError(status, detail, profile, model) {
+  const providerMessage = extractProviderMessage(detail)
+  const providerPrefix = `${profile.name} / ${model}`
+  if (status === 401 || status === 403) {
+    return `${providerPrefix} 授权没有通过，请检查 AppID、Access Token、Resource ID 或服务是否开通。原始提示：${providerMessage}`
+  }
+  if (status === 429 || /quota|concurrency|额度|并发|欠费/i.test(providerMessage)) {
+    return `${providerPrefix} 额度或并发不足。原始提示：${providerMessage}`
+  }
+  if (status >= 500) return `${providerPrefix} 上游暂时没有接住。原始提示：${providerMessage || status}`
+  return `${providerPrefix} 请求失败：${providerMessage || status}`
+}
+
+function formatVolcengineProviderPayloadError(payload, profile, model, rawDetail = '') {
+  const message =
+    payload?.message ||
+    payload?.BaseResp?.StatusMessage ||
+    payload?.error ||
+    extractProviderMessage(rawDetail) ||
+    '没有返回音频数据'
+  return `${profile.name || '火山引擎豆包 TTS'} / ${model} 没有生成音频：${message}`
 }
 
 function normalizeSpeechText(value) {
