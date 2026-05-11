@@ -60,12 +60,14 @@ export function useModelProfiles({ setState, setNotice, getCloudToken }: UseMode
     }
   }, [getCloudToken, setState])
 
-  async function handleSaveModelProfile(profile: ModelProfileInput) {
+  async function handleSaveModelProfile(profile: ModelProfileInput): Promise<ModelProfileSummary | undefined> {
+    let savedProfile: ModelProfileSummary | undefined
     try {
       const token = getCloudToken().trim()
       setModelProfileBusy(true)
       setModelProfileStatus('正在保存模型配置...')
       const result = await saveModelProfile(token, profile)
+      savedProfile = result.profile
       setModelProfiles(result.profiles)
       const shouldActivate = profile.isDefault !== false
       if (shouldActivate) {
@@ -85,6 +87,7 @@ export function useModelProfiles({ setState, setNotice, getCloudToken }: UseMode
     } finally {
       setModelProfileBusy(false)
     }
+    return savedProfile
   }
 
   async function handleDeleteModelProfile(profileId: string) {

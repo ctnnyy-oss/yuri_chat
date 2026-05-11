@@ -75,7 +75,7 @@ interface MemoryPanelProps {
   modelProfiles: ModelProfileSummary[]
   modelProfileStatus: string
   modelProfileBusy: boolean
-  onSaveModelProfile: (profile: ModelProfileInput) => Promise<void>
+  onSaveModelProfile: (profile: ModelProfileInput) => Promise<ModelProfileSummary | undefined>
   onDeleteModelProfile: (profileId: string) => Promise<void>
   onFetchModelCatalog: (input: { profileId?: string; profile?: ModelProfileInput }) => Promise<ModelCatalogResult>
   onTestModelProfile: (input: { profileId?: string; profile?: ModelProfileInput }) => Promise<void>

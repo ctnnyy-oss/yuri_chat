@@ -76,7 +76,7 @@ interface ModelAndDataPanelProps {
   cloudToken: string
   usesAccountSession?: boolean
   cloudStatus?: string
-  onSaveModelProfile: (profile: ModelProfileInput) => Promise<void>
+  onSaveModelProfile: (profile: ModelProfileInput) => Promise<ModelProfileSummary | undefined>
   onDeleteModelProfile: (profileId: string) => Promise<void>
   onFetchModelCatalog: (input: { profileId?: string; profile?: ModelProfileInput }) => Promise<ModelCatalogResult>
   onTestModelProfile: (input: { profileId?: string; profile?: ModelProfileInput }) => Promise<void>

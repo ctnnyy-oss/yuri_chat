@@ -10,7 +10,7 @@ import {
 
 interface UseModelProfileDraftDeps {
   modelProfileBusy: boolean
-  onSaveModelProfile: (profile: ModelProfileInput) => Promise<void>
+  onSaveModelProfile: (profile: ModelProfileInput) => Promise<ModelProfileSummary | undefined>
   onFetchModelCatalog: (input: { profileId?: string; profile?: ModelProfileInput }) => Promise<ModelCatalogResult>
   onTestModelProfile: (input: { profileId?: string; profile?: ModelProfileInput }) => Promise<void>
 }
@@ -108,11 +108,13 @@ export function useModelProfileDraft({
   }
 
   async function handleSaveProfile() {
-    await onSaveModelProfile({ ...draft, name: buildProfileName(draft), isDefault: true, enabled: true })
+    const savedProfile = await onSaveModelProfile({ ...draft, name: buildProfileName(draft), isDefault: true, enabled: true })
+    if (savedProfile) setDraft((currentDraft) => ({ ...currentDraft, id: savedProfile.id, apiKey: '' }))
   }
 
   async function handleSaveProfileAsSpare() {
-    await onSaveModelProfile({ ...draft, name: buildProfileName(draft), isDefault: false, enabled: true })
+    const savedProfile = await onSaveModelProfile({ ...draft, name: buildProfileName(draft), isDefault: false, enabled: true })
+    if (savedProfile) setDraft((currentDraft) => ({ ...currentDraft, id: savedProfile.id, apiKey: '' }))
   }
 
   async function handleTestDraft() {
