@@ -32,7 +32,7 @@ import { requestModelEmbeddings } from '../services/modelProfiles'
 import { chooseAssistantDeliveryMode } from '../services/messageDelivery'
 import { addMemoryEventToState, applyAgentActionsToState, enqueueAgentTaskActions } from './agentActions'
 import { formatChatFailure } from './chatFailure'
-import { countDirectProactiveTurnsSinceLastUser, countGroupProactiveTurnsSinceLastUser, getConversationMessageKey, getDirectProactiveDelayMs, getGroupProactiveDelayMs } from './chatProactiveTiming'
+import { countDirectProactiveTurnsSinceLastUser, countGroupAssistantMessagesSinceLastUser, countGroupProactiveTurnsSinceLastUser, getConversationMessageKey, getDirectProactiveDelayMs, getGroupProactiveDelayMs } from './chatProactiveTiming'
 
 interface UseChatDeps {
   state: AppState
@@ -56,12 +56,14 @@ export function useChat({ state, setState, setNotice, character, conversation, p
   const lastDirectProactiveAttemptKeyRef = useRef('')
   const directProactiveConversationIdRef = useRef('')
   const chatAlert = chatAlertState?.conversationId === conversation.id ? chatAlertState.message : ''
+  const groupAutoReplyLimit = clampGroupAutoReplyLimit(state.settings.groupChatMaxAutoReplies)
 
   const runGroupProactiveTurn = useCallback(
     async ({ force = true }: { force?: boolean } = {}) => {
       if (proactivePaused) return
       if (!isGroupCharacter(character) || isSending || proactiveInFlightRef.current) return
       if (!force && (!state.settings.groupChatHumanMode || !state.settings.groupChatProactiveMode)) return
+      if (!force && countGroupAssistantMessagesSinceLastUser(conversation.messages) >= groupAutoReplyLimit) return
       if (!force && countGroupProactiveTurnsSinceLastUser(conversation.messages) >= 2) return
 
       const attemptKey = getConversationMessageKey(conversation.messages)
@@ -101,7 +103,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
         setIsSending(false)
       }
     },
-    [character, conversation, isSending, proactivePaused, setNotice, setState, state],
+    [character, conversation, groupAutoReplyLimit, isSending, proactivePaused, setNotice, setState, state],
   )
 
   const runDirectProactiveTurn = useCallback(
@@ -162,6 +164,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     if (!state.settings.groupChatHumanMode || !state.settings.groupChatProactiveMode) return
     if (isSending || proactiveInFlightRef.current) return
     if (conversation.messages.length === 0) return
+    if (countGroupAssistantMessagesSinceLastUser(conversation.messages) >= groupAutoReplyLimit) return
     if (countGroupProactiveTurnsSinceLastUser(conversation.messages) >= 2) return
     if (typeof document !== 'undefined' && document.hidden) return
 
@@ -191,6 +194,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     isSending,
     proactivePaused,
     runGroupProactiveTurn,
+    groupAutoReplyLimit,
     state.settings.groupChatHumanMode,
     state.settings.groupChatProactiveMode,
   ])
@@ -495,4 +499,9 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
       window.setTimeout(() => reject(new Error('embedding timeout')), timeoutMs)
     }),
   ])
+}
+
+function clampGroupAutoReplyLimit(value: number): number {
+  const normalized = Number.isFinite(value) ? Math.trunc(value) : 3
+  return Math.min(4, Math.max(1, normalized))
 }

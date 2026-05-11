@@ -19,6 +19,18 @@ export function countGroupProactiveTurnsSinceLastUser(messages: ChatMessage[]): 
   return proactiveTurnIds.size
 }
 
+export function countGroupAssistantMessagesSinceLastUser(messages: ChatMessage[]): number {
+  let count = 0
+
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index]
+    if (message.role === 'user') break
+    if (message.role === 'assistant') count += 1
+  }
+
+  return count
+}
+
 export function countDirectProactiveTurnsSinceLastUser(messages: ChatMessage[]): number {
   let count = 0
 
