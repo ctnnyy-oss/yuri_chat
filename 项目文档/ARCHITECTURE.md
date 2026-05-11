@@ -10,7 +10,7 @@
 - `src/app`：前端应用编排层。`useYuriNestApp.ts` 统一持有页面状态、聊天发送、云端同步和模型配置动作；`agentActions.ts` 负责把后端 Agent 动作落到 AppState；`theme.ts`、`navigation.ts` 和 `formatters.ts` 放跨页面的轻量工具。
 - `src/components/memory`：记忆面板的子组件、草稿类型和 UI 工具函数。`MemoryPanel.tsx` 只负责组装记忆页、候选审核、守护台和档案弹窗，不继续堆编辑表单和卡片细节。
 - `src/components/memory/sections/MemoryRecallMap.tsx`：记忆生命周期总览，展示捕捉、校准、调用、修剪四段状态，让人工审核入口不藏在列表深处。
-- `src/components/settings`：设置、主题、云同步、本机备份和导入导出的页面视图。
+- `src/components/settings`：设置、主题、云同步、本机备份和导入导出的页面视图。`SettingsPanel.tsx` 只做设置页编排；聊天行为、语音、回收花园、云同步、备份迁移和记忆捕捉分别放在独立设置区块组件里。
 - `src/components/world`：世界树和 CP 展示视图。
 - `src/components/trash`：回收花园视图。
 - `src/config`：集中放品牌名、默认项目空间、本地存储 key 等跨模块配置。改名或调整存储策略时先看这里。
@@ -40,7 +40,8 @@
 - `src/components/agent/taskPanel`：Agent 任务页的子组件边界。`AgentTaskPanel.tsx` 只负责状态刷新、任务排序和页面编排；后台平台控制台、任务卡片、状态标签 helper 都放在子目录里。
 - `src/components/chat/useChatPhoneMedia.ts`：聊天页的摄像头、文件入口、语音听写、录音和语音通话状态集中在这里。`ChatPhone.tsx` 不再直接管理设备能力，后续接真实图片上传、OCR 或 TTS/ASR 供应商时优先扩展这个 hook。
 - `src/components/role`：角色管理页的桌面编辑器、人设质量条和角色草稿模型。`QqFeaturePanel.tsx` 只保留页面状态、移动端长按和删除确认流程。
-- `src/components/settings/PreferenceSettings.tsx`：输入习惯、字号和主题色从设置总页拆出，`SettingsPanel.tsx` 继续负责云同步、备份、语音和记忆相关设置。
+- `src/components/settings/PreferenceSettings.tsx`：输入习惯、字号和主题色设置区块。
+- `src/components/settings/ChatBehaviorSettings.tsx`、`VoiceSettings.tsx`、`TrashRetentionSettings.tsx`、`DataSyncSettings.tsx`、`BackupMigrationSettings.tsx`、`MemoryCaptureSettings.tsx`：设置页按设置域拆分后的子区块。后续新增设置优先落到对应区块，不要堆回 `SettingsPanel.tsx`。
 - `src/components/characterRailModel.ts`：左侧导航、会话列表静态配置、时间/未读/群聊判断工具，避免 `CharacterRail.tsx` 同时承担配置表和渲染逻辑。
 - `src/services/groupChatEngine.ts`：群聊入口只保留反应式回复和主动回复流程；候选成员排序、群聊 prompt、回复清洗、重复回复过滤和群消息创建放在 `src/services/groupChatHelpers.ts`。
 - `src/services/memoryRecords.ts`：长期记忆创建和版本快照/修订工具；`memoryCore.ts` 继续处理记忆合并、去重、格式化和主题关系判断。
@@ -58,7 +59,7 @@
 - 品牌名、技术路径和存储 key 分开管理，但当前主技术名已经统一为 `yuri-chat`，避免后续部署和文档继续分裂。
 - 旧数据升级只能走 `migrations.ts`，不要在界面组件里临时判断旧字段；这样妹妹本机、云端快照和未来多设备同步都能复用同一条升级路径。
 - 文件行数按两层看：500 行以内是推荐舒适区；复杂功能可以有理由地保持三位数；1000 行及以上（四位数）视为必须处理的硬上限。新增能力时按目录边界塞到对应子模块，不要回头堆到 facade。
-- `npm run audit:architecture` 会扫描 `src` 和 `server`，分出“推荐精炼观察区”和“四位数硬上限观察区”。这个命令只做提醒，不阻断构建；每次大功能前后都可以跑一遍，防止新能力又被塞回入口文件。
+- `npm run audit:architecture` 会扫描 `src`、`server` 和 `scripts`，分出“推荐精炼观察区”和“四位数硬上限观察区”。这个命令只做提醒，不阻断构建；每次大功能前后都可以跑一遍，防止新能力又被塞回入口文件或测试脚本。
 - 拆大文件优先按“可验证的小模块”推进：先拆纯工具、配置、迁移、独立 UI，再拆带状态流的核心逻辑；每次拆完必须跑 lint/build 和浏览器回归。
 - 新功能默认先问“它属于页面、应用编排、领域服务、数据迁移、后端路由、云存储、模型供应商还是 Agent 工具”。答不上来时先补边界，不要直接塞进 `App.tsx`、`MemoryPanel.tsx` 或 `server/index.mjs`。
 

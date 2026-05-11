@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 const root = process.cwd()
-const watchRoots = ['src', 'server']
+const watchRoots = ['src', 'server', 'scripts']
 const ignoredDirs = new Set(['.git', 'dist', 'node_modules', '.playwright-cli'])
 const codeExtensions = new Set(['.ts', '.tsx', '.mjs'])
 const styleExtensions = new Set(['.css'])

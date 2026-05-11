@@ -402,8 +402,8 @@ npm run build          # VITE_BASE_PATH=/yuri-chat/，dist/index.html 已确认 
   - 新增 `src/components/chat/useChatPhoneMedia.ts`，集中处理摄像头、文件入口、语音听写、录音、语音通话和清理副作用。
 - `QqFeaturePanel.tsx`：641 行 -> 419 行。
   - 新增 `src/components/role/rolePanelModel.ts`、`DesktopRoleEditor.tsx`、`RolePersonaMeter.tsx`。
-- `SettingsPanel.tsx`：591 行 -> 489 行。
-  - 新增 `src/components/settings/PreferenceSettings.tsx`。
+- `SettingsPanel.tsx`：591 行 -> 105 行。
+  - 新增 `src/components/settings/PreferenceSettings.tsx`，并在 2026-05-11 继续拆出聊天行为、语音、回收花园、云同步、备份迁移和记忆捕捉设置区块。
 - `CharacterRail.tsx`：570 行 -> 470 行。
   - 新增 `src/components/characterRailModel.ts`，收纳导航配置、会话时间、未读数和群聊判断。
 
@@ -426,3 +426,51 @@ npm run audit:architecture  # all watched files are inside the recommended comfo
 ```
 
 下一步继续跑完整验证：`npm run lint`、`npm run test:agent`、`npm run test:memory`、`npm run build`，然后进入真实线上账号试玩。
+
+## 第七阶段（2026-05-11，测试脚本纳入架构护栏 + 设置页二次瘦身 + 构建分包）
+
+> 妹妹这次要求继续“防止项目变成屎山”，但项目当前已经处在比较健康的早期整理后状态。本轮没有为了拆而拆，而是处理两个后续最容易继续长胖的位置：记忆回归脚本和设置页。
+
+### 23. 记忆回归脚本模块化
+
+- `scripts/memoryEvalEntry.ts`：950 行 -> 31 行，只保留总入口和失败门槛。
+- 新增：
+  - `scripts/memoryEvalFixtures.ts`：记忆评测样本、测试角色、测试会话和 memory factory。
+  - `scripts/memoryEvalRecallChecks.ts`：语义召回、角色扮演隔离、反思候选、复习加固、冲突与修订历史。
+  - `scripts/memoryEvalCaptureChecks.ts`：显式记忆捕捉、候选优先、临时写作指令过滤、合并建议、semantic tombstone。
+  - `scripts/memoryEvalVectorChecks.ts`：向量召回、embedding 缓存、外部 query vector、高噪声抗干扰和反馈校准。
+  - `scripts/memoryEvalGate.ts`：17 维 human-memory proxy gate 汇总。
+- `scripts/architecture-audit.mjs` 现在扫描 `src`、`server` 和 `scripts`，避免测试/运维脚本在主业务代码之外悄悄膨胀。
+
+### 24. 设置页按设置域拆分
+
+- `src/components/settings/SettingsPanel.tsx`：484 行 -> 105 行，只负责页面标题、两列布局和区块编排。
+- 新增：
+  - `ChatBehaviorSettings.tsx`
+  - `VoiceSettings.tsx`
+  - `TrashRetentionSettings.tsx`
+  - `DataSyncSettings.tsx`
+  - `BackupMigrationSettings.tsx`
+  - `MemoryCaptureSettings.tsx`
+- 这次不改样式和交互，只把未来最容易加开关的设置区块拆出来，后续新增语音、云同步、备份或记忆选项时不用再堆回总页。
+
+### 25. 构建分包护栏
+
+- `vite.config.ts` 新增 Rolldown `codeSplitting.groups`，把 `node_modules` 依赖拆成 `vendor` chunk。
+- 构建产物从一个 589KB 主 JS 包，变成：
+  - `index-CjlMh8-3.js`：约 377KB
+  - `vendor-Bku3tUwX.js`：约 214KB
+  - `rolldown-runtime-pRHcBP7x.js`：极小运行时
+- Vite 的 500KB chunk warning 已消失，后续主应用代码继续增长时更容易观察真实业务体积。
+
+### 验证
+
+```
+npx tsc -b                  # 通过
+npm run lint                # 通过
+npm run test:agent          # 19 个 Agent/security 场景 + detector 回归通过
+npm run test:memory         # 13/13 召回 + 17/17 human-memory proxy gate 通过
+npm run audit:architecture  # all watched files are inside the recommended comfort zone（扫描 204 个源文件）
+$env:VITE_BASE_PATH='/yuri-chat/'; $env:VITE_API_BASE_URL=(Get-Content -Raw .\secrets\cloud-api-url.txt).Trim(); npm run build
+                              # 通过，dist 已生成 /yuri-chat/ base path 的分包产物
+```
