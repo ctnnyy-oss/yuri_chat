@@ -107,6 +107,28 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
     setModelProfileStatus,
   } = modelProfilesHook
 
+  const pushMigratedStateInBackground = useCallback((stateToPush: AppState, baseRevision: number, signature: string) => {
+    if (autoPushInFlightRef.current) return
+
+    autoPushInFlightRef.current = true
+    void (async () => {
+      try {
+        const result = await pushCloudState(stateToPush, cloudTokenRef.current, {
+          baseRevision,
+        })
+        const nextMeta = { hasState: true, revision: result.revision, updatedAt: result.updatedAt }
+        cloudMetaRef.current = nextMeta
+        lastAutoPushSignatureRef.current = signature
+        setCloudMeta(nextMeta)
+        setCloudStatus(`云端结构已在后台补齐 v${result.revision}`)
+      } catch (error) {
+        setCloudStatus(error instanceof Error ? `云端已读取，后台补齐暂未完成：${error.message}` : '云端已读取，后台补齐暂未完成')
+      } finally {
+        autoPushInFlightRef.current = false
+      }
+    })()
+  }, [])
+
   const refreshCloudBackups = useCallback(async (token: string) => {
     if (!isCloudSyncConfigured() || !canManageCloudBackups) {
       setCloudBackups([])
@@ -168,16 +190,13 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
         const normalizedPulledState = applyTrashRetention(pulledState)
         const migratedSignature = createAutoPushSignature(normalizedPulledState)
         const sourceSignature = createAutoPushSignature(applyTrashRetention(snapshot.state))
-        let nextCloudMeta = {
+        const nextCloudMeta = {
           hasState: true,
           revision: snapshot.revision,
           updatedAt: snapshot.updatedAt,
         }
         if (migratedSignature !== sourceSignature) {
-          const result = await pushCloudState(normalizedPulledState, cloudToken, {
-            baseRevision: snapshot.revision,
-          })
-          nextCloudMeta = { hasState: true, revision: result.revision, updatedAt: result.updatedAt }
+          pushMigratedStateInBackground(normalizedPulledState, snapshot.revision, migratedSignature)
         }
         skipNextAutoPushRef.current = true
         lastAutoPushSignatureRef.current = migratedSignature
@@ -205,7 +224,7 @@ export function useCloudSync({ state, setState, setNotice, characterId, makeLoca
     } finally {
       setCloudBootstrapping(false)
     }
-  }, [cloudToken, refreshCloudBackups, refreshModelProfileList, setModelProfileStatus, setState, setNotice])
+  }, [cloudToken, pushMigratedStateInBackground, refreshCloudBackups, refreshModelProfileList, setModelProfileStatus, setState, setNotice])
 
   async function handleConnectCloud() {
     if (state.settings.dataStorageMode === 'local') {

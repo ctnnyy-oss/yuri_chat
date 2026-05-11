@@ -1,6 +1,7 @@
 import { clampNumber } from './shared/utils.mjs'
 
 const maxSpeechCharacters = 3600
+const speechChunkCharacters = 220
 
 export async function callTextToSpeech(input, profile) {
   if (!profile) throw new Error('请先在模型页保存可用的聊天模型或 TTS 模型档案。')
@@ -22,7 +23,20 @@ export async function callTextToSpeech(input, profile) {
   )
   const instructions = buildVoiceInstructions(input?.characterName, settings, characterVoice)
   const speed = clampNumber(settings.speechRate, 0.65, 1.35, 1)
+  const chunks = splitSpeechText(text)
 
+  if (chunks.length > 1) {
+    const results = []
+    for (const chunk of chunks) {
+      results.push(await callSingleTextToSpeech({ profile, model, voiceId, text: chunk, instructions, speed }))
+    }
+    return mergeSpeechResults(results)
+  }
+
+  return callSingleTextToSpeech({ profile, model, voiceId, text, instructions, speed })
+}
+
+async function callSingleTextToSpeech({ profile, model, voiceId, text, instructions, speed }) {
   const response = await fetchWithTimeout(`${profile.baseUrl}/audio/speech`, {
     method: 'POST',
     headers: {
@@ -48,6 +62,17 @@ export async function callTextToSpeech(input, profile) {
   }
 
   return readAudioResponse(response, profile, model, voiceId)
+}
+
+function mergeSpeechResults(results) {
+  if (results.length === 1) return results[0]
+  const first = results[0]
+  const audioBase64 = Buffer.concat(results.map((result) => Buffer.from(result.audioBase64, 'base64'))).toString('base64')
+  return {
+    ...first,
+    audioBase64,
+    mimeType: first.mimeType || 'audio/mpeg',
+  }
 }
 
 async function callChatCompletionSpeech({ profile, model, voiceId, text, instructions, speed }) {
@@ -162,6 +187,38 @@ function normalizeSpeechText(value) {
   const text = String(value || '').replace(/\s+/g, ' ').trim()
   if (!text) throw new Error('语音生成需要一段文字。')
   return text.slice(0, maxSpeechCharacters)
+}
+
+function splitSpeechText(text) {
+  if (text.length <= speechChunkCharacters) return [text]
+
+  const pieces = text.match(/[^。！？!?；;]+[。！？!?；;]*/g) ?? [text]
+  const chunks = []
+  let current = ''
+
+  for (const rawPiece of pieces) {
+    let piece = rawPiece.trim()
+    if (!piece) continue
+
+    if ((current + piece).length <= speechChunkCharacters) {
+      current += piece
+      continue
+    }
+
+    if (current) {
+      chunks.push(current)
+      current = ''
+    }
+
+    while (piece.length > speechChunkCharacters) {
+      chunks.push(piece.slice(0, speechChunkCharacters))
+      piece = piece.slice(speechChunkCharacters)
+    }
+    current = piece
+  }
+
+  if (current) chunks.push(current)
+  return chunks
 }
 
 function normalizeShortText(value, fallback, maxLength) {
