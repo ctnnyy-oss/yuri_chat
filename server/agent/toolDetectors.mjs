@@ -8,6 +8,11 @@ const REAL_WEATHER_HINT_PATTERN =
   /查|看看|看下|搜|问问|想知道|真实|现实|当地|我这里|这边|那边|今天|明天|后天|现在|出门|通勤|上班|上学|学校|带伞|雨伞|天气预报|空气质量|台风/
 const ROLEPLAY_WEATHER_CONTEXT_PATTERN =
   /旧书店|旧书馆|书店|店里|阁楼|窗外|房间|宿舍|教室|学院|书院|仙门|宗门|魔法学院|城堡|花园|小窝|梦里|文里|故事里|剧情里|场景里|你那里|你那边/
+const LOCAL_CHAT_CONTEXT_PATTERN =
+  /用你(?:自己)?的(?:语气|方式)|你的语气|你的方式|回一句|打个招呼|角色|人设|旧书店|旧书馆|书店|店里|阁楼|小窝|梦里|文里|故事里|剧情里|场景里|你那里|你那边|今晚.*样子/
+const STRONG_SEARCH_PATTERN =
+  /搜索|搜一下|搜搜|查找|查询|帮我查|帮我搜|研究|网上|联网|资料|文档|官方|官网|教程|百科|新闻|热搜|榜单|价格|评测|哪里买|怎么买/
+const WEAK_FACT_LOOKUP_PATTERN = /最新|近况|谁是|是什么|有哪些|推荐/
 
 export function shouldUseTimeTool(text) {
   return /几点|当前时间|现在(?:几点|是什么时间|时间)|日期|今天(?:是)?(?:几号|周几|星期几)|明天(?:是)?(?:几号|周几|星期几)|后天(?:是)?(?:几号|周几|星期几)|昨天(?:是)?(?:几号|周几|星期几)|星期几|周几|刚刚(?:几点|多久)|一会儿/.test(text)
@@ -35,9 +40,11 @@ export function shouldUseSearchTool(text) {
     /(?:不要|不用|无需|无须|不必|别|先别|禁止|别去|别再|不要再|先不用|无需再).{0,8}(?:联网|上网|搜索|搜一下|搜搜|查找|查询|查资料|查网页|查网络|查官网|查官方)/g,
     '',
   )
-  const explicitSearch = /搜索|搜一下|搜搜|查找|查询|帮我查|帮我搜|研究|网上|联网|资料|文档|官方|官网|教程|百科|新闻|热搜|最新|近况|榜单|价格|评测|推荐|谁是|是什么|有哪些|哪里买|怎么买/.test(searchText)
+  if (STRONG_SEARCH_PATTERN.test(searchText)) return true
+  if (WEAK_FACT_LOOKUP_PATTERN.test(searchText) && !LOCAL_CHAT_CONTEXT_PATTERN.test(searchText)) return true
+
   const plainLookup = /(^|[^检])(?:查一下|查查)/.test(searchText)
-  return explicitSearch || plainLookup
+  return plainLookup
 }
 
 export function shouldUseDeepResearchTool(text) {

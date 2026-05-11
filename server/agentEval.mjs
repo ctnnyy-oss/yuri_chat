@@ -308,6 +308,13 @@ function runDetectorRegression() {
       run: () => !shouldUseSearchTool('先用你的方式打个招呼，再帮我检查一下：如果妹妹今晚写百合卡住，你会怎么接住？'),
     },
     {
+      name: 'roleplay what-is phrasing stays local',
+      run: () =>
+        !shouldUseSearchTool(
+          '听澜，姐姐来做一次真实试玩。你不用迎合我，先用你自己的语气回一句：旧书馆今晚是什么样子？顺便记住一个测试偏好：姐姐今天想听低声一点、像夜里白茶一样的语音。',
+        ),
+    },
+    {
       name: 'plain explicit 查一下 still uses search',
       run: () => shouldUseSearchTool('姐姐查一下 YOP 中转站最新模型有哪些'),
     },
