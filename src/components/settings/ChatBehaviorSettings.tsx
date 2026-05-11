@@ -7,6 +7,15 @@ interface ChatBehaviorSettingsProps {
 }
 
 export function ChatBehaviorSettings({ onUpdateSettings, settings }: ChatBehaviorSettingsProps) {
+  const groupProactiveTurnsUnlimited = settings.groupChatMaxProactiveTurns < 0
+  const groupProactiveTurnsValue = groupProactiveTurnsUnlimited
+    ? 12
+    : clampProactiveTurns(settings.groupChatMaxProactiveTurns)
+
+  function updateGroupProactiveTurns(value: number) {
+    onUpdateSettings({ ...settings, groupChatMaxProactiveTurns: clampProactiveTurns(value) })
+  }
+
   return (
     <div className="settings-section">
       <div className="settings-section-title">
@@ -71,16 +80,31 @@ export function ChatBehaviorSettings({ onUpdateSettings, settings }: ChatBehavio
       <label className="range-control">
         <span>
           <strong>自发续聊轮数</strong>
-          <small>{settings.groupChatMaxProactiveTurns} 轮</small>
+          <small>{groupProactiveTurnsUnlimited ? '无限' : `${groupProactiveTurnsValue} 轮`}</small>
         </span>
         <input
-          disabled={!settings.groupChatProactiveMode}
-          max="6"
+          disabled={!settings.groupChatProactiveMode || groupProactiveTurnsUnlimited}
+          max="999"
           min="0"
-          onChange={(event) => onUpdateSettings({ ...settings, groupChatMaxProactiveTurns: Number(event.target.value) })}
+          onChange={(event) => updateGroupProactiveTurns(Number(event.target.value))}
           step="1"
-          type="range"
-          value={settings.groupChatMaxProactiveTurns}
+          type="number"
+          value={groupProactiveTurnsValue}
+        />
+      </label>
+      <label className="toggle-row">
+        <span>
+          <strong>无限续聊</strong>
+          <small>页面开着时，群成员可以一直慢慢聊下去，模型额度消耗会更高</small>
+        </span>
+        <input
+          checked={groupProactiveTurnsUnlimited}
+          disabled={!settings.groupChatProactiveMode}
+          onChange={(event) => onUpdateSettings({
+            ...settings,
+            groupChatMaxProactiveTurns: event.target.checked ? -1 : 2,
+          })}
+          type="checkbox"
         />
       </label>
       <label className="range-control">
@@ -99,4 +123,9 @@ export function ChatBehaviorSettings({ onUpdateSettings, settings }: ChatBehavio
       </label>
     </div>
   )
+}
+
+function clampProactiveTurns(value: number): number {
+  const normalized = Number.isFinite(value) ? Math.trunc(value) : 2
+  return Math.min(999, Math.max(0, normalized))
 }

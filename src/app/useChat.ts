@@ -500,6 +500,7 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
 }
 
 function clampGroupProactiveTurnLimit(value: number): number {
+  if (value < 0) return Number.POSITIVE_INFINITY
   const normalized = Number.isFinite(value) ? Math.trunc(value) : 2
-  return Math.min(6, Math.max(0, normalized))
+  return Math.min(999, Math.max(0, normalized))
 }

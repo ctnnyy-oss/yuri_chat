@@ -74,10 +74,8 @@ export function migrateAppState(state: AppState): AppState {
         4,
         defaults.settings.groupChatMaxAutoReplies,
       ),
-      groupChatMaxProactiveTurns: clampNumber(
+      groupChatMaxProactiveTurns: normalizeGroupProactiveTurns(
         sourceSettings.groupChatMaxProactiveTurns,
-        0,
-        6,
         defaults.settings.groupChatMaxProactiveTurns,
       ),
       voice: normalizeVoiceSettings(sourceSettings.voice, defaults.settings.voice),
@@ -273,6 +271,13 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
   const numericValue = Number(value)
   if (!Number.isFinite(numericValue)) return fallback
   return Math.min(max, Math.max(min, numericValue))
+}
+
+function normalizeGroupProactiveTurns(value: unknown, fallback: number): number {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) return fallback
+  if (numericValue < 0) return -1
+  return Math.min(999, Math.max(0, Math.trunc(numericValue)))
 }
 
 function normalizeVoiceSettings(value: unknown, fallback: AppState['settings']['voice']): AppState['settings']['voice'] {
