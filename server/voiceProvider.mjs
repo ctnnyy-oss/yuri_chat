@@ -2,6 +2,7 @@ import { clampNumber } from './shared/utils.mjs'
 
 const maxSpeechCharacters = 3600
 const speechChunkCharacters = 220
+const defaultSpeechTimeoutMs = 75_000
 
 export async function callTextToSpeech(input, profile) {
   if (!profile) throw new Error('请先在模型页保存可用的聊天模型或 TTS 模型档案。')
@@ -240,7 +241,7 @@ function buildVoiceInstructions(characterName, settings, characterVoice) {
   return parts.filter(Boolean).join('\n')
 }
 
-async function fetchWithTimeout(url, init = {}, timeoutMs = 45_000) {
+async function fetchWithTimeout(url, init = {}, timeoutMs = getSpeechTimeoutMs()) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
@@ -252,6 +253,10 @@ async function fetchWithTimeout(url, init = {}, timeoutMs = 45_000) {
   } finally {
     clearTimeout(timeout)
   }
+}
+
+function getSpeechTimeoutMs() {
+  return clampNumber(process.env.AI_TTS_REQUEST_TIMEOUT_MS, 15_000, 120_000, defaultSpeechTimeoutMs)
 }
 
 function formatVoiceProviderError(status, detail, profile) {

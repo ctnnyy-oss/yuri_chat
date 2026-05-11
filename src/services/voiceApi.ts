@@ -21,13 +21,20 @@ export async function requestSpeechAudio(request: SpeechAudioRequest): Promise<S
     throw new Error('当前选择的是浏览器朗读，不需要请求后端语音模型。')
   }
 
+  const speechPayload = {
+    text: request.text,
+    characterName: request.characterName,
+    characterVoice: request.characterVoice,
+    settings: { voice: request.settings.voice },
+  }
+
   try {
     const response = await apiFetch('/api/voice/speech', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
+      body: JSON.stringify(speechPayload),
       token: getSavedCloudToken(),
-      timeoutMs: 60_000,
+      timeoutMs: 100_000,
       timeoutMessage: '语音生成超时：TTS 模型响应太慢，可以稍后再试或切到浏览器朗读。',
       errorFormatter: formatSpeechError,
     })
