@@ -2,7 +2,11 @@ import { Activity, AlertCircle, CheckCircle2, CircleDashed, SlidersHorizontal, X
 import { useEffect, useRef, useState } from 'react'
 import type { AppSettings, ModelProfileInput, ModelProfileSummary } from '../../domain/types'
 import { checkCloudHealth, saveCloudToken } from '../../services/cloudSync'
-import { isLikelyVoiceOnlyProfile, pickFallbackChatProfile } from '../../services/modelProfileCapabilities'
+import {
+  buildVoiceProfileSettingsPatch,
+  isLikelyVoiceOnlyProfile,
+  pickFallbackChatProfile,
+} from '../../services/modelProfileCapabilities'
 import { listModelProfiles, testModelProfile, type ModelCatalogResult } from '../../services/modelProfiles'
 import { requestSpeechAudio } from '../../services/voiceApi'
 import { WorkspaceTitle } from '../memory/atoms'
@@ -182,6 +186,7 @@ export function ModelAndDataPanel({
           ...settings,
           voice: {
             ...settings.voice,
+            ...buildVoiceProfileSettingsPatch(profile, settings.voice),
             provider: 'openai-compatible',
             ttsProfileId: profile.id,
             ttsModel: profile.model || settings.voice.ttsModel,

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Loader2, Mic, Play, ShieldCheck, SlidersHorizontal, Volume2 } from 'lucide-react'
 import type { AppSettings, CharacterVoiceProfile, ModelProfileSummary, VoiceBlendLayer } from '../../domain/types'
+import { buildVoiceProfileSettingsPatch } from '../../services/modelProfileCapabilities'
 import { requestSpeechAudio, speakWithBrowserVoice, stopBrowserSpeech } from '../../services/voiceApi'
 
 interface VoiceModelSettingsProps {
@@ -170,8 +171,23 @@ export function VoiceModelSettings({ modelProfiles, onUpdateSettings, settings }
     ? settings.voice.speechEmotion
     : 'natural'
 
-  function updateVoice(patch: Partial<AppSettings['voice']>) {
+  const updateVoice = useCallback((patch: Partial<AppSettings['voice']>) => {
     onUpdateSettings({ ...settings, voice: { ...settings.voice, ...patch } })
+  }, [onUpdateSettings, settings])
+
+  useEffect(() => {
+    if (usingBrowserVoice || !selectedTtsProfile) return
+
+    const patch = buildVoiceProfileSettingsPatch(selectedTtsProfile, settings.voice)
+    if (Object.keys(patch).length > 0) updateVoice(patch)
+  }, [selectedTtsProfile, settings.voice, updateVoice, usingBrowserVoice])
+
+  function handleTtsProfileChange(profileId: string) {
+    const profile = openAiCompatibleProfiles.find((candidate) => candidate.id === profileId)
+    updateVoice({
+      ttsProfileId: profileId,
+      ...(profile ? buildVoiceProfileSettingsPatch(profile, settings.voice) : {}),
+    })
   }
 
   function updateBlendLayer(index: number, patch: Partial<VoiceBlendLayer>) {
@@ -270,7 +286,7 @@ export function VoiceModelSettings({ modelProfiles, onUpdateSettings, settings }
         </span>
         <select
           disabled={usingBrowserVoice}
-          onChange={(event) => updateVoice({ ttsProfileId: event.target.value })}
+          onChange={(event) => handleTtsProfileChange(event.target.value)}
           value={selectedTtsProfileId}
         >
           <option value="">沿用当前 LLM 档案</option>
