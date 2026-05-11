@@ -380,7 +380,8 @@
 
   .voice-model-layout,
   .voice-config-grid,
-  .voice-toggle-grid {
+  .voice-toggle-grid,
+  .voice-blend-fields {
     grid-template-columns: minmax(0, 1fr);
   }
 

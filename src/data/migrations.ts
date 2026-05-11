@@ -1,10 +1,10 @@
-import type { AppState, CharacterCard, ConversationState, LongTermMemory, MemoryTombstone } from '../domain/types'
+import type { AppState, CharacterCard, ConversationState, LongTermMemory, MemoryTombstone, VoiceBlendLayer } from '../domain/types'
 import { refreshLocalMemoryEmbeddingCache } from '../services/memoryEmbeddingIndex'
 import { normalizeMemories } from '../services/memoryEngine'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { agentRooms, createSeedState } from './seed'
 
-const currentStateVersion = 32
+const currentStateVersion = 33
 const legacyDefaultRoomId = 'room-yuri-nest'
 const currentDefaultRoomId = 'room-yuri-chat'
 
@@ -284,10 +284,42 @@ function normalizeVoiceSettings(value: unknown, fallback: AppState['settings']['
     defaultVoiceLabel: normalizeShortText(source.defaultVoiceLabel, fallback.defaultVoiceLabel, 80),
     defaultStylePrompt: normalizeLongText(source.defaultStylePrompt, fallback.defaultStylePrompt, 360),
     speechRate: clampNumber(source.speechRate, 0.65, 1.35, fallback.speechRate),
+    speechPitch: clampNumber(source.speechPitch, 0.75, 1.25, fallback.speechPitch),
+    speechVolume: clampNumber(source.speechVolume, 0.5, 1.5, fallback.speechVolume),
+    speechBrightness: clampNumber(source.speechBrightness, 0, 1, fallback.speechBrightness),
+    speechBreathiness: clampNumber(source.speechBreathiness, 0, 1, fallback.speechBreathiness),
+    speechTension: clampNumber(source.speechTension, 0, 1, fallback.speechTension),
+    speechWarmth: clampNumber(source.speechWarmth, 0, 1, fallback.speechWarmth),
+    speechStyleIntensity: clampNumber(source.speechStyleIntensity, 0, 1, fallback.speechStyleIntensity),
+    speechEmotion: normalizeShortText(source.speechEmotion, fallback.speechEmotion, 40),
+    voiceBlendEnabled: Boolean(source.voiceBlendEnabled),
+    voiceBlendLayers: normalizeVoiceBlendLayers(source.voiceBlendLayers, fallback.voiceBlendLayers),
     browserFallbackEnabled: source.browserFallbackEnabled !== false,
     callModeEnabled: source.callModeEnabled !== false,
     customVoiceConsentRequired: source.customVoiceConsentRequired !== false,
   }
+}
+
+function normalizeVoiceBlendLayers(value: unknown, fallback: VoiceBlendLayer[]): VoiceBlendLayer[] {
+  const source = Array.isArray(value) ? value : fallback
+  const layers = source
+    .slice(0, 3)
+    .map((layer, index) => {
+      const item = layer && typeof layer === 'object' ? layer as Partial<VoiceBlendLayer> : {}
+      const fallbackLayer = fallback[index] ?? { label: `声线 ${index + 1}`, voiceId: '', weight: 0 }
+      return {
+        label: normalizeShortText(item.label, fallbackLayer.label, 24),
+        voiceId: normalizeShortText(item.voiceId, fallbackLayer.voiceId, 80),
+        weight: clampNumber(item.weight, 0, 1, fallbackLayer.weight),
+      }
+    })
+
+  while (layers.length < 3) {
+    const fallbackLayer = fallback[layers.length] ?? { label: `声线 ${layers.length + 1}`, voiceId: '', weight: 0 }
+    layers.push(fallbackLayer)
+  }
+
+  return layers
 }
 
 function normalizeShortText(value: unknown, fallback: string, maxLength: number): string {

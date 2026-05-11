@@ -361,9 +361,25 @@ export interface VoiceSettings {
   defaultVoiceLabel: string
   defaultStylePrompt: string
   speechRate: number
+  speechPitch: number
+  speechVolume: number
+  speechBrightness: number
+  speechBreathiness: number
+  speechTension: number
+  speechWarmth: number
+  speechStyleIntensity: number
+  speechEmotion: string
+  voiceBlendEnabled: boolean
+  voiceBlendLayers: VoiceBlendLayer[]
   browserFallbackEnabled: boolean
   callModeEnabled: boolean
   customVoiceConsentRequired: boolean
+}
+
+export interface VoiceBlendLayer {
+  label: string
+  voiceId: string
+  weight: number
 }
 
 export interface SendMessageOptions {

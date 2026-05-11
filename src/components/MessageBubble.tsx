@@ -148,7 +148,12 @@ function AssistantVoicePlayer({
     }
 
     if (settings.voice.provider === 'browser') {
-      const started = speakWithBrowserVoice(content, settings.voice.speechRate)
+      const started = speakWithBrowserVoice(
+        content,
+        settings.voice.speechRate,
+        settings.voice.speechPitch,
+        settings.voice.speechVolume,
+      )
       setStatus(started ? 'playing' : 'error')
       if (!started) setError('浏览器朗读不可用')
       return
@@ -171,7 +176,10 @@ function AssistantVoicePlayer({
       audio.onerror = () => setStatus('error')
       await audio.play()
     } catch (speechError) {
-      if (settings.voice.browserFallbackEnabled && speakWithBrowserVoice(content, settings.voice.speechRate)) {
+      if (
+        settings.voice.browserFallbackEnabled &&
+        speakWithBrowserVoice(content, settings.voice.speechRate, settings.voice.speechPitch, settings.voice.speechVolume)
+      ) {
         setStatus('playing')
         setError('TTS 未接通，已用浏览器朗读')
         return

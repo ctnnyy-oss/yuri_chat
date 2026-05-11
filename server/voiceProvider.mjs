@@ -15,15 +15,10 @@ export async function callTextToSpeech(input, profile) {
   const characterVoice = input?.characterVoice ?? {}
   const text = normalizeSpeechText(input?.text)
   const model = normalizeShortText(settings.ttsModel, 'gpt-4o-mini-tts', 120)
-  const voiceId = normalizeShortText(
-    characterVoice.consentConfirmed && characterVoice.providerVoiceId
-      ? characterVoice.providerVoiceId
-      : settings.defaultVoiceId,
-    'coral',
-    80,
-  )
-  const instructions = buildVoiceInstructions(input?.characterName, settings, characterVoice)
-  const speed = clampNumber(settings.speechRate, 0.65, 1.35, 1)
+  const tuning = normalizeVoiceTuning(settings)
+  const voiceId = resolveSpeechVoiceId(settings, characterVoice, tuning)
+  const instructions = buildVoiceInstructions(input?.characterName, settings, characterVoice, tuning)
+  const speed = tuning.speed
   const chunks = splitSpeechText(text)
 
   if (chunks.length > 1) {
@@ -227,10 +222,25 @@ function normalizeShortText(value, fallback, maxLength) {
   return (text || fallback).slice(0, maxLength)
 }
 
-function buildVoiceInstructions(characterName, settings, characterVoice) {
+function resolveSpeechVoiceId(settings, characterVoice, tuning) {
+  if (characterVoice.consentConfirmed && characterVoice.providerVoiceId) {
+    return normalizeShortText(characterVoice.providerVoiceId, 'coral', 80)
+  }
+
+  const blendVoiceId = tuning.voiceBlendEnabled
+    ? [...tuning.voiceBlendLayers]
+      .filter((layer) => layer.voiceId && layer.weight > 0)
+      .sort((left, right) => right.weight - left.weight)[0]?.voiceId
+    : ''
+
+  return normalizeShortText(blendVoiceId || settings.defaultVoiceId, 'coral', 80)
+}
+
+function buildVoiceInstructions(characterName, settings, characterVoice, tuning) {
   const parts = [
     `你正在为角色「${normalizeShortText(characterName, '角色', 60)}」生成聊天语音。`,
     normalizeShortText(settings.defaultStylePrompt, '', 360),
+    buildTuningInstruction(tuning),
   ]
 
   if (characterVoice.consentConfirmed && characterVoice.stylePrompt) {
@@ -239,6 +249,91 @@ function buildVoiceInstructions(characterName, settings, characterVoice) {
 
   parts.push('语气自然、清晰、像即时通讯里的语音消息；不要额外朗读舞台说明。')
   return parts.filter(Boolean).join('\n')
+}
+
+function normalizeVoiceTuning(settings) {
+  return {
+    speed: clampNumber(settings.speechRate, 0.65, 1.35, 1),
+    pitch: clampNumber(settings.speechPitch, 0.75, 1.25, 1),
+    volume: clampNumber(settings.speechVolume, 0.5, 1.5, 1),
+    brightness: clampNumber(settings.speechBrightness, 0, 1, 0.5),
+    breathiness: clampNumber(settings.speechBreathiness, 0, 1, 0.18),
+    tension: clampNumber(settings.speechTension, 0, 1, 0.32),
+    warmth: clampNumber(settings.speechWarmth, 0, 1, 0.68),
+    styleIntensity: clampNumber(settings.speechStyleIntensity, 0, 1, 0.55),
+    emotion: normalizeShortText(settings.speechEmotion, 'natural', 40),
+    voiceBlendEnabled: Boolean(settings.voiceBlendEnabled),
+    voiceBlendLayers: normalizeVoiceBlendLayers(settings.voiceBlendLayers),
+  }
+}
+
+function normalizeVoiceBlendLayers(value) {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .slice(0, 3)
+    .map((layer) => {
+      const item = layer && typeof layer === 'object' ? layer : {}
+      return {
+        label: normalizeShortText(item.label, '', 24),
+        voiceId: normalizeShortText(item.voiceId, '', 80),
+        weight: clampNumber(item.weight, 0, 1, 0),
+      }
+    })
+    .filter((layer) => layer.label || layer.voiceId || layer.weight > 0)
+}
+
+function buildTuningInstruction(tuning) {
+  const toneLines = [
+    `调音盘：语速 ${formatRatio(tuning.speed)}，音高 ${formatRatio(tuning.pitch)}，饱满度 ${formatRatio(tuning.volume)}，清亮度 ${formatPercent(tuning.brightness)}，气声 ${formatPercent(tuning.breathiness)}，松紧感 ${formatPercent(tuning.tension)}，温暖度 ${formatPercent(tuning.warmth)}，情绪风格 ${voiceEmotionLabel(tuning.emotion)}，风格强度 ${formatPercent(tuning.styleIntensity)}。`,
+    buildAcousticInstruction(tuning),
+  ]
+
+  if (tuning.voiceBlendEnabled) {
+    const blendText = tuning.voiceBlendLayers
+      .filter((layer) => layer.weight > 0)
+      .map((layer) => {
+        const name = layer.label || layer.voiceId || '未命名声线'
+        return `${name} ${Math.round(layer.weight * 100)}%`
+      })
+      .join('，')
+    if (blendText) toneLines.push(`声线配方参考：${blendText}。如果供应商不支持真正混音，就按这个方向靠近声线气质。`)
+  }
+
+  toneLines.push('这些是内部演绎参数，不要把参数本身读出来。')
+  return toneLines.join('\n')
+}
+
+function formatRatio(value) {
+  return `${Number(value).toFixed(2)}x`
+}
+
+function formatPercent(value) {
+  return `${Math.round(Number(value) * 100)}%`
+}
+
+function buildAcousticInstruction(tuning) {
+  const brightness = tuning.brightness >= 0.62 ? '更清亮、靠前、齿音清晰但不尖刺' : tuning.brightness <= 0.38 ? '更暗、更低饱和、声音靠后' : '清亮度适中'
+  const breathiness = tuning.breathiness >= 0.55 ? '带可控气声和柔软边缘' : tuning.breathiness <= 0.18 ? '发声干净、少漏气' : '保留少量气声'
+  const tension = tuning.tension >= 0.62 ? '声带张力略紧，情绪更绷' : tuning.tension <= 0.28 ? '咬字放松，语尾自然落下' : '松紧适中'
+  const warmth = tuning.warmth >= 0.62 ? '口腔共鸣温暖、贴近耳边' : tuning.warmth <= 0.38 ? '质感偏冷、距离感更强' : '温暖度适中'
+  return `声学方向：${brightness}；${breathiness}；${tension}；${warmth}。`
+}
+
+function voiceEmotionLabel(value) {
+  const labels = {
+    natural: '自然',
+    warm: '温柔',
+    cheerful: '开心',
+    shy: '害羞',
+    soft: '软糯',
+    fragile: '病弱',
+    nervous: '紧张',
+    cool: '冷淡',
+    sad: '低落',
+    angry: '生气',
+  }
+  return labels[value] ?? normalizeShortText(value, '自然', 40)
 }
 
 async function fetchWithTimeout(url, init = {}, timeoutMs = getSpeechTimeoutMs()) {

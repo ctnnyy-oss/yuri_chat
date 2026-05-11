@@ -56,11 +56,13 @@ export async function requestSpeechAudio(request: SpeechAudioRequest): Promise<S
   }
 }
 
-export function speakWithBrowserVoice(text: string, rate = 1): boolean {
+export function speakWithBrowserVoice(text: string, rate = 1, pitch = 1, volume = 1): boolean {
   if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return false
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.lang = 'zh-CN'
   utterance.rate = Math.min(1.35, Math.max(0.65, rate))
+  utterance.pitch = Math.min(1.25, Math.max(0.75, pitch))
+  utterance.volume = Math.min(1, Math.max(0, volume))
   window.speechSynthesis.cancel()
   window.speechSynthesis.speak(utterance)
   return true
