@@ -92,6 +92,33 @@ export function blankRoleDraft(): RoleDraft {
   }
 }
 
+export function applyPersonaImportTemplate(draft: RoleDraft): string {
+  const current = draft.persona.trim()
+  const name = draft.name.trim() || '角色名'
+  const relation = draft.relation.trim() || '和用户/其他角色的关系'
+  const mood = draft.mood.trim() || '性格底色'
+  const template = [
+    `身份：${name}，年龄/身份/世界观位置。`,
+    `关系：${relation}。写清她和用户、CP、朋友、家人、对手分别是什么关系。`,
+    `性格：${mood}。写“她遇到什么会怎么做”，少堆形容词。`,
+    '说话方式：常用称呼、句长、口癖、会不会吐槽/撒娇/冷淡、不会出现的客服腔。',
+    '情绪模式：什么会心软、吃醋、生气、逃避、主动靠近。',
+    '经历：1-3 个让她形成现在性格的具体事件。',
+    '目标：她长期想守住、得到、逃离或证明什么。',
+    '边界：她不知道什么、不能乱编什么、关系不能突然越到哪里。',
+    '互动规则：面对安慰、任务、亲密追问、身份追问时，她会怎样自然回应。',
+    '',
+    '用户：你是不是在担心我？',
+    `${name}：写一条最像她的回复。`,
+    '用户：你到底是谁？',
+    `${name}：写一条防破甲但不出戏的回复。`,
+  ].join('\n')
+
+  if (!current) return template
+  if (/身份[:：]|说话方式[:：]|用户[:：]/.test(current)) return current
+  return [current, '', '--- 可补的人设结构 ---', template].join('\n')
+}
+
 export function roleMatchesQuery(role: ManagedRole, query: string) {
   if (!query) return true
   return [role.name, role.relation, role.mood].join(' ').toLowerCase().includes(query)

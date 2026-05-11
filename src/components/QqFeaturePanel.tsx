@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { MessageCircle, Plus, Search, X } from 'lucide-react'
+import { MessageCircle, Plus, Search, Wand2, X } from 'lucide-react'
 import type { CharacterCard, CharacterVoiceProfile } from '../domain/types'
 import { analyzePersonaImport } from '../services/personaImport'
 import type { AppView } from './CharacterRail'
@@ -8,6 +8,7 @@ import { DesktopRoleEditor } from './role/DesktopRoleEditor'
 import { RolePersonaMeter } from './role/RolePersonaMeter'
 import {
   LONG_PRESS_MS,
+  applyPersonaImportTemplate,
   blankRoleDraft,
   buildVoiceProfileFromDraft,
   isGroupCharacter,
@@ -353,15 +354,27 @@ export function QqFeaturePanel({
                     value={roleDraft.mood}
                   />
                 </label>
-                <label>
-                  人设导入
+                <div className="persona-import-field">
+                  <span className="persona-field-head">
+                    人设导入
+                    <button
+                      aria-label="套用人设结构模板"
+                      disabled={!editorEditable}
+                      onClick={() => updateDraft('persona', applyPersonaImportTemplate(roleDraft))}
+                      type="button"
+                    >
+                      <Wand2 size={15} />
+                      <span>套用结构</span>
+                    </button>
+                  </span>
                   <textarea
+                    aria-label="人设导入"
                     disabled={!editorEditable}
                     onChange={(event) => updateDraft('persona', event.target.value)}
                     placeholder="粘贴角色资料、聊天样例、经历、说话方式、边界"
                     value={roleDraft.persona}
                   />
-                </label>
+                </div>
                 <label>
                   音色名
                   <input

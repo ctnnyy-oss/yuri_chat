@@ -2,6 +2,7 @@ import type { AppState, ChatMessage, MemoryUsageLog, PromptBundle, PromptContext
 import { brand } from '../config/brand'
 import { createId, isExplicitMemoryQuery, nowIso } from './memoryCore'
 import { getActiveMemories, getTriggeredWorldNodes, buildMemoryContextBlocks } from './memoryRetrieval'
+import { buildPersonaContextBlocks } from './personaImport'
 
 type PromptBlockCategory = NonNullable<PromptContextBlock['category']>
 
@@ -52,11 +53,15 @@ export function buildPromptBundle(
   const memoryContextBlocks = buildMemoryContextBlocks(activeMemories, {
     characterName: character.name,
   })
+  const personaContextBlocks = buildPersonaContextBlocks(character, { latestUserText, recentText })
+  const personaGuardBlocks = personaContextBlocks.filter((block) => block.title === '本轮人设守门')
+  const personaPreludeBlocks = personaContextBlocks.filter((block) => block.title !== '本轮人设守门')
   const runtimeContext = buildRuntimeContextBlock()
   const reminderContext = buildReminderContextBlock(state)
   const companionRhythm = buildCompanionRhythmBlock(recentMessages, character.name)
   const contextBlocks = applyPromptContextBudget([
     runtimeContext,
+    ...personaPreludeBlocks,
     companionRhythm,
     ...(recallMode ? [buildRecallModeContextBlock(activeMemories)] : []),
     ...(reminderContext ? [reminderContext] : []),
@@ -77,6 +82,7 @@ export function buildPromptBundle(
           },
         ]
       : []),
+    ...personaGuardBlocks,
   ])
 
   return {

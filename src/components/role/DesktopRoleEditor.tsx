@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
-import { Plus, Save, Trash2 } from 'lucide-react'
+import { Plus, Save, Trash2, Wand2 } from 'lucide-react'
 import type { analyzePersonaImport } from '../../services/personaImport'
-import type { ManagedRole, MobileEditorMode, RoleDraft } from './rolePanelModel'
+import { applyPersonaImportTemplate, type ManagedRole, type MobileEditorMode, type RoleDraft } from './rolePanelModel'
 import { RolePersonaMeter } from './RolePersonaMeter'
 
 type PersonaAnalysis = ReturnType<typeof analyzePersonaImport>
@@ -71,15 +71,27 @@ export function DesktopRoleEditor({
             placeholder="温柔、傲娇、绿茶、忠犬..."
           />
         </label>
-        <label>
-          人设导入
+        <div className="persona-import-field">
+          <span className="persona-field-head">
+            人设导入
+            <button
+              aria-label="套用人设结构模板"
+              disabled={!editorEditable}
+              onClick={() => onUpdateDraft('persona', applyPersonaImportTemplate(roleDraft))}
+              type="button"
+            >
+              <Wand2 size={15} />
+              <span>套用结构</span>
+            </button>
+          </span>
           <textarea
+            aria-label="人设导入"
             disabled={!editorEditable}
             value={roleDraft.persona}
             onChange={(event) => onUpdateDraft('persona', event.target.value)}
             placeholder="可以直接粘贴自然语言。越包含经历、说话方式、情绪模式、边界和相处规则，越像真人。"
           />
-        </label>
+        </div>
         <label>
           音色名
           <input

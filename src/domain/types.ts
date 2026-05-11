@@ -81,6 +81,7 @@ export interface CharacterCard {
 }
 
 export interface CharacterPersonaProfile {
+  schemaVersion?: 2
   sourceText: string
   identity: string
   relationship: string
@@ -91,8 +92,64 @@ export interface CharacterPersonaProfile {
   goals: string
   boundaries: string
   interactionRules: string
+  constitution?: PersonaConstitution
+  relationships?: PersonaRelationshipEntry[]
+  speechExamples?: PersonaSpeechExample[]
+  loreEntries?: PersonaLoreEntry[]
+  sceneTriggers?: PersonaSceneTrigger[]
+  oocGuards?: string[]
+  runtimeAnchors?: string[]
   missingDimensions: string[]
   updatedAt: string
+}
+
+export interface PersonaConstitution {
+  coreIdentity: string
+  immutableFacts: string[]
+  coreDrives: string[]
+  hardBoundaries: string[]
+  driftRules: string[]
+}
+
+export interface PersonaRelationshipEntry {
+  name: string
+  relation: string
+  stance: string
+  evidence?: string
+}
+
+export interface PersonaSpeechExample {
+  user: string
+  character: string
+  note?: string
+  source: 'imported' | 'generated'
+}
+
+export interface PersonaLoreEntry {
+  id: string
+  title: string
+  content: string
+  keywords: string[]
+  priority: number
+  source: 'identity' | 'relationship' | 'temperament' | 'speech' | 'experience' | 'goal' | 'boundary' | 'raw'
+}
+
+export interface PersonaSceneTrigger {
+  id: string
+  title: string
+  keywords: string[]
+  activeTraits: string[]
+  responseStrategy: string
+  priority: number
+}
+
+export interface PersonaRuntimeState {
+  scenario: string
+  emotionalPosture: string
+  activeTraits: string[]
+  responseStrategy: string
+  riskFlags: string[]
+  selfCheck: string[]
 }
 
 export interface ConversationState {
