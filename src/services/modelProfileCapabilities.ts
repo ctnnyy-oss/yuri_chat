@@ -6,6 +6,7 @@ export function isLikelyVoiceOnlyModel(model: string): boolean {
     || /text[-_]?to[-_]?speech/.test(normalized)
     || /speech[-_]?synthesis/.test(normalized)
     || /voice[-_]?clone|voiceclone|voice[-_]?design|voicedesign/.test(normalized)
+    || /^volcano_(icl|tts)$/.test(normalized)
 }
 
 export function isLikelyVoiceOnlyProfile(profile?: Pick<ModelProfileSummary, 'model'> | null): boolean {

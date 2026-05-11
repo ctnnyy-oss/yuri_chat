@@ -6,7 +6,7 @@ const speechChunkCharacters = 220
 const defaultSpeechTimeoutMs = 75_000
 const volcengineDefaultV1Endpoint = 'https://openspeech.bytedance.com/api/v1/tts'
 const volcengineDefaultV3Endpoint = 'https://openspeech.bytedance.com/api/v3/tts/unidirectional/sse'
-const volcengineDefaultV1Voice = 'BV700_V2_streaming'
+const volcengineDefaultV1Voice = 'zh_female_vv_uranus_bigtts'
 const volcengineDefaultV3Voice = 'zh_female_cancan_uranus_bigtts'
 
 export async function callTextToSpeech(input, profile) {
@@ -72,8 +72,8 @@ export async function callTextToSpeech(input, profile) {
 }
 
 async function callVolcengineTextToSpeech({ profile, model, voiceId, text, instructions, tuning, mode }) {
-  const config = parseVolcengineCredentials(profile.apiKey)
   const endpoint = resolveVolcengineEndpoint(profile.baseUrl, mode)
+  const config = parseVolcengineCredentials(profile.apiKey, mode, model)
   if (mode === 'v3') {
     return callVolcengineV3TextToSpeech({ profile, endpoint, config, model, voiceId, text, instructions, tuning })
   }
@@ -81,26 +81,34 @@ async function callVolcengineTextToSpeech({ profile, model, voiceId, text, instr
 }
 
 async function callVolcengineV1TextToSpeech({ profile, endpoint, config, model, voiceId, text, tuning }) {
+  const headers = {
+    'Content-Type': 'application/json; charset=utf-8',
+  }
+  if (config.authMode === 'api-key') {
+    headers['x-api-key'] = config.token
+  } else {
+    headers.Authorization = `Bearer;${config.token}`
+  }
+
+  const app = {
+    cluster: config.cluster,
+  }
+  if (config.appid) {
+    app.appid = config.appid
+    app.token = config.token
+  }
+
   const response = await fetchWithTimeout(endpoint, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer;${config.token}`,
-      'Content-Type': 'application/json; charset=utf-8',
-    },
+    headers,
     body: JSON.stringify({
-      app: {
-        appid: config.appid,
-        token: config.token,
-        cluster: config.cluster,
-      },
+      app,
       user: {
-        uid: `yuri-chat-${randomUUID()}`,
+        uid: '豆包语音',
       },
       audio: {
-        voice: 'other',
         voice_type: voiceId,
         encoding: 'mp3',
-        rate: 24000,
         speed_ratio: clampNumber(tuning.speed, 0.1, 2, 1),
         volume_ratio: clampNumber(tuning.volume, 0.1, 3, 1),
         pitch_ratio: clampNumber(tuning.pitch, 0.1, 3, 1),
@@ -318,12 +326,15 @@ function detectBase64AudioMimeType(base64) {
 
 function isVolcengineSpeechProfile(profile, model) {
   const probe = `${profile.baseUrl || ''} ${profile.model || ''} ${model || ''}`.toLowerCase()
-  return /openspeech\.bytedance\.com|volcengine|doubao/.test(probe)
+  return /openspeech\.bytedance\.com|volcengine|doubao|volcano_/.test(probe)
     || isVolcengineResourceId(model)
 }
 
 function shouldUseVolcengineV3(profile, model) {
-  const probe = `${profile.baseUrl || ''} ${model || ''}`.toLowerCase()
+  const baseUrl = String(profile.baseUrl || '').toLowerCase()
+  if (/\/api\/v1\/tts/.test(baseUrl)) return false
+  if (/\/api\/v3\/tts/.test(baseUrl)) return true
+  const probe = `${baseUrl} ${model || ''}`.toLowerCase()
   return /\/api\/v3\/|seed-(tts|icl)-2|seed-tts|bigtts|volcengine-tts-v3/.test(probe)
 }
 
@@ -331,12 +342,12 @@ function isVolcengineResourceId(value) {
   return /^seed-(tts|icl)-/i.test(String(value || '').trim())
 }
 
-function parseVolcengineCredentials(apiKey) {
+function parseVolcengineCredentials(apiKey, mode, model) {
   const raw = String(apiKey || '').trim()
   const envConfig = {
     appid: process.env.VOLCENGINE_TTS_APP_ID || process.env.VOLCENGINE_TTS_APPID || process.env.BYTEPLUS_SEED_SPEECH_APPID || '',
     token: process.env.VOLCENGINE_TTS_TOKEN || process.env.VOLCENGINE_TTS_API_KEY || process.env.BYTEPLUS_SEED_SPEECH_API_KEY || '',
-    cluster: process.env.VOLCENGINE_TTS_CLUSTER || process.env.VOLCENGINE_TTS_CLUSTER_ID || 'volcano_tts',
+    cluster: process.env.VOLCENGINE_TTS_CLUSTER || process.env.VOLCENGINE_TTS_CLUSTER_ID || '',
     resourceId: process.env.VOLCENGINE_TTS_RESOURCE_ID || '',
     synthesisModel: process.env.VOLCENGINE_TTS_MODEL || '',
   }
@@ -344,13 +355,17 @@ function parseVolcengineCredentials(apiKey) {
   const config = {
     appid: parsed.appid || envConfig.appid,
     token: parsed.token || envConfig.token,
-    cluster: parsed.cluster || envConfig.cluster || 'volcano_tts',
+    cluster: parsed.cluster || envConfig.cluster || inferVolcengineCluster(model, mode),
     resourceId: parsed.resourceId || envConfig.resourceId,
     synthesisModel: parsed.synthesisModel || envConfig.synthesisModel,
+    authMode: parsed.appid || envConfig.appid ? 'bearer' : 'api-key',
   }
 
-  if (!config.appid || !config.token) {
-    throw new Error('火山引擎豆包 TTS 需要 AppID 和 Access Token。模型档案的 API Key 可以填 appid|access_token|resource_id，例如第三段填 seed-tts-2.0；小米档案会继续保留不受影响。')
+  if (!config.token) {
+    throw new Error('火山引擎豆包 TTS 需要 API Key。模型档案的 API Key 直接填控制台给的 x-api-key；小米档案会继续保留不受影响。')
+  }
+  if (mode === 'v3' && !config.appid && config.authMode === 'api-key') {
+    throw new Error('当前豆包 V3 端点需要 AppID + Access Token。妹妹这份 x-api-key 请使用 https://openspeech.bytedance.com/api/v1/tts，cluster 填 volcano_icl。')
   }
   return config
 }
@@ -372,10 +387,11 @@ function parseVolcengineCredentialText(raw) {
 
   const parts = raw.split('|').map((part) => part.trim()).filter(Boolean)
   if (parts.length >= 2) {
+    const cluster = parts.find((part) => /^volcano_/i.test(part)) || ''
     return {
       appid: parts[0],
       token: normalizeBearerToken(parts[1]),
-      cluster: parts[2] && !isVolcengineResourceId(parts[2]) ? parts[2] : '',
+      cluster,
       resourceId: parts.find((part) => isVolcengineResourceId(part)) || '',
       synthesisModel: parts.find((part) => /^seed-tts-2\.0-(expressive|standard)$/i.test(part)) || '',
     }
@@ -413,8 +429,18 @@ function resolveVolcengineVoiceId(voiceId, mode) {
     if (/^S_|_bigtts$/i.test(normalized)) return normalized
     return volcengineDefaultV3Voice
   }
-  if (/^(S_|BV|VC_|zh_)/i.test(normalized)) return normalized
+  if (/^[A-Za-z0-9_-]+$/.test(normalized) && !isLikelyOpenAiBuiltinVoice(normalized)) return normalized
   return volcengineDefaultV1Voice
+}
+
+function inferVolcengineCluster(model, mode) {
+  const normalized = String(model || '').trim()
+  if (/^volcano_/i.test(normalized)) return normalized
+  return mode === 'v1' ? 'volcano_icl' : 'volcano_tts'
+}
+
+function isLikelyOpenAiBuiltinVoice(value) {
+  return /^(alloy|ash|ballad|coral|echo|fable|nova|onyx|sage|shimmer|verse)$/i.test(String(value || ''))
 }
 
 function resolveVolcengineResourceId(value) {

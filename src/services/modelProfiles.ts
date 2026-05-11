@@ -123,11 +123,11 @@ export const modelProviderPresets: ModelProviderPreset[] = [
   {
     id: 'volcengine-doubao-tts',
     label: '火山引擎豆包 TTS',
-    description: '豆包语音合成大模型。API Key 填 appid|access_token|seed-tts-2.0；右侧默认音色 ID 填 speaker/voice_type，小米档案可继续保留。',
+    description: '豆包语音/复刻音色通道。API Key 直接填控制台的 x-api-key；右侧默认音色 ID 填 Voice_Type 或复刻音色 ID。',
     group: 'official',
     kind: 'openai-compatible',
-    baseUrl: 'https://openspeech.bytedance.com/api/v3/tts/unidirectional/sse',
-    model: 'seed-tts-2.0',
+    baseUrl: 'https://openspeech.bytedance.com/api/v1/tts',
+    model: 'volcano_icl',
   },
   {
     id: 'anthropic',
