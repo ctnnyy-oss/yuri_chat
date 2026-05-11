@@ -220,7 +220,14 @@ export async function fetchModelCatalog(
 
 export async function requestModelEmbeddings(
   token: string,
-  input: { texts: string[]; profileId?: string; profile?: ModelProfileInput; model?: string; dimensions?: number },
+  input: {
+    texts: string[]
+    profileId?: string
+    profile?: ModelProfileInput
+    model?: string
+    dimensions?: number
+    optional?: boolean
+  },
 ): Promise<ModelEmbeddingResult> {
   const response = await modelFetch('/api/model/embeddings', token, {
     method: 'POST',

@@ -462,6 +462,7 @@ async function prepareExternalEmbeddingContext(
       requestModelEmbeddings(getSavedCloudToken(), {
         profileId: state.settings.modelProfileId,
         texts: [...memories.map(getMemoryEmbeddingInput), query],
+        optional: true,
       }),
       3_500,
     )

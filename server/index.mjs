@@ -298,6 +298,7 @@ app.post('/api/model/models', requireAccountAuth, async (request, response) => {
 })
 
 app.post('/api/model/embeddings', requireAccountAuth, async (request, response) => {
+  const startedAt = Date.now()
   try {
     const runtimeProfile = resolveRuntimeProfileForModelCatalog(request.body ?? {}, request.user)
     if (!runtimeProfile.apiKey) {
@@ -305,7 +306,6 @@ app.post('/api/model/embeddings', requireAccountAuth, async (request, response) 
       return
     }
 
-    const startedAt = Date.now()
     const result = await callModelEmbeddings(request.body?.texts, runtimeProfile, {
       model: request.body?.model,
       dimensions: request.body?.dimensions,
@@ -315,6 +315,18 @@ app.post('/api/model/embeddings', requireAccountAuth, async (request, response) 
       latencyMs: Date.now() - startedAt,
     })
   } catch (error) {
+    if (request.body?.optional) {
+      response.json({
+        ok: false,
+        provider: '',
+        model: '',
+        dimensions: 0,
+        embeddings: [],
+        latencyMs: Date.now() - startedAt,
+        error: error instanceof Error ? error.message : 'embedding 生成失败',
+      })
+      return
+    }
     response.status(502).json({ error: error instanceof Error ? error.message : 'embedding 生成失败' })
   }
 })
