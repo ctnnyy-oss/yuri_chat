@@ -4,7 +4,7 @@ import { normalizeMemories } from '../services/memoryEngine'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { agentRooms, createSeedState } from './seed'
 
-const currentStateVersion = 33
+const currentStateVersion = 34
 const legacyDefaultRoomId = 'room-yuri-nest'
 const currentDefaultRoomId = 'room-yuri-chat'
 
@@ -73,6 +73,12 @@ export function migrateAppState(state: AppState): AppState {
         1,
         4,
         defaults.settings.groupChatMaxAutoReplies,
+      ),
+      groupChatMaxProactiveTurns: clampNumber(
+        sourceSettings.groupChatMaxProactiveTurns,
+        0,
+        6,
+        defaults.settings.groupChatMaxProactiveTurns,
       ),
       voice: normalizeVoiceSettings(sourceSettings.voice, defaults.settings.voice),
     },

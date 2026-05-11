@@ -347,6 +347,7 @@ export interface AppSettings {
   groupChatHumanMode: boolean
   groupChatProactiveMode: boolean
   groupChatMaxAutoReplies: number
+  groupChatMaxProactiveTurns: number
   voice: VoiceSettings
 }
 

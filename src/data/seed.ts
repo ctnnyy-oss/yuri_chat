@@ -388,7 +388,7 @@ export function createSeedState(): AppState {
   }))
 
   return {
-    version: 32,
+    version: 34,
     activeCharacterId: characters[0].id,
     characters,
     conversations,
@@ -430,6 +430,7 @@ export function createSeedState(): AppState {
       groupChatHumanMode: true,
       groupChatProactiveMode: true,
       groupChatMaxAutoReplies: 3,
+      groupChatMaxProactiveTurns: 2,
       voice: {
         inputEnabled: true,
         assistantPlaybackEnabled: true,

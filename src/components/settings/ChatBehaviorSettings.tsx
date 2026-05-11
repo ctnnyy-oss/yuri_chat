@@ -60,12 +60,27 @@ export function ChatBehaviorSettings({ onUpdateSettings, settings }: ChatBehavio
       <label className="toggle-row">
         <span>
           <strong>群成员主动发言</strong>
-          <small>群聊空闲时，成员会随机起话题或互相接话，最多连续两轮</small>
+          <small>群聊空闲时，成员会随机起话题或互相接话；想省额度可以关掉</small>
         </span>
         <input
           checked={settings.groupChatProactiveMode}
           onChange={(event) => onUpdateSettings({ ...settings, groupChatProactiveMode: event.target.checked })}
           type="checkbox"
+        />
+      </label>
+      <label className="range-control">
+        <span>
+          <strong>自发续聊轮数</strong>
+          <small>{settings.groupChatMaxProactiveTurns} 轮</small>
+        </span>
+        <input
+          disabled={!settings.groupChatProactiveMode}
+          max="6"
+          min="0"
+          onChange={(event) => onUpdateSettings({ ...settings, groupChatMaxProactiveTurns: Number(event.target.value) })}
+          step="1"
+          type="range"
+          value={settings.groupChatMaxProactiveTurns}
         />
       </label>
       <label className="range-control">
