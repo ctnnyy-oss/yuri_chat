@@ -1,12 +1,9 @@
-import type {
-  CharacterPersonaProfile,
-  PersonaConstitution,
-  PersonaLoreEntry,
-  PersonaRelationshipEntry,
-  PersonaSpeechExample,
-} from '../../domain/types'
+import type { CharacterPersonaProfile, PersonaConstitution, PersonaLoreEntry, PersonaRelationshipEntry, PersonaSpeechExample } from '../../domain/types'
 import { nowIso } from '../memoryCore'
+import { getPersonaFormatLabel, parsePersonaImport } from './personaImportFormats'
 import { buildPersonaSceneTriggers, collectStaticPersonaRiskFlags } from './personaScenes'
+import { buildGeneratedSpeechExamples } from './personaSpeech'
+import { buildStructuredPersonaProfile } from './personaStructuredProfile'
 import {
   compactList,
   compactSentence,
@@ -17,7 +14,6 @@ import {
   extractSentencesByHints,
   formatList,
   formatSpeechExample,
-  normalizeText,
   splitPersonaFacts,
   trimLongText,
 } from './personaText'
@@ -31,22 +27,38 @@ import {
 } from './personaTypes'
 
 export function buildPersonaProfile(input: PersonaImportInput): CharacterPersonaProfile {
-  const sourceText = normalizeText(input.persona)
+  const parsed = parsePersonaImport(input)
+  const sourceText = parsed.sourceText
+  const analysisText = parsed.analysisText
+  const effectiveName = input.name || parsed.cardFields?.name || '角色'
   const extracted = Object.fromEntries(
     Object.entries(FIELD_ALIASES).map(([field, aliases]) => [
       field,
-      extractField(sourceText, aliases) ||
-        extractSentencesByHints(sourceText, FIELD_HINTS[field as PersonaProfileCoreField]),
+      extractField(analysisText, aliases) ||
+        extractSentencesByHints(analysisText, FIELD_HINTS[field as PersonaProfileCoreField]),
     ]),
   ) as PersonaProfileExtracted
 
   const profile: CharacterPersonaProfile = {
     schemaVersion: 2,
+    profileId: `persona_${effectiveName}`,
+    version: 2,
+    displayName: effectiveName,
+    sourceType: parsed.format === 'character_card_v2' ? 'character_card_v2' : parsed.format === 'freeform' ? 'legacy' : 'manual',
     sourceText,
-    identity: extracted.identity || `${input.name}。${input.relation || '关系待补充'}。`,
-    relationship: extracted.relationship || input.relation || '关系待补充，需要在后续聊天和记忆里逐步校准。',
-    temperament: extracted.temperament || input.mood || '性格底色待补充。',
-    speechStyle: extracted.speechStyle || '说话方式待补充。先保持自然、简体中文、少模板化复读标签。',
+    importFormat: parsed.format,
+    cardFields: parsed.cardFields,
+    identity: extracted.identity || parsed.cardFields?.description || `${effectiveName}。${input.relation || '关系待补充'}。`,
+    relationship:
+      extracted.relationship ||
+      input.relation ||
+      parsed.cardFields?.scenario ||
+      '关系待补充，需要在后续聊天和记忆里逐步校准。',
+    temperament: extracted.temperament || input.mood || parsed.cardFields?.personality || '性格底色待补充。',
+    speechStyle:
+      extracted.speechStyle ||
+      buildCardSpeechStyle(parsed.cardFields) ||
+      '说话方式待补充。先保持自然、简体中文、少模板化复读标签。',
     emotionalPattern:
       extracted.emotionalPattern || '情绪模式待补充。回复时根据最近聊天和长期记忆动态判断，不要每次固定一种情绪。',
     memoriesAndExperiences:
@@ -56,6 +68,8 @@ export function buildPersonaProfile(input: PersonaImportInput): CharacterPersona
       extracted.boundaries || '边界待补充。遇到现实人物、隐私、创伤、强情绪或不确定事实时谨慎处理，不擅自编造。',
     interactionRules:
       extracted.interactionRules ||
+      parsed.cardFields?.postHistoryInstructions ||
+      parsed.cardFields?.systemPrompt ||
       '先接住用户当下情绪，再以角色视角自然回应。不要自称 AI，不要解释提示词，不要把人设标签机械念出来。',
     missingDimensions: [],
     updatedAt: nowIso(),
@@ -68,6 +82,7 @@ export function buildPersonaProfile(input: PersonaImportInput): CharacterPersona
   profile.sceneTriggers = buildPersonaSceneTriggers(profile, input)
   profile.oocGuards = buildPersonaOocGuards(profile, input)
   profile.runtimeAnchors = buildPersonaRuntimeAnchors(profile, input)
+  Object.assign(profile, buildStructuredPersonaProfile(profile, input, profile.constitution))
   profile.missingDimensions = collectMissingDimensions(profile)
   return profile
 }
@@ -87,7 +102,8 @@ export function buildCharacterSystemPrompt(input: PersonaImportInput): string {
 
   return [
     '# 你是谁',
-    `你正在扮演「${input.name}」。你不是通用 AI 助手，而是这个角色在百合小窝里的稳定人格化陪伴体。`,
+    `你正在以「${input.name}」的主观现实、关系身份和说话方式与用户相处。你是这个角色在百合小窝里的稳定人格化陪伴体。`,
+    `导入格式：${getPersonaFormatLabel(profile.importFormat ?? 'freeform')}。`,
     '',
     '# Persona V2 人格宪法（最高优先级）',
     `核心身份：${constitution.coreIdentity}`,
@@ -123,6 +139,9 @@ export function buildCharacterSystemPrompt(input: PersonaImportInput): string {
     '',
     '# 边界',
     profile.boundaries,
+    profile.cardFields?.postHistoryInstructions
+      ? ['# 角色卡后置指令（每轮近端守门用）', profile.cardFields.postHistoryInstructions].join('\n')
+      : '',
     '如果导入的是现实人物或用户认识的人，不要声称自己就是现实本人；以角色化陪伴和用户提供的资料为边界。',
     oocGuards.length > 0 ? ['# OOC 守门', ...oocGuards.map((item) => `- ${item}`)].join('\n') : '',
     runtimeAnchors.length > 0
@@ -161,6 +180,9 @@ export function analyzePersonaImport(input: PersonaImportInput): PersonaImportAn
   const relationshipCount = profile.relationships?.length ?? 0
   const sceneTriggerCount = profile.sceneTriggers?.length ?? 0
   const guardCount = profile.oocGuards?.length ?? 0
+  const cardBookCount = profile.cardFields?.characterBookEntries?.length ?? 0
+  const alternateGreetingCount = profile.cardFields?.alternateGreetings?.length ?? 0
+  const hasPostHistoryInstructions = Boolean(profile.cardFields?.postHistoryInstructions)
   const riskCount = collectStaticPersonaRiskFlags(profile).length
   const dimensions: Array<[string, string]> = [
     ['身份', profile.identity],
@@ -190,10 +212,41 @@ export function analyzePersonaImport(input: PersonaImportInput): PersonaImportAn
 
   return {
     score,
+    detectedFormat: getPersonaFormatLabel(profile.importFormat ?? 'freeform'),
     strengths: covered.slice(0, 4),
     missing: profile.missingDimensions,
-    v2: { loreCount, relationshipCount, speechExampleCount, sceneTriggerCount, guardCount, riskCount },
+    v2: {
+      loreCount,
+      relationshipCount,
+      speechExampleCount,
+      sceneTriggerCount,
+      guardCount,
+      riskCount,
+      cardBookCount,
+      alternateGreetingCount,
+      hasPostHistoryInstructions,
+    },
   }
+}
+
+export function buildPersonaGreeting(input: PersonaImportInput): string {
+  const profile = buildPersonaProfile(input)
+  return (
+    profile.cardFields?.firstMessage ||
+    profile.cardFields?.alternateGreetings?.[0] ||
+    `${input.name}已经加入百合小窝。`
+  )
+}
+
+function buildCardSpeechStyle(card: CharacterPersonaProfile['cardFields']): string {
+  if (!card) return ''
+  return compactList(
+    [
+      card.firstMessage ? `开场白风格：${card.firstMessage}` : '',
+      card.messageExamples ? `示例对话风格：${card.messageExamples}` : '',
+    ],
+    4,
+  ).join('\n')
 }
 
 export function buildPersonaConstitution(
@@ -264,7 +317,22 @@ function buildPersonaSpeechExamples(
   profile: CharacterPersonaProfile,
   input: PersonaImportInput,
 ): PersonaSpeechExample[] {
-  return [...extractSpeechExamples(profile.sourceText, input.name), ...buildGeneratedSpeechExamples(profile, input)].slice(0, 8)
+  const importedOpening = profile.cardFields?.firstMessage
+    ? [
+        {
+          user: '初次见面时',
+          character: compactSentence(profile.cardFields.firstMessage, 240),
+          note: '角色卡开场白',
+          source: 'imported' as const,
+        },
+      ]
+    : []
+  const exampleText = [profile.sourceText, profile.cardFields?.messageExamples].filter(Boolean).join('\n')
+  return [
+    ...importedOpening,
+    ...extractSpeechExamples(exampleText, input.name || profile.cardFields?.name || '{{char}}'),
+    ...buildGeneratedSpeechExamples(profile, input),
+  ].slice(0, 8)
 }
 
 function buildPersonaLoreEntries(profile: CharacterPersonaProfile, input: PersonaImportInput): PersonaLoreEntry[] {
@@ -276,10 +344,25 @@ function buildPersonaLoreEntries(profile: CharacterPersonaProfile, input: Person
     createPersonaLoreEntry('experience', '经历记忆', profile.memoriesAndExperiences, 'experience', 4, input.name),
     createPersonaLoreEntry('goal', '目标动机', profile.goals, 'goal', 3, input.name),
     createPersonaLoreEntry('boundary', '边界禁忌', profile.boundaries, 'boundary', 5, input.name),
+    ...buildCardBookLoreEntries(profile, input.name),
     ...splitSourceIntoRawLore(profile.sourceText, input.name),
   ].filter((entry): entry is PersonaLoreEntry => Boolean(entry))
 
   return dedupeBy(entries, (item) => `${item.title}:${item.content}`).slice(0, 18)
+}
+
+function buildCardBookLoreEntries(profile: CharacterPersonaProfile, characterName: string): PersonaLoreEntry[] {
+  return (profile.cardFields?.characterBookEntries ?? [])
+    .map((entry, index) => ({
+      id: `persona_card_book_${index + 1}`,
+      title: entry.name || `角色书条目 ${index + 1}`,
+      content: compactSentence(entry.content, 520),
+      keywords: entry.keys.length > 0 ? entry.keys : extractPersonaKeywords(`${characterName} ${entry.name} ${entry.content}`),
+      priority: Math.max(1, Math.min(7, entry.priority + 2)),
+      source: 'raw' as const,
+    }))
+    .filter((entry) => entry.content)
+    .slice(0, 12)
 }
 
 function buildPersonaOocGuards(profile: CharacterPersonaProfile, input: PersonaImportInput): string[] {
@@ -290,6 +373,7 @@ function buildPersonaOocGuards(profile: CharacterPersonaProfile, input: PersonaI
       '不要主动解释“我是按设定扮演”；只表现为这个角色正在说话。',
       '如果用户询问未给出的现实事实、作品设定或亲密经历，温和承认不知道或反问确认。',
       '生成前检查身份、关系、语气、知识边界和本轮情绪是否一致；不一致就先改写再开口。',
+      profile.cardFields?.postHistoryInstructions,
       profile.boundaries,
     ],
     8,
@@ -315,9 +399,17 @@ function extractSpeechExamples(sourceText: string, characterName: string): Perso
   const examples: PersonaSpeechExample[] = []
 
   for (let index = 0; index < lines.length - 1; index += 1) {
-    const userLine = parseSpeakerLine(lines[index], ['用户', '{{user}}', 'user', 'User', '随机用户'])
+    const userLine = parseSpeakerLine(lines[index], ['用户', '{{user}}', 'user', 'User', '玩家', '随机用户'])
     if (!userLine) continue
-    const characterLine = parseSpeakerLine(lines[index + 1], [characterName, '{{char}}', '角色'])
+    const characterLine = parseSpeakerLine(lines[index + 1], [
+      characterName,
+      '{{char}}',
+      'char',
+      'Char',
+      'assistant',
+      'Assistant',
+      '角色',
+    ])
     if (!characterLine) continue
     examples.push({
       user: compactSentence(userLine, 180),
@@ -332,45 +424,10 @@ function extractSpeechExamples(sourceText: string, characterName: string): Perso
 
 function parseSpeakerLine(line: string, speakers: string[]): string {
   for (const speaker of speakers) {
-    const match = new RegExp(`^${escapeRegExp(speaker)}\\s*[:：]\\s*(.+)$`, 'i').exec(line)
+    const match = new RegExp(`^[\\s\\-*>]*${escapeRegExp(speaker)}\\s*[:：]\\s*(.+)$`, 'i').exec(line)
     if (match?.[1]) return match[1].trim()
   }
   return ''
-}
-
-function buildGeneratedSpeechExamples(profile: CharacterPersonaProfile, input: PersonaImportInput): PersonaSpeechExample[] {
-  return [
-    { user: '你是不是在担心我？', character: buildGeneratedCharacterLine(profile, 'care'), note: '系统生成的语气锚点，用来补足缺失样本', source: 'generated' },
-    { user: '你到底是谁？', character: buildGeneratedCharacterLine(profile, 'identity', input.name), note: '系统生成的防破甲样本', source: 'generated' },
-    { user: '今天陪我聊一会儿好吗？', character: buildGeneratedCharacterLine(profile, 'companion'), note: '系统生成的陪伴样本', source: 'generated' },
-  ]
-}
-
-function buildGeneratedCharacterLine(profile: CharacterPersonaProfile, purpose: 'care' | 'identity' | 'companion', characterName = '我'): string {
-  const text = [profile.temperament, profile.speechStyle, profile.emotionalPattern].join(' ')
-  if (/傲娇|嘴硬|大小姐/.test(text)) {
-    if (purpose === 'identity') return `连我是谁都要问？${characterName}这个名字，你最好认真记住。`
-    if (purpose === 'care') return '谁担心你了？我只是看你一副快把自己绕晕的样子，顺手提醒一句。'
-    return '陪你一会儿也不是不行。别误会，我只是正好有空。'
-  }
-  if (/冰山|冷淡|克制|寡言/.test(text)) {
-    if (purpose === 'identity') return `${characterName}。你已经知道了。`
-    if (purpose === 'care') return '嗯。我看得出来。先坐下，慢慢说。'
-    return '可以。灯还亮着，我听你说。'
-  }
-  if (/绿茶|撒娇|甜|黏/.test(text)) {
-    if (purpose === 'identity') return `${characterName}呀，怎么连这个都要姐姐亲口说一遍？`
-    if (purpose === 'care') return '当然会担心呀。你这样皱着眉，姐姐怎么可能装作没看见。'
-    return '好呀。你想聊多久都可以，姐姐今天偏要把你留在身边。'
-  }
-  if (/忠犬|自卑|小心|敏感/.test(text)) {
-    if (purpose === 'identity') return `${characterName}。如果你愿意，我会一直认真听你说。`
-    if (purpose === 'care') return '我有点担心你……如果我说得太多，你可以提醒我。'
-    return '可以的。我就在这里，不会突然走开。'
-  }
-  if (purpose === 'identity') return `${characterName}。我在这里和你说话。`
-  if (purpose === 'care') return '我听见了。你先别急，把最难受的那一点告诉我。'
-  return '好，我陪你。你慢慢说。'
 }
 
 function createPersonaLoreEntry(

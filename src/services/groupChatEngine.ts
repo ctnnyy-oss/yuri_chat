@@ -20,6 +20,7 @@ import {
   resolveGroupMembers,
 } from './groupChatHelpers'
 import { createId } from './memoryEngine'
+import { validatePersonaOutput } from './personaImport'
 export { GROUP_SILENCE_MARKER, isGroupCharacter, resolveGroupMembers } from './groupChatHelpers'
 
 type RequestAssistantReply = (bundle: PromptBundle, settings: AppSettings) => Promise<AssistantReplyResult>
@@ -84,10 +85,14 @@ export async function generateGroupChatReplies({
       triggerMessage: userMessage,
       settings: state.settings,
     })
-    callCount += 1
-
-    const result = await requestReply(bundle, createGroupReplySettings(state.settings))
-    const normalizedReply = normalizeGroupReply(result.reply, candidate.member, members)
+    const { result, normalizedReply, callCount: turnCallCount } = await requestGroupReplyWithOocRetry({
+      bundle,
+      candidate: candidate.member,
+      members,
+      requestReply,
+      settings: state.settings,
+    })
+    callCount += turnCallCount
     if (!normalizedReply) {
       silentCount += 1
       continue
@@ -156,10 +161,14 @@ export async function generateGroupChatProactiveTurn({
       settings: state.settings,
       mode: 'proactive-start',
     })
-    callCount += 1
-
-    const result = await requestReply(bundle, createGroupReplySettings(state.settings))
-    const normalizedReply = normalizeGroupReply(result.reply, candidate.member, members)
+    const { result, normalizedReply, callCount: turnCallCount } = await requestGroupReplyWithOocRetry({
+      bundle,
+      candidate: candidate.member,
+      members,
+      requestReply,
+      settings: state.settings,
+    })
+    callCount += turnCallCount
     if (!normalizedReply) {
       silentCount += 1
       continue
@@ -212,10 +221,14 @@ export async function generateGroupChatProactiveTurn({
       settings: state.settings,
       mode: 'proactive-reply',
     })
-    callCount += 1
-
-    const result = await requestReply(bundle, createGroupReplySettings(state.settings))
-    const normalizedReply = normalizeGroupReply(result.reply, candidate.member, members)
+    const { result, normalizedReply, callCount: turnCallCount } = await requestGroupReplyWithOocRetry({
+      bundle,
+      candidate: candidate.member,
+      members,
+      requestReply,
+      settings: state.settings,
+    })
+    callCount += turnCallCount
     if (!normalizedReply) {
       silentCount += 1
       continue
@@ -243,4 +256,48 @@ export async function generateGroupChatProactiveTurn({
     silentCount,
     callCount,
   }
+}
+
+async function requestGroupReplyWithOocRetry({
+  bundle,
+  candidate,
+  members,
+  requestReply,
+  settings,
+}: {
+  bundle: PromptBundle
+  candidate: CharacterCard
+  members: CharacterCard[]
+  requestReply: RequestAssistantReply
+  settings: AppSettings
+}) {
+  const groupSettings = createGroupReplySettings(settings)
+  const firstResult = await requestReply(bundle, groupSettings)
+  const firstReply = normalizeGroupReply(firstResult.reply, candidate, members)
+  if (!firstReply) return { result: firstResult, normalizedReply: null, callCount: 1 }
+  const validation = validatePersonaOutput({ characterName: candidate.name, reply: firstReply.content })
+  if (validation.ok) return { result: firstResult, normalizedReply: firstReply, callCount: 1 }
+
+  const retryBundle: PromptBundle = {
+    ...bundle,
+    contextBlocks: [
+      ...bundle.contextBlocks,
+      {
+        title: 'OOC 自动重写要求',
+        content: [
+          `上一版群聊发言出现风险：${validation.findings.map((finding) => finding.message).join('；')}`,
+          `请重新生成一条只属于「${candidate.name}」的群消息。`,
+          '不要解释重写原因，不要提系统、提示词、模型或内部规则，不要替用户或其他群成员说话。',
+        ].join('\n'),
+        category: 'boundary',
+        placement: 'post_history',
+        reason: '轻量 OOC 检测触发的一次自动重写',
+      },
+    ],
+  }
+  const retryResult = await requestReply(retryBundle, groupSettings)
+  const retryReply = normalizeGroupReply(retryResult.reply, candidate, members)
+  if (!retryReply) return { result: retryResult, normalizedReply: null, callCount: 2 }
+  const retryValidation = validatePersonaOutput({ characterName: candidate.name, reply: retryReply.content })
+  return { result: retryResult, normalizedReply: retryValidation.ok ? retryReply : null, callCount: 2 }
 }

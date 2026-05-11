@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { CharacterCard, CharacterVoiceProfile } from '../../domain/types'
+import { buildPersonaProfile, exportPersonaProfileToCharacterCardV2 } from '../../services/personaImport'
 
 export type ManagedRole = {
   id: string
@@ -112,11 +113,24 @@ export function applyPersonaImportTemplate(draft: RoleDraft): string {
     `${name}：写一条最像她的回复。`,
     '用户：你到底是谁？',
     `${name}：写一条防破甲但不出戏的回复。`,
+    '',
+    '也可以直接粘贴 Character Card V2 / Tavern JSON；姐姐会识别 description、personality、scenario、first_mes、mes_example、post_history_instructions 和 character_book。',
   ].join('\n')
 
   if (!current) return template
   if (/身份[:：]|说话方式[:：]|用户[:：]/.test(current)) return current
   return [current, '', '--- 可补的人设结构 ---', template].join('\n')
+}
+
+export function exportRoleDraftToCharacterCardV2(draft: RoleDraft): string {
+  const name = draft.name.trim() || '角色'
+  const profile = buildPersonaProfile({
+    name,
+    relation: draft.relation.trim() || '角色',
+    mood: draft.mood.trim() || '性格待补充',
+    persona: draft.persona.trim() || '还没有导入人设。',
+  })
+  return JSON.stringify(exportPersonaProfileToCharacterCardV2(profile), null, 2)
 }
 
 export function roleMatchesQuery(role: ManagedRole, query: string) {

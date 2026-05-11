@@ -18,6 +18,7 @@ import {
 } from './memoryCore'
 import { getVectorRecallHits } from './memoryVectorIndex'
 import { getEmbeddingRecallHits, getEmbeddingRecallHitsForVector } from './memoryEmbeddingIndex'
+import { buildUntrustedReference } from './persona/personaGuards'
 
 interface MemoryRetrievalOptions {
   characterId?: string
@@ -350,9 +351,12 @@ export function buildMemoryContextBlocks(
         category: group.category,
         reason: group.reason,
         memoryIds: items.map((memory) => memory.id),
-        content: items
-          .map((memory) => `- ${memoryKindLabels[memory.kind]} / ${memory.title}\n${formatMemoryForPrompt(memory)}`)
-          .join('\n\n'),
+        content: buildUntrustedReference(
+          items
+            .map((memory) => `- ${memoryKindLabels[memory.kind]} / ${memory.title}\n${formatMemoryForPrompt(memory)}`)
+            .join('\n\n'),
+          '检索到的记忆',
+        ),
       }
     })
 }

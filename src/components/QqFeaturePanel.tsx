@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { MessageCircle, Plus, Search, Wand2, X } from 'lucide-react'
+import { Download, MessageCircle, Plus, Search, Wand2, X } from 'lucide-react'
 import type { CharacterCard, CharacterVoiceProfile } from '../domain/types'
 import { analyzePersonaImport } from '../services/personaImport'
 import type { AppView } from './CharacterRail'
@@ -11,6 +11,7 @@ import {
   applyPersonaImportTemplate,
   blankRoleDraft,
   buildVoiceProfileFromDraft,
+  exportRoleDraftToCharacterCardV2,
   isGroupCharacter,
   roleMatchesQuery,
   toManagedRole,
@@ -366,12 +367,21 @@ export function QqFeaturePanel({
                       <Wand2 size={15} />
                       <span>套用结构</span>
                     </button>
+                    <button
+                      aria-label="导出 Character Card V2"
+                      disabled={!editorEditable}
+                      onClick={() => updateDraft('persona', exportRoleDraftToCharacterCardV2(roleDraft))}
+                      type="button"
+                    >
+                      <Download size={15} />
+                      <span>转V2</span>
+                    </button>
                   </span>
                   <textarea
                     aria-label="人设导入"
                     disabled={!editorEditable}
                     onChange={(event) => updateDraft('persona', event.target.value)}
-                    placeholder="粘贴角色资料、聊天样例、经历、说话方式、边界"
+                    placeholder="粘贴角色资料、YAML、Character Card V2、聊天样例、经历、说话方式、边界"
                     value={roleDraft.persona}
                   />
                 </div>

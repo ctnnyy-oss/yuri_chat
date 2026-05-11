@@ -3,8 +3,33 @@ import { brand } from '../config/brand'
 import { createId, isExplicitMemoryQuery, nowIso } from './memoryCore'
 import { getActiveMemories, getTriggeredWorldNodes, buildMemoryContextBlocks } from './memoryRetrieval'
 import { buildPersonaContextBlocks } from './personaImport'
+import { buildUntrustedReference } from './persona/personaGuards'
 
 type PromptBlockCategory = NonNullable<PromptContextBlock['category']>
+type PersonaRuntimeRole = 'system' | 'developer' | 'user' | 'assistant'
+
+export interface PersonaRuntimeMessage {
+  role: PersonaRuntimeRole
+  content: string
+  section: string
+  trusted: boolean
+  placement: 'pre_history' | 'chat_history' | 'post_history'
+}
+
+export interface PersonaRuntimeProviderCapabilities {
+  supportsDeveloperRole?: boolean
+  supportsPostHistorySystem?: boolean
+}
+
+export interface PromptBudgetDiagnostic {
+  totalCharacters: number
+  sections: Array<{
+    title: string
+    category: PromptBlockCategory | 'system' | 'chat_history'
+    placement: 'pre_history' | 'chat_history' | 'post_history'
+    characters: number
+  }>
+}
 
 const DEFAULT_PROMPT_BLOCK_CATEGORY: PromptBlockCategory = 'stable'
 const PROMPT_CONTEXT_TOTAL_BUDGET = 8_200
@@ -68,7 +93,7 @@ export function buildPromptBundle(
     ...memoryContextBlocks,
     ...activeWorldNodes.map((node) => ({
       title: `世界树：${node.title}`,
-      content: node.content,
+      content: buildUntrustedReference(node.content, '触发的世界观资料'),
       category: 'world' as const,
       reason: `命中触发词：${node.keywords.join(' / ')}`,
     })),
@@ -125,8 +150,70 @@ export function buildPromptBundle(
   }
 }
 
+export function buildPersonaRuntimeMessages(
+  bundle: PromptBundle,
+  providerCapabilities: PersonaRuntimeProviderCapabilities = {},
+): PersonaRuntimeMessage[] {
+  const contextRole: PersonaRuntimeRole = providerCapabilities.supportsDeveloperRole ? 'developer' : 'system'
+  const preHistoryBlocks = bundle.contextBlocks.filter((block) => block.placement !== 'post_history')
+  const postHistoryBlocks = bundle.contextBlocks.filter((block) => block.placement === 'post_history')
+
+  return [
+    {
+      role: 'system',
+      content: bundle.systemPrompt,
+      section: 'system_policy_and_character_base',
+      trusted: true,
+      placement: 'pre_history',
+    },
+    ...preHistoryBlocks.map((block) => buildRuntimeMessageFromBlock(block, contextRole, 'pre_history')),
+    ...bundle.messages.map((message) => ({
+      role: message.role,
+      content: message.content,
+      section: 'chat_history',
+      trusted: message.role === 'assistant',
+      placement: 'chat_history' as const,
+    })),
+    ...postHistoryBlocks.map((block) =>
+      buildRuntimeMessageFromBlock(
+        block,
+        providerCapabilities.supportsPostHistorySystem ? 'system' : contextRole,
+        'post_history',
+      ),
+    ),
+  ]
+}
+
 export function getMemoryUsageLogLimit(): number {
   return MEMORY_USAGE_LOG_LIMIT
+}
+
+export function inspectPromptBundleBudget(bundle: PromptBundle): PromptBudgetDiagnostic {
+  const sections: PromptBudgetDiagnostic['sections'] = [
+    {
+      title: 'systemPrompt',
+      category: 'system',
+      placement: 'pre_history',
+      characters: bundle.systemPrompt.length,
+    },
+    ...bundle.contextBlocks.map((block) => ({
+      title: block.title,
+      category: getPromptBlockCategory(block),
+      placement: block.placement ?? 'pre_history',
+      characters: block.content.length,
+    })),
+    {
+      title: 'chatHistory',
+      category: 'chat_history',
+      placement: 'chat_history',
+      characters: bundle.messages.reduce((total, message) => total + message.content.length, 0),
+    },
+  ]
+
+  return {
+    totalCharacters: sections.reduce((total, section) => total + section.characters, 0),
+    sections,
+  }
 }
 
 export function createMemoryUsageLog(input: {
@@ -260,6 +347,20 @@ function formatReminderTime(value: string): string {
     minute: '2-digit',
     hour12: false,
   }).format(date)
+}
+
+function buildRuntimeMessageFromBlock(
+  block: PromptContextBlock,
+  role: PersonaRuntimeRole,
+  placement: 'pre_history' | 'post_history',
+): PersonaRuntimeMessage {
+  return {
+    role,
+    content: `${block.title}\n${block.content}`,
+    section: block.title,
+    trusted: block.category === 'boundary' || block.category === 'stable',
+    placement,
+  }
 }
 
 function buildCurrentTimeInstruction(): string {

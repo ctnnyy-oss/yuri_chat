@@ -1,13 +1,7 @@
-import type {
-  AppSettings,
-  AssistantReplyResult,
-  CharacterCard,
-  ChatMessage,
-  ConversationState,
-  PromptBundle,
-} from '../domain/types'
+import type { AppSettings, AssistantReplyResult, CharacterCard, ChatMessage, ConversationState, PromptBundle } from '../domain/types'
 import { createId, nowIso } from './memoryEngine'
 import { chooseAssistantDeliveryMode, extractDeliveryEnvelope } from './messageDelivery'
+import { requestDirectReplyWithOocRetry } from './directChatOocRetry'
 
 export const DIRECT_SILENCE_MARKER = '[[NO_REPLY]]'
 
@@ -69,14 +63,21 @@ export async function generateDirectChatReply({
     settings,
     mode: 'reactive',
   })
-  const result = await requestReply(replyBundle, createDirectReplySettings(settings, 'reactive'))
-  const normalizedReply = normalizeDirectReply(result.reply, character)
+  const { result, normalizedReply, callCount } = await requestDirectReplyWithOocRetry({
+    character,
+    mode: 'reactive',
+    normalizeReply: normalizeDirectReply,
+    requestReply,
+    replyBundle,
+    settings,
+    settingsForMode: createDirectReplySettings,
+  })
 
   if (!normalizedReply) {
     return {
       message: null,
       silent: true,
-      callCount: 1,
+      callCount,
       skippedReason: `${character.name}看见了，但这会儿没有自然接话。`,
     }
   }
@@ -85,7 +86,7 @@ export async function generateDirectChatReply({
     return {
       message: null,
       silent: true,
-      callCount: 1,
+      callCount,
       skippedReason: `${character.name} skipped a repeated line.`,
     }
   }
@@ -103,7 +104,7 @@ export async function generateDirectChatReply({
       turnKind: 'reactive',
     }),
     silent: false,
-    callCount: 1,
+    callCount,
   }
 }
 
@@ -137,14 +138,21 @@ export async function generateDirectChatProactiveTurn({
     mode: 'proactive',
     proactiveDrive: drive,
   })
-  const result = await requestReply(proactiveBundle, createDirectReplySettings(settings, 'proactive'))
-  const normalizedReply = normalizeDirectReply(result.reply, character)
+  const { result, normalizedReply, callCount } = await requestDirectReplyWithOocRetry({
+    character,
+    mode: 'proactive',
+    normalizeReply: normalizeDirectReply,
+    requestReply,
+    replyBundle: proactiveBundle,
+    settings,
+    settingsForMode: createDirectReplySettings,
+  })
 
   if (!normalizedReply) {
     return {
       message: null,
       silent: true,
-      callCount: 1,
+      callCount,
       skippedReason: `${character.name}想了想，还是没有主动打扰。`,
     }
   }
@@ -153,7 +161,7 @@ export async function generateDirectChatProactiveTurn({
     return {
       message: null,
       silent: true,
-      callCount: 1,
+      callCount,
       skippedReason: `${character.name} skipped a repeated line.`,
     }
   }
@@ -171,7 +179,7 @@ export async function generateDirectChatProactiveTurn({
       turnKind: 'proactive',
     }),
     silent: false,
-    callCount: 1,
+    callCount,
   }
 }
 

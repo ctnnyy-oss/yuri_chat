@@ -295,16 +295,23 @@ function getChatTimeoutMs() {
 }
 
 function buildProviderMessages(bundle, baseUrl) {
+  const preHistoryBlocks = getPreHistoryBlocks(bundle)
+  const postHistoryBlocks = getPostHistoryBlocks(bundle)
+
   if (!shouldEscapeUnicodeContent(baseUrl)) {
     return [
       { role: 'system', content: bundle.systemPrompt },
-      ...bundle.contextBlocks.map((block) => ({
+      ...preHistoryBlocks.map((block) => ({
         role: 'system',
         content: `${block.title}\n${block.content}`,
       })),
       ...bundle.messages.map((message) => ({
         role: message.role,
         content: message.content,
+      })),
+      ...postHistoryBlocks.map((block) => ({
+        role: 'system',
+        content: `${block.title}\n${block.content}`,
       })),
     ]
   }
@@ -318,7 +325,7 @@ function buildProviderMessages(bundle, baseUrl) {
       role: 'system',
       content: ['SYSTEM_PROMPT_ESCAPED:', escapeUnicodeText(bundle.systemPrompt)].join('\n'),
     },
-    ...bundle.contextBlocks.map((block) => ({
+    ...preHistoryBlocks.map((block) => ({
       role: 'system',
       content: [
         'CONTEXT_BLOCK_ESCAPED:',
@@ -330,12 +337,35 @@ function buildProviderMessages(bundle, baseUrl) {
       role: message.role,
       content: `${message.role === 'user' ? 'USER_TEXT' : 'ASSISTANT_HISTORY'}:\n${escapeUnicodeText(message.content)}`,
     })),
+    ...postHistoryBlocks.map((block) => ({
+      role: 'system',
+      content: [
+        'POST_HISTORY_CONTEXT_BLOCK_ESCAPED:',
+        `TITLE_ESCAPED: ${escapeUnicodeText(block.title)}`,
+        `CONTENT_ESCAPED: ${escapeUnicodeText(block.content)}`,
+      ].join('\n'),
+    })),
   ]
 }
 
 function buildAnthropicSystem(bundle) {
-  const contextBlocks = bundle.contextBlocks.map((block) => `${block.title}\n${block.content}`).join('\n\n')
-  return [bundle.systemPrompt, contextBlocks].filter(Boolean).join('\n\n')
+  const preHistoryBlocks = getPreHistoryBlocks(bundle).map((block) => `${block.title}\n${block.content}`).join('\n\n')
+  const postHistoryBlocks = getPostHistoryBlocks(bundle)
+    .map((block) => `后置角色检查（当前模型接口不支持历史后的 system 消息，因此作为系统上下文提供）：\n${block.title}\n${block.content}`)
+    .join('\n\n')
+  return [bundle.systemPrompt, preHistoryBlocks, postHistoryBlocks].filter(Boolean).join('\n\n')
+}
+
+function getPreHistoryBlocks(bundle) {
+  return Array.isArray(bundle?.contextBlocks)
+    ? bundle.contextBlocks.filter((block) => block?.placement !== 'post_history')
+    : []
+}
+
+function getPostHistoryBlocks(bundle) {
+  return Array.isArray(bundle?.contextBlocks)
+    ? bundle.contextBlocks.filter((block) => block?.placement === 'post_history')
+    : []
 }
 
 function shouldEscapeUnicodeContent(baseUrl) {

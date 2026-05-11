@@ -191,6 +191,32 @@ export interface MemoryUsageLog {
   createdAt: string
 }
 
+export interface MemorySearchOptions {
+  query?: string
+  characterId?: string
+  conversationId?: string
+  scope?: MemoryScope['kind']
+  maxItems?: number
+  includeSensitive?: boolean
+}
+
+export interface MemoryStore {
+  addMemory(memory: LongTermMemory): Promise<LongTermMemory>
+  updateMemory(memoryId: string, patch: Partial<LongTermMemory>): Promise<LongTermMemory | null>
+  deleteMemory(memoryId: string): Promise<boolean>
+  getMemoryById(memoryId: string): Promise<LongTermMemory | null>
+  searchMemories(options: MemorySearchOptions): Promise<LongTermMemory[]>
+  listMemoriesByScope(scope: MemoryScope): Promise<LongTermMemory[]>
+  consolidateMemories(): Promise<MemoryMaintenanceReport>
+}
+
+export interface MemoryMaintenanceReport {
+  memories: LongTermMemory[]
+  mergedCount: number
+  reflectedCount: number
+  reviewedCount: number
+}
+
 export type MemoryEventType =
   | 'created'
   | 'captured'

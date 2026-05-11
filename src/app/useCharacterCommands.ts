@@ -2,7 +2,12 @@ import type { Dispatch, SetStateAction } from 'react'
 import { createSeedState } from '../data/seed'
 import type { AppState, CharacterCard } from '../domain/types'
 import { createId, getConversation, nowIso, upsertConversation } from '../services/memoryEngine'
-import { buildCharacterSystemPrompt, buildPersonaProfile } from '../services/personaImport'
+import {
+  buildCharacterSystemPrompt,
+  buildPersonaGreeting,
+  buildPersonaProfile,
+  inferPersonaImportBasics,
+} from '../services/personaImport'
 
 interface UseCharacterCommandsDeps {
   state: AppState
@@ -32,11 +37,14 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
 
   function handleCreateCharacter(input: CharacterDraftInput): string {
     const now = nowIso()
-    const name = input.name.trim() || '新角色'
-    const relation = input.relation.trim() || '角色'
-    const mood = input.mood.trim() || '等待补全'
     const persona = input.persona.trim() || '还没有导入人设。'
+    const inferred = inferPersonaImportBasics(persona)
+    const name = input.name.trim() || inferred.name || '新角色'
+    const relationInput = input.relation.trim()
+    const relation = relationInput && relationInput !== '角色' ? relationInput : inferred.relation || relationInput || '角色'
+    const mood = input.mood.trim() || inferred.mood || '等待补全'
     const personaInput = { name, relation, mood, persona }
+    const personaProfile = buildPersonaProfile(personaInput)
     const characterId = createId('character')
     const groupMemberIds = dedupeIds(input.groupMemberIds).slice(0, 16)
     const character: CharacterCard = {
@@ -52,9 +60,9 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
       tags: ['自定义角色', relation, name],
       systemPrompt: buildCharacterSystemPrompt(personaInput),
       personaSource: persona,
-      personaProfile: buildPersonaProfile(personaInput),
+      personaProfile,
       voiceProfile: normalizeVoiceProfile(input.voiceProfile),
-      greeting: `${name}已经加入百合小窝。`,
+      greeting: buildPersonaGreeting(personaInput),
     }
     setState((currentState) => ({
       ...currentState,
@@ -89,11 +97,13 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
       return false
     }
 
-    const name = input.name.trim() || target.name
-    const relation = input.relation.trim() || target.relationship || '角色'
-    const mood = input.mood.trim() || target.mood || '等待补全'
     const persona = input.persona.trim() || target.personaSource || target.systemPrompt || '还没有导入人设。'
+    const inferred = inferPersonaImportBasics(persona)
+    const name = input.name.trim() || inferred.name || target.name
+    const relation = input.relation.trim() || inferred.relation || target.relationship || '角色'
+    const mood = input.mood.trim() || inferred.mood || target.mood || '等待补全'
     const personaInput = { name, relation, mood, persona }
+    const personaProfile = buildPersonaProfile(personaInput)
 
     setState((currentState) => ({
       ...currentState,
@@ -109,9 +119,9 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
               mood,
               systemPrompt: buildCharacterSystemPrompt(personaInput),
               personaSource: persona,
-              personaProfile: buildPersonaProfile(personaInput),
+              personaProfile,
               voiceProfile: normalizeVoiceProfile(input.voiceProfile),
-              greeting: `${name}已经加入百合小窝。`,
+              greeting: buildPersonaGreeting(personaInput),
               tags: ['自定义角色', relation, name],
             }
           : characterItem,

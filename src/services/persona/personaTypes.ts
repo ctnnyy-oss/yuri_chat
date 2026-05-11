@@ -9,6 +9,7 @@ export interface PersonaImportInput {
 
 export interface PersonaImportAnalysis {
   score: number
+  detectedFormat: string
   strengths: string[]
   missing: string[]
   v2: {
@@ -18,6 +19,9 @@ export interface PersonaImportAnalysis {
     sceneTriggerCount: number
     guardCount: number
     riskCount: number
+    cardBookCount: number
+    alternateGreetingCount: number
+    hasPostHistoryInstructions: boolean
   }
 }
 
@@ -33,15 +37,38 @@ export type PersonaProfileCoreField =
   | 'interactionRules'
 
 export const FIELD_ALIASES: Record<PersonaProfileCoreField, string[]> = {
-  identity: ['身份', '基本信息', '角色身份', '人设定位', '设定定位'],
-  relationship: ['关系', '关系定位', '和用户关系', '感情关系', 'CP关系'],
-  temperament: ['性格', '性格底色', '人格', '气质', '性格特点'],
-  speechStyle: ['说话方式', '语气', '口癖', '台词', '表达风格', '称呼', '聊天样例', '示例对话', '样例回复'],
+  identity: ['身份', '基本信息', '角色身份', '人设定位', '设定定位', 'description', '角色描述', 'profile'],
+  relationship: ['关系', '关系定位', '和用户关系', '感情关系', 'CP关系', 'scenario', '场景', '世界观'],
+  temperament: ['性格', '性格底色', '人格', '气质', '性格特点', 'personality'],
+  speechStyle: [
+    '说话方式',
+    '语气',
+    '口癖',
+    '台词',
+    '表达风格',
+    '称呼',
+    '聊天样例',
+    '示例对话',
+    '样例回复',
+    'first_mes',
+    'first_message',
+    'mes_example',
+    'example_messages',
+  ],
   emotionalPattern: ['情绪', '情绪模式', '情感模式', '雷点', '软肋', '破防点', '心软点'],
-  memoriesAndExperiences: ['经历', '过去', '记忆', '背景', '重要经历', '成长经历'],
-  goals: ['目标', '愿望', '动机', '想要什么', '价值观', '偏好'],
-  boundaries: ['边界', '禁忌', '不要', '不能', '避雷'],
-  interactionRules: ['互动方式', '相处方式', '回复规则', '聊天方式', '相处规则', '互动规则'],
+  memoriesAndExperiences: ['经历', '过去', '记忆', '背景', '重要经历', '成长经历', 'creator_notes'],
+  goals: ['目标', '愿望', '动机', '想要什么', '价值观', '偏好', 'motivation'],
+  boundaries: ['边界', '禁忌', '不要', '不能', '避雷', 'knowledge_boundary'],
+  interactionRules: [
+    '互动方式',
+    '相处方式',
+    '回复规则',
+    '聊天方式',
+    '相处规则',
+    '互动规则',
+    'system_prompt',
+    'post_history_instructions',
+  ],
 }
 
 export const FIELD_HINTS: Record<PersonaProfileCoreField, string[]> = {
