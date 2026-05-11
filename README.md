@@ -59,6 +59,8 @@ VITE_API_BASE_URL=
 
 公网部署还默认启用接口限流：`YURI_CHAT_RATELIMIT_CHAT` 控制 `/api/chat` 每 IP 每分钟次数（默认 30），`YURI_CHAT_RATELIMIT_CLOUD` 控制 `/api/cloud/*`（默认 60）。两个 health 接口不走限流，方便监控和前端启动检查。
 
+自动云端保存默认会在覆盖前最多每 10 分钟创建一次 SQLite 备份，避免每条聊天都触发重备份；可用 `YURI_CHAT_AUTO_BACKUP_INTERVAL_MINUTES` 调整。手动云端备份仍可随时创建。
+
 当前后端服务名：
 
 - `yuri-chat-api.service`

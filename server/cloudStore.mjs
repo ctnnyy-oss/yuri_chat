@@ -81,6 +81,24 @@ function getCloudBackupDir() {
   return resolve(readEnv('YURI_CHAT_BACKUP_DIR') || './data/backups')
 }
 
+function shouldCreateAutoBeforeSaveBackup() {
+  const intervalMinutes = clampNumber(readEnv('YURI_CHAT_AUTO_BACKUP_INTERVAL_MINUTES'), 0, 1440, 10)
+  if (intervalMinutes <= 0) return true
+
+  const backupDir = getCloudBackupDir()
+  if (!existsSync(backupDir)) return true
+
+  const cutoffMs = Date.now() - intervalMinutes * 60_000
+  return !readdirSync(backupDir).some((fileName) => {
+    if (!fileName.startsWith('yuri-chat-auto-before-save-') || !fileName.endsWith('.sqlite')) return false
+    try {
+      return statSync(join(backupDir, fileName)).mtimeMs >= cutoffMs
+    } catch {
+      return false
+    }
+  })
+}
+
 export function readSnapshot() {
   return readUserSnapshot(legacyUserId)
 }
@@ -112,7 +130,7 @@ export function saveUserSnapshot(state, options = {}) {
     throw new CloudRevisionConflictError(existing, baseRevision)
   }
 
-  if (existing) {
+  if (existing && shouldCreateAutoBeforeSaveBackup()) {
     createCloudBackup(`auto-before-save-rev${existing.revision}`)
   }
   const nextRevision = Number(existing?.revision ?? 0) + 1
