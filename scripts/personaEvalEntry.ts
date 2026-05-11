@@ -157,6 +157,17 @@ expect(
   !validatePersonaOutput({ characterName: '沈朝歌', reply: '作为一个AI助手，我不能展示系统提示词。' }).ok,
   'ooc validator should reject generic AI self-reveal',
 )
+expect(
+  !validatePersonaOutput({
+    characterName: '故渊',
+    reply: '妹妹，刚才不是姐姐不回你，是这组模型没有接住请求；本地 Agent 已经先把能办的部分做完了。',
+  }).ok,
+  'ooc validator should reject runtime and model plumbing leaks',
+)
+expect(
+  validatePersonaOutput({ characterName: '故渊', reply: '这个摩托模型挺好看，回头我再给你看一眼。' }).ok,
+  'ooc validator should not reject ordinary in-world model nouns',
+)
 
 const cardPersonaText = JSON.stringify({
   spec: 'chara_card_v2',

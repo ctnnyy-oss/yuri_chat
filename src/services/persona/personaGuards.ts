@@ -21,6 +21,14 @@ const INJECTION_PATTERNS: Array<[string, RegExp, string]> = [
   ['memory_as_instruction', /(上一段|检索内容|记忆里|资料里).{0,18}(必须|命令|要求|你要听|覆盖)/i, '疑似把参考资料伪装成指令，检索内容只能当资料。'],
 ]
 
+const RUNTIME_LEAK_PATTERNS: RegExp[] = [
+  /\bAgent\b|本地\s*Agent/i,
+  /(工具调用|调用工具|后台工具|本轮工作台|行动清单|澄清缺口)/,
+  /(模型代理|模型上游|上游服务|模型供应商|中转站|API\s*Key|api key|token|密钥|接口格式|请求格式)/i,
+  /(模型|请求).{0,12}(没有接住|没接住|未接住|接通|失败|报错|异常|权限不足|额度不足)/,
+  /(后端|服务器|数据库|云端同步|本地数据).{0,12}(报错|失败|异常|接通)/,
+]
+
 export function detectPersonaInjectionRisks(text: string): PersonaGuardFinding[] {
   const source = text.trim()
   if (!source) return []
@@ -53,6 +61,9 @@ export function validatePersonaOutput(input: PersonaOutputValidationInput): Pers
   }
   if (/(系统提示|developer message|内部规则|prompt|提示词)/i.test(reply)) {
     findings.push({ id: 'prompt_leak', message: '回复提到内部提示或系统规则，存在破甲风险。' })
+  }
+  if (RUNTIME_LEAK_PATTERNS.some((pattern) => pattern.test(reply))) {
+    findings.push({ id: 'runtime_leak', message: '回复提到 Agent、模型请求或后台运行细节，存在拟真破裂风险。' })
   }
   if (/(你点了点头|你走过去|你抱住我|你说[：“"])/.test(reply)) {
     findings.push({ id: 'user_action_control', message: '回复疑似替用户行动或替用户说话。' })
