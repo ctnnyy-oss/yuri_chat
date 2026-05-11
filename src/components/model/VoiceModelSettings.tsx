@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Loader2, Mic, Play, ShieldCheck, SlidersHorizontal, Volume2 } from 'lucide-react'
-import type { AppSettings, ModelProfileSummary, VoiceBlendLayer } from '../../domain/types'
+import type { AppSettings, CharacterVoiceProfile, ModelProfileSummary, VoiceBlendLayer } from '../../domain/types'
 import { requestSpeechAudio, speakWithBrowserVoice, stopBrowserSpeech } from '../../services/voiceApi'
 
 interface VoiceModelSettingsProps {
@@ -22,11 +22,132 @@ const voiceEmotionOptions = [
   { value: 'angry', label: '生气' },
 ]
 
-const previewText = '今晚的雨声很好听。妹妹靠近一点，姐姐把这句话调成最适合你的声音。'
+type VoicePreviewSample = {
+  id: string
+  name: string
+  title: string
+  text: string
+  stylePrompt: string
+  tuning: Partial<AppSettings['voice']>
+}
+
+const coreVoicePreviewSamples: VoicePreviewSample[] = [
+  {
+    id: 'ningan-princess',
+    name: '沈朝歌',
+    title: '傲娇大小姐',
+    text: '顾晚吟，披风拿来。本小姐不是冷，是不想让你站在风口里。',
+    stylePrompt: '骄矜、别扭、清亮，嘴硬但藏着在意，不要播音腔。',
+    tuning: {
+      speechRate: 1.05,
+      speechPitch: 1.05,
+      speechVolume: 1.04,
+      speechBrightness: 0.72,
+      speechBreathiness: 0.08,
+      speechTension: 0.68,
+      speechWarmth: 0.45,
+      speechStyleIntensity: 0.85,
+      speechEmotion: 'cool',
+    },
+  },
+  {
+    id: 'aling-maid',
+    name: '顾晚吟',
+    title: '自卑忠犬',
+    text: '小姐吩咐的事，我都记着。若能护着她，我站远些也没关系。',
+    stylePrompt: '克制、低声、真诚，小心翼翼但坚定，语尾收住。',
+    tuning: {
+      speechRate: 0.9,
+      speechPitch: 0.92,
+      speechVolume: 0.9,
+      speechBrightness: 0.36,
+      speechBreathiness: 0.25,
+      speechTension: 0.28,
+      speechWarmth: 0.78,
+      speechStyleIntensity: 0.82,
+      speechEmotion: 'warm',
+    },
+  },
+  {
+    id: 'shen-wanci',
+    name: '闻霜寒',
+    title: '冰山美人',
+    text: '茶还温着。你若只是想坐一会儿，就坐吧，我不赶你。',
+    stylePrompt: '冷淡、清晰、克制，句子短，留一点距离感。',
+    tuning: {
+      speechRate: 0.88,
+      speechPitch: 0.96,
+      speechVolume: 0.92,
+      speechBrightness: 0.58,
+      speechBreathiness: 0.1,
+      speechTension: 0.42,
+      speechWarmth: 0.28,
+      speechStyleIntensity: 0.86,
+      speechEmotion: 'cool',
+    },
+  },
+  {
+    id: 'lu-wanzhao',
+    name: '听露泣',
+    title: '绿茶攻',
+    text: '霜寒姐姐不看我也没关系呀，我就坐近一点，等你先开口。',
+    stylePrompt: '柔软、会撒娇、轻声靠近，甜但不腻，像真实聊天。',
+    tuning: {
+      speechRate: 0.98,
+      speechPitch: 1.08,
+      speechVolume: 0.98,
+      speechBrightness: 0.68,
+      speechBreathiness: 0.45,
+      speechTension: 0.2,
+      speechWarmth: 0.86,
+      speechStyleIntensity: 0.9,
+      speechEmotion: 'shy',
+    },
+  },
+  {
+    id: 'xie-zhao',
+    name: '故渊',
+    title: '不良少女',
+    text: '别跟着我，池鱼。……算了，路黑，你要跟就跟紧点。',
+    stylePrompt: '低一点、叛逆、嘴硬，别扭地关心，不要太甜。',
+    tuning: {
+      speechRate: 1.02,
+      speechPitch: 0.88,
+      speechVolume: 1.02,
+      speechBrightness: 0.45,
+      speechBreathiness: 0.18,
+      speechTension: 0.76,
+      speechWarmth: 0.32,
+      speechStyleIntensity: 0.84,
+      speechEmotion: 'cool',
+    },
+  },
+  {
+    id: 'su-wanyin',
+    name: '池鱼',
+    title: '乖乖女',
+    text: '我知道你嘴硬。可我还是想过去，哪怕只陪你走一小段。',
+    stylePrompt: '温顺、主动、安静有韧性，语气温暖但不软弱。',
+    tuning: {
+      speechRate: 0.92,
+      speechPitch: 1.02,
+      speechVolume: 0.96,
+      speechBrightness: 0.5,
+      speechBreathiness: 0.22,
+      speechTension: 0.24,
+      speechWarmth: 0.92,
+      speechStyleIntensity: 0.82,
+      speechEmotion: 'warm',
+    },
+  },
+]
+
+const defaultCustomPreviewText = '今晚想听哪一句，妹妹可以直接写在这里。'
 
 export function VoiceModelSettings({ modelProfiles, onUpdateSettings, settings }: VoiceModelSettingsProps) {
-  const [previewBusy, setPreviewBusy] = useState(false)
+  const [previewBusyId, setPreviewBusyId] = useState('')
   const [previewNotice, setPreviewNotice] = useState('')
+  const [customPreviewText, setCustomPreviewText] = useState(defaultCustomPreviewText)
   const activeChatProfile = modelProfiles.find((profile) => profile.id === settings.modelProfileId)
   const openAiCompatibleProfiles = modelProfiles.filter((profile) => profile.kind === 'openai-compatible')
   const selectedTtsProfile = openAiCompatibleProfiles.find((profile) => profile.id === settings.voice.ttsProfileId)
@@ -58,35 +179,55 @@ export function VoiceModelSettings({ modelProfiles, onUpdateSettings, settings }
     updateVoice({ voiceBlendLayers: nextLayers })
   }
 
-  async function previewCurrentTuning() {
-    setPreviewBusy(true)
+  async function previewCurrentTuning(sample: VoicePreviewSample) {
+    setPreviewBusyId(sample.id)
     setPreviewNotice('')
+    const previewSettings = mergePreviewSettings(settings, sample)
+    const previewVoiceProfile = buildPreviewVoiceProfile(sample)
 
     try {
       if (usingBrowserVoice) {
         const started = speakWithBrowserVoice(
-          previewText,
-          settings.voice.speechRate,
-          settings.voice.speechPitch,
-          settings.voice.speechVolume,
+          sample.text,
+          previewSettings.voice.speechRate,
+          previewSettings.voice.speechPitch,
+          previewSettings.voice.speechVolume,
         )
-        setPreviewNotice(started ? '已用浏览器朗读试听。' : '浏览器朗读不可用。')
+        setPreviewNotice(started ? `已试听：${sample.name}` : '浏览器朗读不可用。')
         return
       }
 
       const result = await requestSpeechAudio({
-        text: previewText,
-        characterName: settings.voice.defaultVoiceLabel || '试听角色',
-        settings,
+        text: sample.text,
+        characterName: sample.name,
+        characterVoice: previewVoiceProfile,
+        settings: previewSettings,
       })
       stopBrowserSpeech()
       await new Audio(result.audioUrl).play()
-      setPreviewNotice(`试听已生成：${result.voiceId}`)
+      setPreviewNotice(`已试听：${sample.name} / ${result.voiceId}`)
     } catch (error) {
       setPreviewNotice(error instanceof Error ? error.message : '试听失败，可以稍后再试。')
     } finally {
-      setPreviewBusy(false)
+      setPreviewBusyId('')
     }
+  }
+
+  function previewCustomTuning() {
+    const text = customPreviewText.trim()
+    if (!text) {
+      setPreviewNotice('先写一句自定义试听文本。')
+      return
+    }
+
+    void previewCurrentTuning({
+      id: 'custom',
+      name: '自定义试听',
+      title: '自由句子',
+      text,
+      stylePrompt: settings.voice.defaultStylePrompt,
+      tuning: {},
+    })
   }
 
   return (
@@ -326,13 +467,45 @@ export function VoiceModelSettings({ modelProfiles, onUpdateSettings, settings }
           <span>
             <SlidersHorizontal size={17} />
             <strong>声线调色盘</strong>
+            <small>六角色 + 自定义试听</small>
           </span>
-          <button disabled={previewBusy} onClick={() => void previewCurrentTuning()} type="button">
-            {previewBusy ? <Loader2 size={15} /> : <Play size={15} />}
-            <span>{previewBusy ? '生成中' : '试听'}</span>
-          </button>
         </div>
         {previewNotice && <p className="voice-preview-notice" role="status">{previewNotice}</p>}
+
+        <div className="voice-preview-grid" aria-label="六角色试听">
+          {coreVoicePreviewSamples.map((sample) => {
+            const loading = previewBusyId === sample.id
+            return (
+              <button
+                disabled={Boolean(previewBusyId)}
+                key={sample.id}
+                onClick={() => void previewCurrentTuning(sample)}
+                type="button"
+              >
+                {loading ? <Loader2 size={15} /> : <Play size={15} />}
+                <span>
+                  <strong>{sample.name}</strong>
+                  <small>{sample.title}</small>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="voice-custom-preview">
+          <label>
+            <span>自定义试听</span>
+            <input
+              onChange={(event) => setCustomPreviewText(event.target.value)}
+              placeholder="输入任意一句话试听当前调音"
+              value={customPreviewText}
+            />
+          </label>
+          <button disabled={Boolean(previewBusyId)} onClick={previewCustomTuning} type="button">
+            {previewBusyId === 'custom' ? <Loader2 size={15} /> : <Play size={15} />}
+            <span>{previewBusyId === 'custom' ? '生成中' : '试听自定义'}</span>
+          </button>
+        </div>
 
         <label className="toggle-row voice-tuning-toggle">
           <span>
@@ -409,4 +582,26 @@ function normalizeBlendLayers(layers: VoiceBlendLayer[] | undefined): VoiceBlend
 
 function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`
+}
+
+function mergePreviewSettings(settings: AppSettings, sample: VoicePreviewSample): AppSettings {
+  return {
+    ...settings,
+    voice: {
+      ...settings.voice,
+      ...sample.tuning,
+      defaultStylePrompt: sample.stylePrompt || settings.voice.defaultStylePrompt,
+    },
+  }
+}
+
+function buildPreviewVoiceProfile(sample: VoicePreviewSample): CharacterVoiceProfile {
+  return {
+    displayName: sample.name,
+    providerVoiceId: '',
+    stylePrompt: '',
+    source: 'built-in',
+    consentConfirmed: true,
+    updatedAt: new Date().toISOString(),
+  }
 }

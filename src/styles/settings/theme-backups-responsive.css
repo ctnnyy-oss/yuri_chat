@@ -381,6 +381,7 @@
   .voice-model-layout,
   .voice-config-grid,
   .voice-toggle-grid,
+  .voice-custom-preview,
   .voice-blend-fields {
     grid-template-columns: minmax(0, 1fr);
   }
