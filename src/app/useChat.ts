@@ -50,9 +50,11 @@ export function useChat({ state, setState, setNotice, character, conversation, p
   const proactiveTimerRef = useRef<number | null>(null)
   const proactiveInFlightRef = useRef(false)
   const lastProactiveAttemptKeyRef = useRef('')
+  const proactiveConversationIdRef = useRef('')
   const directProactiveTimerRef = useRef<number | null>(null)
   const directProactiveInFlightRef = useRef(false)
   const lastDirectProactiveAttemptKeyRef = useRef('')
+  const directProactiveConversationIdRef = useRef('')
   const chatAlert = chatAlertState?.conversationId === conversation.id ? chatAlertState.message : ''
 
   const runGroupProactiveTurn = useCallback(
@@ -164,6 +166,11 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     if (typeof document !== 'undefined' && document.hidden) return
 
     const attemptKey = getConversationMessageKey(conversation.messages)
+    if (proactiveConversationIdRef.current !== conversation.id) {
+      proactiveConversationIdRef.current = conversation.id
+      lastProactiveAttemptKeyRef.current = attemptKey
+      return
+    }
     if (lastProactiveAttemptKeyRef.current === attemptKey) return
 
     proactiveTimerRef.current = window.setTimeout(() => {
@@ -202,6 +209,11 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     if (typeof document !== 'undefined' && document.hidden) return
 
     const attemptKey = getConversationMessageKey(conversation.messages)
+    if (directProactiveConversationIdRef.current !== conversation.id) {
+      directProactiveConversationIdRef.current = conversation.id
+      lastDirectProactiveAttemptKeyRef.current = attemptKey
+      return
+    }
     if (lastDirectProactiveAttemptKeyRef.current === attemptKey) return
 
     directProactiveTimerRef.current = window.setTimeout(() => {
