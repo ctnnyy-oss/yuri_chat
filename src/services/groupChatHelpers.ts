@@ -168,6 +168,7 @@ export function buildGroupPromptBundle({
   conversationMessages,
   triggerMessage,
   settings,
+  force = false,
   mode = 'reactive',
 }: {
   group: CharacterCard
@@ -176,6 +177,7 @@ export function buildGroupPromptBundle({
   conversationMessages: ChatMessage[]
   triggerMessage: ChatMessage | null
   settings: AppSettings
+  force?: boolean
   mode?: GroupPromptMode
 }): PromptBundle {
   const member = candidate.member
@@ -229,7 +231,9 @@ export function buildGroupPromptBundle({
           `本轮接话冲动：${candidate.drive}/100`,
           `是否被点名：${candidate.mentioned ? '是' : '否'}`,
           `最近是否刚说过话：${candidate.recentlySpoke ? '是' : '否'}`,
-          mode === 'proactive-start'
+          mode === 'proactive-start' && force
+            ? '用户刚刚手动点了“让群里自己聊”。这不是后台随机续聊，而是明确希望群成员主动开一个自然话题；除非完全不合角色，否则优先开口。'
+            : mode === 'proactive-start'
             ? '现在是群里空闲时的主动发言判断；没想法、没必要开口时，直接输出静默标记。'
             : '冲动低、没被点名、话题和自己关系不大时，直接输出静默标记。',
           '如果发言，你可以自己决定打字还是发语音。可输出 JSON：{"delivery":"text|voice","message":"你的群消息"}。群聊里语音要克制，短情绪、吐槽、撒娇可以 voice；长内容、解释、任务、多人信息用 text。',
@@ -247,15 +251,23 @@ export function buildGroupPromptBundle({
       {
         id: `${triggerMessage?.id ?? 'proactive'}-${member.id}`,
         role: 'user',
-        content: buildGroupUserInstruction(member, mode, lastSpeakerName),
+        content: buildGroupUserInstruction(member, mode, lastSpeakerName, force),
         createdAt: nowIso(),
       },
     ],
   }
 }
 
-function buildGroupUserInstruction(member: CharacterCard, mode: GroupPromptMode, lastSpeakerName: string): string {
+function buildGroupUserInstruction(member: CharacterCard, mode: GroupPromptMode, lastSpeakerName: string, force: boolean): string {
   if (mode === 'proactive-start') {
+    if (force) {
+      return [
+        `用户刚刚点了“让群里自己聊”，现在轮到你作为 ${member.name} 主动开口。`,
+        '请发一条像真人小群里自然出现的短消息，可以轻轻换话题、接刚才氛围、问某位成员一句，或抛一个很轻的吐槽。',
+        '只有在发言会明显破坏角色边界时，才输出静默标记。',
+        '不要写名字前缀，不要替其他人发言。',
+      ].join('\n')
+    }
     return [
       `现在群里空了一会儿，轮到你判断：${member.name} 要不要主动开口。`,
       `如果只是尴尬续话、没有真实想法、或此刻不想说话，只输出 ${GROUP_SILENCE_MARKER}。`,

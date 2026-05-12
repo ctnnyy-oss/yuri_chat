@@ -159,6 +159,7 @@ export async function generateGroupChatProactiveTurn({
       conversationMessages: conversation.messages,
       triggerMessage: latestMessage,
       settings: state.settings,
+      force,
       mode: 'proactive-start',
     })
     const { result, normalizedReply, callCount: turnCallCount } = await requestGroupReplyWithOocRetry({
