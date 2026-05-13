@@ -179,6 +179,7 @@ export function ChatPhone({
               <span>{systemAlert}</span>
             </div>
           )}
+          {messages.length === 0 && <ChatEmptyState character={character} />}
           {messages.map((message, index) => (
             <MessageBubble
               key={message.id}
@@ -472,5 +473,16 @@ export function ChatPhone({
         )}
       </form>
     </main>
+  )
+}
+
+function ChatEmptyState({ character }: { character: CharacterCard }) {
+  const isGroup = character.relationship === '群聊'
+  return (
+    <div className="chat-empty-state" style={{ '--avatar-accent': character.accent } as CSSProperties}>
+      <span>{character.avatar}</span>
+      <strong>{character.name}</strong>
+      <p>{isGroup ? character.mood || '群聊刚建好，成员们还在等第一句话。' : character.greeting || character.title}</p>
+    </div>
   )
 }

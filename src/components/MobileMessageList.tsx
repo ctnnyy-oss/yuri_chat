@@ -155,7 +155,7 @@ export function MobileMessageList({
     () =>
       [...roleCharacters]
         .filter((character) =>
-          hasVisibleConversation(conversationByCharacterId.get(character.id)) &&
+          (normalizedQuery || character.id === activeCharacterId || hasVisibleConversation(conversationByCharacterId.get(character.id))) &&
           matchesQuery(
             [character.name, character.title, character.subtitle, character.relationship, character.mood],
             normalizedQuery,
@@ -166,7 +166,7 @@ export function MobileMessageList({
           const rightTime = new Date(conversationByCharacterId.get(right.id)?.updatedAt ?? '').getTime() || 0
           return rightTime - leftTime
         }),
-    [conversationByCharacterId, normalizedQuery, roleCharacters],
+    [activeCharacterId, conversationByCharacterId, normalizedQuery, roleCharacters],
   )
 
   const groupCandidateCharacters = useMemo(

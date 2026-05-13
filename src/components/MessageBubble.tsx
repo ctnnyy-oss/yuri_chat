@@ -66,22 +66,19 @@ export function MessageBubble({
           {isGroupAssistant && showAvatar && <strong className="message-author-name">{assistantName}</strong>}
           {canPlayRecordedVoice && <RecordedVoicePlayer message={message} />}
           {isAssistantVoiceMessage ? (
-            <AssistantVoicePlayer
-              autoPlay={autoPlayVoice}
-              characterName={voiceSpeakerName}
-              content={content}
-              settings={settings}
-              variant="voice-note"
-              voiceProfile={speakerVoiceProfile}
-            />
+            <>
+              <AssistantVoicePlayer
+                autoPlay={autoPlayVoice}
+                characterName={voiceSpeakerName}
+                content={content}
+                settings={settings}
+                variant="voice-note"
+                voiceProfile={speakerVoiceProfile}
+              />
+              <p className="assistant-voice-preview">{content}</p>
+            </>
           ) : (
             <p>{content}</p>
-          )}
-          {isAssistantVoiceMessage && (
-            <details className="assistant-voice-transcript">
-              <summary>转文字</summary>
-              <p>{content}</p>
-            </details>
           )}
           {canPlayAssistantVoice && !isAssistantVoiceMessage && (
             <AssistantVoicePlayer

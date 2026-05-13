@@ -37,6 +37,10 @@ interface CharacterRailProps {
   onShellAction?: (message: string) => void
 }
 
+function hasVisibleConversation(conversation?: ConversationState) {
+  return Boolean(conversation && (conversation.messages.length > 0 || conversation.summary || (conversation.unreadCount ?? 0) > 0))
+}
+
 export function CharacterRail({
   characters,
   activeCharacterId,
@@ -81,8 +85,14 @@ export function CharacterRail({
     [totalUnreadBadge],
   )
   const filteredCharacters = useMemo(() => {
-    if (!normalizedQuery) return roleCharacters
-    return roleCharacters.filter((character) => {
+    const recentOrActiveCharacters =
+      activeView === 'chat' && !normalizedQuery
+        ? roleCharacters.filter((character) =>
+          character.id === activeCharacterId || hasVisibleConversation(conversationByCharacterId.get(character.id)),
+        )
+        : roleCharacters
+    if (!normalizedQuery) return recentOrActiveCharacters
+    return recentOrActiveCharacters.filter((character) => {
       const haystack = [
         character.name,
         character.title,
@@ -94,7 +104,7 @@ export function CharacterRail({
         .toLowerCase()
       return haystack.includes(normalizedQuery)
     })
-  }, [normalizedQuery, roleCharacters])
+  }, [activeCharacterId, activeView, conversationByCharacterId, normalizedQuery, roleCharacters])
   const filteredChannelRows = useMemo(() => {
     const defaultTitles = new Set(visibleChannelRows.map((row) => row.title))
     const defaultRows = visibleChannelRows.map((row) => {
