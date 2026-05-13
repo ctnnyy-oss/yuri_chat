@@ -127,7 +127,7 @@ export const modelProviderPresets: ModelProviderPreset[] = [
     group: 'official',
     kind: 'openai-compatible',
     baseUrl: 'https://openspeech.bytedance.com/api/v1/tts',
-    model: 'volcano_icl',
+    model: 'volcano_tts',
   },
   {
     id: 'anthropic',

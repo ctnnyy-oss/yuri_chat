@@ -43,7 +43,12 @@ export function ModelProfileEditor({
 
   function updateDraft(patch: Partial<ModelProfileInput>, options: { resetCatalog?: boolean } = {}) {
     if (options.resetCatalog) onResetCatalog()
-    onDraftChange((currentDraft) => ({ ...currentDraft, ...patch }))
+    const shouldRegenerateName = 'baseUrl' in patch || 'kind' in patch || 'model' in patch
+    onDraftChange((currentDraft) => ({
+      ...currentDraft,
+      ...patch,
+      ...(shouldRegenerateName ? { name: undefined } : {}),
+    }))
   }
 
   return (

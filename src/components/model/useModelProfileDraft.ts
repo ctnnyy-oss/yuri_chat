@@ -68,7 +68,9 @@ export function useModelProfileDraft({
         if (result.models[0]?.id) {
           setDraft((currentDraft) => {
             const currentStillExists = result.models.some((model) => model.id === currentDraft.model)
-            return currentDraft.model && currentStillExists ? currentDraft : { ...currentDraft, model: result.models[0].id }
+            return currentDraft.model && currentStillExists
+              ? currentDraft
+              : { ...currentDraft, name: undefined, model: result.models[0].id }
           })
         }
       } catch (error) {
@@ -130,7 +132,7 @@ export function useModelProfileDraft({
       const result = await fetchDraftCatalog(baseUrl)
       setCatalogModels(result.models)
       setCatalogStatus(`已拉取 ${result.models.length} 个模型`)
-      if (result.models[0]?.id && !draft.model) setDraft({ ...draft, model: result.models[0].id })
+      if (result.models[0]?.id && !draft.model) setDraft({ ...draft, name: undefined, model: result.models[0].id })
     } catch (error) {
       setCatalogStatus(error instanceof Error ? error.message : '模型列表拉取失败')
     }

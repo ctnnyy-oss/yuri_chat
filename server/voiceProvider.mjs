@@ -365,7 +365,7 @@ function parseVolcengineCredentials(apiKey, mode, model) {
     throw new Error('火山引擎豆包 TTS 需要 API Key。模型档案的 API Key 直接填控制台给的 x-api-key；小米档案会继续保留不受影响。')
   }
   if (mode === 'v3' && !config.appid && config.authMode === 'api-key') {
-    throw new Error('当前豆包 V3 端点需要 AppID + Access Token。妹妹这份 x-api-key 请使用 https://openspeech.bytedance.com/api/v1/tts，cluster 填 volcano_icl。')
+    throw new Error('当前豆包 V3 端点需要 AppID + Access Token。妹妹这份 x-api-key 请使用 https://openspeech.bytedance.com/api/v1/tts，cluster 填 volcano_tts。')
   }
   return config
 }
@@ -436,7 +436,7 @@ function resolveVolcengineVoiceId(voiceId, mode) {
 function inferVolcengineCluster(model, mode) {
   const normalized = String(model || '').trim()
   if (/^volcano_/i.test(normalized)) return normalized
-  return mode === 'v1' ? 'volcano_icl' : 'volcano_tts'
+  return 'volcano_tts'
 }
 
 function isLikelyOpenAiBuiltinVoice(value) {
