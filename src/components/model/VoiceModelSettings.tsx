@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Loader2, Mic, Play, ShieldCheck, SlidersHorizontal, Volume2 } from 'lucide-react'
 import type { AppSettings, CharacterVoiceProfile, ModelProfileSummary, VoiceBlendLayer } from '../../domain/types'
-import { buildVoiceProfileSettingsPatch } from '../../services/modelProfileCapabilities'
+import { buildVoiceProfileSettingsPatch, isLikelyVoiceOnlyProfile } from '../../services/modelProfileCapabilities'
 import { requestSpeechAudio, speakWithBrowserVoice, stopBrowserSpeech } from '../../services/voiceApi'
 
 interface VoiceModelSettingsProps {
@@ -151,20 +151,26 @@ export function VoiceModelSettings({ modelProfiles, onUpdateSettings, settings }
   const [customPreviewText, setCustomPreviewText] = useState(defaultCustomPreviewText)
   const activeChatProfile = modelProfiles.find((profile) => profile.id === settings.modelProfileId)
   const openAiCompatibleProfiles = modelProfiles.filter((profile) => profile.kind === 'openai-compatible')
+  const voiceProfileOptions = openAiCompatibleProfiles.filter(isLikelyVoiceOnlyProfile)
   const selectedTtsProfile = openAiCompatibleProfiles.find((profile) => profile.id === settings.voice.ttsProfileId)
   const selectedTtsProfileId = selectedTtsProfile ? settings.voice.ttsProfileId : ''
+  const selectedTtsProfileIsVoiceOnly = selectedTtsProfile ? isLikelyVoiceOnlyProfile(selectedTtsProfile) : false
+  const ttsProfileOptions =
+    selectedTtsProfile && !selectedTtsProfileIsVoiceOnly
+      ? [selectedTtsProfile, ...voiceProfileOptions]
+      : voiceProfileOptions
   const usingBrowserVoice = settings.voice.provider === 'browser'
   const voiceModelLabel =
     usingBrowserVoice
       ? '浏览器朗读'
-      : selectedTtsProfile?.name ?? activeChatProfile?.name ?? '沿用 LLM 档案'
+      : selectedTtsProfile?.name ?? (isLikelyVoiceOnlyProfile(activeChatProfile) ? activeChatProfile?.name : undefined) ?? '请选择 TTS 档案'
   const voiceModelDetail =
     usingBrowserVoice
       ? '使用当前设备自带声音'
       : selectedTtsProfile
-        ? `${selectedTtsProfile.model} / ${selectedTtsProfile.baseUrl}`
+        ? `${selectedTtsProfile.model} / ${selectedTtsProfile.baseUrl}${selectedTtsProfileIsVoiceOnly ? '' : '（这看起来不是语音模型，建议换成 TTS 档案）'}`
         : activeChatProfile
-          ? `${activeChatProfile.model} / ${activeChatProfile.baseUrl}`
+          ? '未指定 TTS 档案；会尝试沿用当前聊天档案，失败时请保存一个 TTS 档案。'
           : '还没有可用模型档案'
   const blendLayers = normalizeBlendLayers(settings.voice.voiceBlendLayers)
   const currentEmotion = voiceEmotionOptions.some((option) => option.value === settings.voice.speechEmotion)
@@ -289,10 +295,12 @@ export function VoiceModelSettings({ modelProfiles, onUpdateSettings, settings }
           onChange={(event) => handleTtsProfileChange(event.target.value)}
           value={selectedTtsProfileId}
         >
-          <option value="">沿用当前 LLM 档案</option>
-          {openAiCompatibleProfiles.map((profile) => (
+          <option value="">不指定，尝试沿用当前聊天档案</option>
+          {voiceProfileOptions.length === 0 && <option disabled value="__none">还没有识别到 TTS 档案</option>}
+          {ttsProfileOptions.map((profile) => (
             <option key={profile.id} value={profile.id}>
               {profile.name} / {profile.model}
+              {isLikelyVoiceOnlyProfile(profile) ? '' : '（聊天档案，不推荐）'}
             </option>
           ))}
         </select>
