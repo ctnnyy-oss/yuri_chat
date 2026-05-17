@@ -76,7 +76,21 @@ const corsOrigin = getCorsOrigin()
 const appName = 'yuri_chat'
 
 app.set('trust proxy', 1)
-app.use(cors({ origin: corsOrigin }))
+app.use(
+  cors({
+    origin: corsOrigin,
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'Content-Encoding',
+      'X-Yuri-Chat-Session',
+      'X-Yuri-Chat-Token',
+      'X-Yuri-Nest-Token',
+      'X-Yuri_Chat-Session',
+      'X-Yuri_Chat-Token',
+    ],
+  }),
+)
 app.use(express.json({ limit: readEnv('YURI_CHAT_JSON_LIMIT') || '10mb' }))
 initializeAccountStore()
 getSecurityStartupHints().forEach((hint) => console.warn(`[${appName} 安全提示] ${hint}`))

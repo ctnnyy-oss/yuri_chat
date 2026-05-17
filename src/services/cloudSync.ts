@@ -24,6 +24,13 @@ type CloudFetchOptions = RequestInit & {
   timeoutMs?: number
 }
 
+type EncodedCloudBody = {
+  body: BodyInit
+  headers: Record<string, string>
+}
+
+const CLOUD_UPLOAD_COMPRESSION_THRESHOLD = 64 * 1024
+
 export function isCloudSyncConfigured(): boolean {
   return Boolean(getCloudApiBaseUrl())
 }
@@ -98,15 +105,38 @@ export async function pushCloudState(
   token: string,
   options: { baseRevision?: number | null } = {},
 ): Promise<Pick<CloudSnapshot, 'updatedAt' | 'revision'>> {
+  const payload = await encodeCloudStateBody({ state, baseRevision: options.baseRevision ?? null })
   const response = await cloudFetch('/api/cloud/state', token, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ state, baseRevision: options.baseRevision ?? null }),
+    headers: payload.headers,
+    body: payload.body,
     timeoutMs: 90_000,
   })
   return response.json()
+}
+
+async function encodeCloudStateBody(payload: unknown): Promise<EncodedCloudBody> {
+  const json = JSON.stringify(payload)
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  if (json.length < CLOUD_UPLOAD_COMPRESSION_THRESHOLD || typeof CompressionStream === 'undefined') {
+    return { body: json, headers }
+  }
+
+  try {
+    const compressedBody = await gzipText(json)
+    headers['Content-Encoding'] = 'gzip'
+    return { body: compressedBody, headers }
+  } catch {
+    return { body: json, headers }
+  }
+}
+
+async function gzipText(text: string): Promise<Blob> {
+  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))
+  return new Response(stream).blob()
 }
 
 export async function listCloudBackups(token: string): Promise<CloudBackupSummary[]> {
