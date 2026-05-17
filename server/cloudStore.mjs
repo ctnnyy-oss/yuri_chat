@@ -74,7 +74,7 @@ function ensureColumn(database, tableName, columnName, definition) {
 }
 
 function getCloudDatabasePath() {
-  return resolve(readEnv('YURI_CHAT_DB_PATH') || './data/yuri-chat.sqlite')
+  return resolve(readEnv('YURI_CHAT_DB_PATH') || './data/yuri_chat.sqlite')
 }
 
 function getCloudBackupDir() {
@@ -90,7 +90,7 @@ function shouldCreateAutoBeforeSaveBackup() {
 
   const cutoffMs = Date.now() - intervalMinutes * 60_000
   return !readdirSync(backupDir).some((fileName) => {
-    if (!fileName.startsWith('yuri-chat-auto-before-save-') || !fileName.endsWith('.sqlite')) return false
+    if (!fileName.startsWith('yuri_chat-auto-before-save-') || !fileName.endsWith('.sqlite')) return false
     try {
       return statSync(join(backupDir, fileName)).mtimeMs >= cutoffMs
     } catch {
@@ -197,7 +197,7 @@ export function createCloudBackup(reason = 'manual') {
 
   const safeReason = String(reason).toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/-+/g, '-').slice(0, 48) || 'backup'
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const fileName = `yuri-chat-${safeReason}-${stamp}.sqlite`
+  const fileName = `yuri_chat-${safeReason}-${stamp}.sqlite`
   const backupPath = join(backupDir, fileName)
 
   database.exec(`VACUUM INTO ${quoteSqlString(backupPath)}`)
@@ -210,7 +210,7 @@ export function listCloudBackups() {
   if (!existsSync(backupDir)) return []
 
   return readdirSync(backupDir)
-    .filter((fileName) => fileName.startsWith('yuri-chat-') && fileName.endsWith('.sqlite'))
+    .filter((fileName) => fileName.startsWith('yuri_chat-') && fileName.endsWith('.sqlite'))
     .map((fileName) => toCloudBackupSummary(join(backupDir, fileName)))
     .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
 }
@@ -226,7 +226,7 @@ function pruneCloudBackups() {
 
 export function resolveBackupPath(fileName) {
   const cleanName = basename(String(fileName))
-  if (!cleanName.startsWith('yuri-chat-') || !cleanName.endsWith('.sqlite')) return null
+  if (!cleanName.startsWith('yuri_chat-') || !cleanName.endsWith('.sqlite')) return null
   const backupDir = getCloudBackupDir()
   const backupPath = resolve(backupDir, cleanName)
   return backupPath.startsWith(`${backupDir}${sep}`) ? backupPath : null
@@ -237,7 +237,7 @@ function toCloudBackupSummary(backupPath) {
   const fileName = basename(backupPath)
   return {
     fileName,
-    label: fileName.replace(/^yuri-chat-/, '').replace(/\.sqlite$/, ''),
+    label: fileName.replace(/^yuri_chat-/, '').replace(/\.sqlite$/, ''),
     createdAt: stats.mtime.toISOString(),
     sizeBytes: stats.size,
   }

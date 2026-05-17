@@ -267,7 +267,7 @@ function runSecurityRegression() {
     {
       name: 'cloud snapshot rejects stale base revision',
       run: () => {
-        const dir = mkdtempSync(join(tmpdir(), 'yuri-chat-cloud-cas-'))
+        const dir = mkdtempSync(join(tmpdir(), 'yuri_chat-cloud-cas-'))
         try {
           return withEnv({ NODE_ENV: 'development', YURI_CHAT_DB_PATH: join(dir, 'cloud.sqlite') }, () => {
             const first = saveSnapshot(minimalCloudState(), { baseRevision: 0 })

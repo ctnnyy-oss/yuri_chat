@@ -338,6 +338,6 @@ function getModelSecretKey() {
     readEnv('YURI_CHAT_SYNC_TOKEN') ||
     process.env.AI_API_KEY ||
     process.env.OPENAI_API_KEY ||
-    'local-yuri-chat-development-secret'
+    'local-yuri_chat-development-secret'
   return createHash('sha256').update(material).digest()
 }

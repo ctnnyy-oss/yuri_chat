@@ -14,7 +14,7 @@ export function shouldExposeDevEmailCode() {
 export async function sendVerificationEmail({ to, code, username, expiresAt }) {
   const mode = getEmailDeliveryMode()
   const subject = '百合小窝邮箱验证码'
-  const from = readEnv('YURI_CHAT_EMAIL_FROM') || 'Yuri Chat <noreply@yuri-chat.local>'
+  const from = readEnv('YURI_CHAT_EMAIL_FROM') || 'yuri_chat <noreply@example.com>'
   const expiresText = formatExpiry(expiresAt)
   const text = [
     `${username || '妹妹'}，欢迎来到百合小窝。`,
@@ -44,7 +44,7 @@ export async function sendVerificationEmail({ to, code, username, expiresAt }) {
     return { provider: 'smtp' }
   }
 
-  console.warn(`[Yuri Chat email verification] ${to} code=${code} expires=${expiresAt}`)
+  console.warn(`[yuri_chat email verification] ${to} code=${code} expires=${expiresAt}`)
   return { provider: 'log', devCode: shouldExposeDevEmailCode() ? code : undefined }
 }
 

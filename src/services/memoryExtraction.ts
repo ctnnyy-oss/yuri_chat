@@ -45,7 +45,7 @@ export function buildMemoryExtractionPrompt(input: {
     .join('\n')
 
   return [
-    '你是 Yuri Chat 的记忆抽取器。只输出严格 JSON，不输出解释。',
+    '你是 yuri_chat 的记忆抽取器。只输出严格 JSON，不输出解释。',
     '只抽取值得长期保留的事实、关系变化、情绪高峰、承诺、偏好和共同经历；忽略寒暄、低价值复读和临时任务噪声。',
     '记忆必须用第三人称、过去时态、摘要化写法；不要保存大段原始聊天。',
     '候选 scope 只能是 user_global / relationship / session / episodic / semantic / affective / lore。',

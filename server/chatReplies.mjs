@@ -20,7 +20,7 @@ const DEMO_META_AGENT_REASONS = new Set([
   'tool_governance',
 ])
 
-export function createDemoReply(bundle, appName = 'Yuri Chat') {
+export function createDemoReply(bundle, appName = 'yuri_chat') {
   const lastUserMessage = [...bundle.messages].reverse().find((message) => message.role === 'user')
   const characterName = bundle.characterName || appName
   const agentBlocks = bundle.contextBlocks.filter((block) => block.title?.startsWith('Agent '))

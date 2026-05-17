@@ -35,7 +35,10 @@ export function isEmailVerificationPending(payload: AccountAuthPayload): payload
 export function getSavedSessionToken(): string {
   if (typeof window === 'undefined') return ''
   try {
-    return window.localStorage.getItem(storageConfig.accountSessionStorageKey) ?? ''
+    return getStoredValueWithLegacyFallback(
+      storageConfig.accountSessionStorageKey,
+      storageConfig.legacyAccountSessionStorageKeys,
+    )
   } catch {
     return ''
   }
@@ -47,11 +50,37 @@ export function saveSessionToken(token: string): void {
   try {
     if (cleanedToken) {
       window.localStorage.setItem(storageConfig.accountSessionStorageKey, cleanedToken)
+      removeStoredValues(storageConfig.legacyAccountSessionStorageKeys)
     } else {
       window.localStorage.removeItem(storageConfig.accountSessionStorageKey)
+      removeStoredValues(storageConfig.legacyAccountSessionStorageKeys)
     }
   } catch {
     // Session 只影响当前浏览器；localStorage 不可用时交给本次内存态兜底。
+  }
+}
+
+function getStoredValueWithLegacyFallback(primaryKey: string, legacyKeys: string[]): string {
+  const primaryValue = window.localStorage.getItem(primaryKey)
+  if (primaryValue) return primaryValue
+
+  for (const legacyKey of legacyKeys) {
+    const legacyValue = window.localStorage.getItem(legacyKey)
+    if (!legacyValue) continue
+    try {
+      window.localStorage.setItem(primaryKey, legacyValue)
+    } catch {
+      // 读取旧 key 已经足够维持当前会话。
+    }
+    return legacyValue
+  }
+
+  return ''
+}
+
+function removeStoredValues(keys: string[]): void {
+  for (const key of keys) {
+    window.localStorage.removeItem(key)
   }
 }
 

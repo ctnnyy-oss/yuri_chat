@@ -248,7 +248,7 @@ function AuthenticatedApp({ authToken, user, onLogout }: AuthenticatedAppProps) 
     <div className={shellClassName} style={appStyle}>
       <header className="desktop-titlebar" aria-label="应用顶栏">
         <div className="desktop-titlebar-brand">
-          <strong className="desktop-titlebar-logo">Yuri Chat</strong>
+          <strong className="desktop-titlebar-logo">yuri_chat</strong>
           <span
             className="desktop-titlebar-avatar"
             style={{ '--avatar-accent': character.accent } as CSSProperties}

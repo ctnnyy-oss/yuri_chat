@@ -33,7 +33,10 @@ export function getSavedCloudToken(): string {
   const sessionToken = getSavedSessionToken()
   if (sessionToken) return sessionToken
   try {
-    return window.localStorage.getItem(storageConfig.cloudTokenStorageKey) ?? ''
+    return getStoredValueWithLegacyFallback(
+      storageConfig.cloudTokenStorageKey,
+      storageConfig.legacyCloudTokenStorageKeys,
+    )
   } catch {
     // iOS Safari 严格模式 / 无痕窗口 / quota 满都会抛
     return ''
@@ -46,11 +49,37 @@ export function saveCloudToken(token: string): void {
   try {
     if (cleanedToken) {
       window.localStorage.setItem(storageConfig.cloudTokenStorageKey, cleanedToken)
+      removeStoredValues(storageConfig.legacyCloudTokenStorageKeys)
     } else {
       window.localStorage.removeItem(storageConfig.cloudTokenStorageKey)
+      removeStoredValues(storageConfig.legacyCloudTokenStorageKeys)
     }
   } catch {
     // localStorage 不可用时静默——token 仅本会话有效，不影响功能
+  }
+}
+
+function getStoredValueWithLegacyFallback(primaryKey: string, legacyKeys: string[]): string {
+  const primaryValue = window.localStorage.getItem(primaryKey)
+  if (primaryValue) return primaryValue
+
+  for (const legacyKey of legacyKeys) {
+    const legacyValue = window.localStorage.getItem(legacyKey)
+    if (!legacyValue) continue
+    try {
+      window.localStorage.setItem(primaryKey, legacyValue)
+    } catch {
+      // 旧 key 已读到即可，不强求迁移写入成功。
+    }
+    return legacyValue
+  }
+
+  return ''
+}
+
+function removeStoredValues(keys: string[]): void {
+  for (const key of keys) {
+    window.localStorage.removeItem(key)
   }
 }
 

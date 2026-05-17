@@ -10,7 +10,7 @@ let platformDatabase
 export function getPlatformDatabase() {
   if (platformDatabase) return platformDatabase
 
-  const databasePath = resolve(readEnv('YURI_CHAT_DB_PATH') || './data/yuri-chat.sqlite')
+  const databasePath = resolve(readEnv('YURI_CHAT_DB_PATH') || './data/yuri_chat.sqlite')
   mkdirSync(dirname(databasePath), { recursive: true })
   platformDatabase = new DatabaseSync(databasePath)
   platformDatabase.exec(`

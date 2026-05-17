@@ -146,13 +146,32 @@ async function claimLegacyLocalState(
   if (!legacyState) return undefined
   if (typeof window !== 'undefined') {
     try {
-      const claimedBy = window.localStorage.getItem(storageConfig.legacyLocalClaimStorageKey)
+      const claimKeys = [
+        storageConfig.legacyLocalClaimStorageKey,
+        ...storageConfig.legacyLocalClaimStorageKeys,
+      ]
+      const claimedBy = getFirstLocalStorageValue(claimKeys)
       if (claimedBy && claimedBy !== accountId) return undefined
       window.localStorage.setItem(storageConfig.legacyLocalClaimStorageKey, accountId)
+      removeLocalStorageValues(storageConfig.legacyLocalClaimStorageKeys)
     } catch {
       // 无痕窗口里 localStorage 可能不可写；账号专属 key 仍然会保存当前状态。
     }
   }
   await database.put(storeName, legacyState, stateKeyForAccount(accountId))
   return legacyState
+}
+
+function getFirstLocalStorageValue(keys: string[]): string {
+  for (const key of keys) {
+    const value = window.localStorage.getItem(key)
+    if (value) return value
+  }
+  return ''
+}
+
+function removeLocalStorageValues(keys: string[]): void {
+  for (const key of keys) {
+    window.localStorage.removeItem(key)
+  }
 }

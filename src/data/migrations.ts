@@ -1,12 +1,14 @@
-import type { AppState, CharacterCard, ConversationState, LongTermMemory, MemoryTombstone, VoiceBlendLayer } from '../domain/types'
+import type { AppState, CharacterCard, ConversationState, LongTermMemory, MemoryScope, MemoryTombstone, VoiceBlendLayer } from '../domain/types'
 import { refreshLocalMemoryEmbeddingCache } from '../services/memoryEmbeddingIndex'
 import { normalizeMemories } from '../services/memoryEngine'
 import { normalizeTrashRetentionSettings } from '../services/trashRetention'
 import { agentRooms, createSeedState } from './seed'
 
-const currentStateVersion = 34
-const legacyDefaultRoomId = 'room-yuri-nest'
-const currentDefaultRoomId = 'room-yuri-chat'
+const currentStateVersion = 35
+const legacyDefaultRoomIds = new Set(['room-yuri-nest', 'room-yuri-chat'])
+const currentDefaultRoomId = 'room-yuri_chat'
+const legacyProjectIds = new Set(['yuri-nest', 'yuri-chat'])
+const currentProjectId = 'yuri_chat'
 
 export function migrateAppState(state: AppState): AppState {
   const defaults = createSeedState()
@@ -17,7 +19,7 @@ export function migrateAppState(state: AppState): AppState {
     sourceVersion < 10 ? mergeMissingSeedMemories(baseMemories, defaults.memories) : baseMemories,
     defaults.memories,
     sourceVersion < 27,
-  )
+  ).map(normalizeMemoryProjectIds)
   const shouldResetCharacterShell = sourceVersion < 19
   const characters = shouldResetCharacterShell
     ? defaults.characters
@@ -36,10 +38,12 @@ export function migrateAppState(state: AppState): AppState {
     memories,
     worldNodes: mergeSeedWorldNodes(state.worldNodes ?? defaults.worldNodes, defaults.worldNodes, sourceVersion < 27),
     trash: {
-      memories: normalizeMemories(state.trash?.memories ?? defaults.trash.memories).map((memory, index) => ({
-        ...memory,
-        deletedAt: state.trash?.memories?.[index]?.deletedAt ?? memory.updatedAt,
-      })),
+      memories: normalizeMemories(state.trash?.memories ?? defaults.trash.memories).map((memory, index) =>
+        normalizeMemoryProjectIds({
+          ...memory,
+          deletedAt: state.trash?.memories?.[index]?.deletedAt ?? memory.updatedAt,
+        }),
+      ),
       worldNodes: state.trash?.worldNodes ?? defaults.trash.worldNodes,
       conversations: normalizeTrashedConversations(state.trash?.conversations ?? defaults.trash.conversations, characters),
     },
@@ -121,7 +125,7 @@ function sanitizeCharacterShell(characters: CharacterCard[], defaultCharacters: 
 function mergeSeedAgentRooms(rooms: AppState['agentRooms'], replaceExistingSeeds = false): AppState['agentRooms'] {
   const seedRoomsById = new Map(agentRooms.map((room) => [room.id, room]))
   const normalizedRooms = dedupeAgentRooms(
-    rooms.map((room) => (room.id === legacyDefaultRoomId ? { ...room, id: currentDefaultRoomId } : room)),
+    rooms.map((room) => (legacyDefaultRoomIds.has(room.id) ? { ...room, id: currentDefaultRoomId } : room)),
   )
   const mergedRooms = normalizedRooms.map((room) => {
     const seedRoom = seedRoomsById.get(room.id)
@@ -212,6 +216,35 @@ function replaceSeedMemories(
     }
   })
   return mergeMissingSeedMemories(replacedMemories, seedMemories)
+}
+
+function normalizeMemoryProjectIds<T extends LongTermMemory>(memory: T): T {
+  const scope = normalizeProjectScope(memory.scope)
+  const revisions = memory.revisions.map((revision) => ({
+    ...revision,
+    snapshot: {
+      ...revision.snapshot,
+      scope: normalizeProjectScope(revision.snapshot.scope),
+    },
+  }))
+  return {
+    ...memory,
+    scope,
+    revisions,
+  } as T
+}
+
+function normalizeProjectScope(scope: MemoryScope): MemoryScope {
+  if (scope.kind === 'project' && legacyProjectIds.has(scope.projectId)) {
+    return { ...scope, projectId: currentProjectId }
+  }
+  if (scope.kind === 'world' && legacyProjectIds.has(scope.worldId)) {
+    return { ...scope, worldId: currentProjectId }
+  }
+  if (scope.kind === 'world_branch' && legacyProjectIds.has(scope.worldId)) {
+    return { ...scope, worldId: currentProjectId }
+  }
+  return scope
 }
 
 function mergeSeedWorldNodes(

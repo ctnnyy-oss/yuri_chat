@@ -148,7 +148,7 @@ async function callVolcengineV3TextToSpeech({ profile, endpoint, config, model, 
     },
     body: JSON.stringify({
       user: {
-        uid: `yuri-chat-${randomUUID()}`,
+        uid: `yuri_chat-${randomUUID()}`,
       },
       req_params: {
         text,

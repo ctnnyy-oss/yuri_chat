@@ -423,7 +423,7 @@ function getAuthSecret() {
   if (configured) return configured
   const issue = getAuthSecretConfigurationIssue()
   if (issue) throw createPublicError(issue, 503)
-  return readEnv('YURI_CHAT_SYNC_TOKEN') || readEnv('YURI_CHAT_MODEL_SECRET') || 'local-yuri-chat-account-secret'
+  return readEnv('YURI_CHAT_SYNC_TOKEN') || readEnv('YURI_CHAT_MODEL_SECRET') || 'local-yuri_chat-account-secret'
 }
 
 function getBcryptCost() {

@@ -1,4 +1,4 @@
-const appName = 'Yuri Chat'
+const appName = 'yuri_chat'
 
 import { clampNumber } from './shared/utils.mjs'
 

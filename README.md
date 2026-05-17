@@ -1,12 +1,12 @@
-# 百合小窝 / Yuri Chat
+# 百合小窝 / yuri_chat
 
 网页端 AI 百合陪伴应用。它是妹妹“百合帝国”的应用侧起点，当前重点不是做一次性聊天 demo，而是把角色、长期记忆、世界树、本地/云端数据和可控的记忆主权慢慢打磨成长期可用的陪伴花园。
 
 线上预览：
 
-- https://ctnnyy-oss.github.io/yuri-chat/
+- https://ctnnyy-oss.github.io/yuri_chat/
 
-当前仓库、部署路径和服务器技术名已经统一为 `yuri-chat`，面向用户的产品名是“百合小窝 / Yuri Chat”。
+当前仓库、部署路径、服务器目录、systemd 服务名、包名和文档技术名已经统一为 `yuri_chat`，面向用户的产品名是“百合小窝 / yuri_chat”。
 
 ## 当前功能
 
@@ -53,7 +53,7 @@ VITE_API_BASE_URL=
 
 - `secrets/`
 - `.env.local`
-- 服务器 `/opt/yuri-chat/.env`
+- 服务器 `/opt/yuri_chat/.env`
 
 旧版 `YURI_CHAT_REQUIRE_CLOUD_AUTH` / `YURI_CHAT_SYNC_TOKEN` 仍保留为短期回滚入口；账号系统正常使用时走 session。模型保险箱在生产环境需要 `YURI_CHAT_MODEL_SECRET` 保护服务器保存的模型密钥。
 
@@ -63,17 +63,17 @@ VITE_API_BASE_URL=
 
 当前后端服务名：
 
-- `yuri-chat-api.service`
-- `yuri-chat-tunnel.service`
+- `yuri_chat-api.service`
+- `yuri_chat-tunnel.service`
 
 如果 Cloudflare Quick Tunnel 地址变化，需要更新前端的 `VITE_API_BASE_URL` 后重新构建并推送。
 
 ## 构建和上线
 
-GitHub Pages 使用仓库路径 `/yuri-chat/`，构建时必须带正确 base path：
+GitHub Pages 使用仓库路径 `/yuri_chat/`，构建时必须带正确 base path：
 
 ```powershell
-$env:VITE_BASE_PATH='/yuri-chat/'
+$env:VITE_BASE_PATH='/yuri_chat/'
 $env:VITE_API_BASE_URL='<当前云端 API 地址>'
 npm run build
 ```
@@ -81,7 +81,7 @@ npm run build
 构建后要检查 `dist/index.html` 是否引用：
 
 ```text
-/yuri-chat/assets/...
+/yuri_chat/assets/...
 ```
 
 `dist` 是当前 Pages 部署产物的一部分，提交前请确认没有把任何密钥、token 或 `.env.local` 加入 Git。

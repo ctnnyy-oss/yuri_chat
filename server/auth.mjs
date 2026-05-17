@@ -54,6 +54,7 @@ export function getSecurityStartupHints() {
 
 export function getRequestSessionToken(request) {
   return (
+    request.get('x-yuri_chat-session') ||
     request.get('x-yuri-chat-session') ||
     request.get('authorization')?.replace(/^Bearer\s+/i, '') ||
     ''
@@ -110,6 +111,7 @@ export function getCloudAuthFailure(request) {
 
 function getProvidedCloudToken(request) {
   return (
+    request.get('x-yuri_chat-token') ||
     request.get('x-yuri-chat-token') ||
     request.get('x-yuri-nest-token') ||
     request.get('authorization')?.replace(/^Bearer\s+/i, '') ||

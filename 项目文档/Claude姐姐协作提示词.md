@@ -17,13 +17,13 @@
 
 主要项目：
 
-- 本地路径：`C:\Users\MI\Desktop\AI\yuri-chat`
-- GitHub 仓库：`https://github.com/ctnnyy-oss/yuri-chat`
-- 线上前端：`https://ctnnyy-oss.github.io/yuri-chat/`
+- 本地路径：`C:\Users\MI\Desktop\AI\yuri_chat`
+- GitHub 仓库：`https://github.com/ctnnyy-oss/yuri_chat`
+- 线上前端：`https://ctnnyy-oss.github.io/yuri_chat/`
 - 腾讯云后端 SSH alias：`tencent-astrbot`
-- 服务器后端目录：`/opt/yuri-chat`
-- systemd 服务：`yuri-chat-api.service`
-- 临时隧道服务：`yuri-chat-tunnel.service`
+- 服务器后端目录：`/opt/yuri_chat`
+- systemd 服务：`yuri_chat-api.service`
+- 临时隧道服务：`yuri_chat-tunnel.service`
 
 先读：
 
@@ -38,7 +38,7 @@
 
 ## 3. 产品方向
 
-`Yuri Chat / 百合小窝` 是妹妹的百合陪伴网页应用，不是普通聊天 demo。
+`yuri_chat / 百合小窝` 是妹妹的百合陪伴网页应用，不是普通聊天 demo。
 
 核心能力：
 
@@ -73,7 +73,7 @@
 
 ## 5. 常用验证
 
-在 `C:\Users\MI\Desktop\AI\yuri-chat` 执行：
+在 `C:\Users\MI\Desktop\AI\yuri_chat` 执行：
 
 ```powershell
 npm run lint
@@ -83,19 +83,19 @@ npm run test:memory
 npm run audit:architecture
 ```
 
-⚠️ **如果只是想验证 TypeScript 编译**（不打算发布），跑 `npx tsc -b` 而不是 `npm run build`。`npm run build` 会重写 `dist/`，未设 `VITE_BASE_PATH=/yuri-chat/` 时 `dist/index.html` 的资源路径会退回到 `/`，污染 Pages 部署。如果不小心 build 了，立刻 `git checkout -- dist/` 还原已 tracked 文件，并 `rm` 掉新生成的 untracked `dist/assets/*` 资产。
+⚠️ **如果只是想验证 TypeScript 编译**（不打算发布），跑 `npx tsc -b` 而不是 `npm run build`。`npm run build` 会重写 `dist/`，未设 `VITE_BASE_PATH=/yuri_chat/` 时 `dist/index.html` 的资源路径会退回到 `/`，污染 Pages 部署。如果不小心 build 了，立刻 `git checkout -- dist/` 还原已 tracked 文件，并 `rm` 掉新生成的 untracked `dist/assets/*` 资产。
 
 构建 GitHub Pages 前端（**真正要发布时才跑这段**）：
 
 ```powershell
-$env:VITE_BASE_PATH='/yuri-chat/'
+$env:VITE_BASE_PATH='/yuri_chat/'
 $env:VITE_API_BASE_URL=(Get-Content -Raw .\secrets\cloud-api-url.txt).Trim()
 npm run build
 ```
 
-构建后确认 `dist/index.html` 里的资源路径是 `/yuri-chat/assets/...`。
+构建后确认 `dist/index.html` 里的资源路径是 `/yuri_chat/assets/...`。
 
-浏览器验证要覆盖桌面和手机宽度。只跑代码检查不够，Yuri Chat 之前多次是“lint/build 绿，但真实浏览器或 Agent 运行时暴露问题”。
+浏览器验证要覆盖桌面和手机宽度。只跑代码检查不够，yuri_chat 之前多次是“lint/build 绿，但真实浏览器或 Agent 运行时暴露问题”。
 
 重点用户流：
 
@@ -136,26 +136,26 @@ npm run build
 - `secrets/`
 - AI API Key
 - 云同步 token
-- 服务器 `/opt/yuri-chat/.env`
+- 服务器 `/opt/yuri_chat/.env`
 
 只允许验证“是否存在 / 服务是否正常”，不要展示密钥。
 
 常用后端检查：
 
 ```powershell
-ssh tencent-astrbot "systemctl is-active yuri-chat-api.service yuri-chat-tunnel.service"
+ssh tencent-astrbot "systemctl is-active yuri_chat-api.service yuri_chat-tunnel.service"
 ```
 
 后端更新：
 
 ```powershell
-ssh tencent-astrbot "cd /opt/yuri-chat && git fetch --all --prune && git reset --hard origin/main && npm install --omit=dev --no-audit --no-fund && sudo systemctl restart yuri-chat-api.service"
+ssh tencent-astrbot "cd /opt/yuri_chat && git fetch --all --prune && git reset --hard origin/main && npm install --omit=dev --no-audit --no-fund && sudo systemctl restart yuri_chat-api.service"
 ```
 
 查看当前 Cloudflare Quick Tunnel 地址：
 
 ```powershell
-ssh tencent-astrbot "sudo journalctl -u yuri-chat-tunnel --no-pager -n 120 | grep -Eo 'https://[-a-zA-Z0-9]+\.trycloudflare\.com' | tail -n 1"
+ssh tencent-astrbot "sudo journalctl -u yuri_chat-tunnel --no-pager -n 120 | grep -Eo 'https://[-a-zA-Z0-9]+\.trycloudflare\.com' | tail -n 1"
 ```
 
 如果隧道地址变了：

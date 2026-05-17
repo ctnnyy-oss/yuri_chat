@@ -337,7 +337,7 @@ function isTransientTaskInstruction(content: string): boolean {
 function inferExplicitMemorySignal(payload: string): NonNullable<ReturnType<typeof classifyMemory>> {
   const kind: MemoryKind = /(暗号|称呼|昵称|关系|姐姐|妹妹|恋人|朋友|家人)/.test(payload)
     ? 'relationship'
-    : /(项目|应用|百合小窝|Yuri Chat|架构|模型|Agent|云服务器)/i.test(payload)
+    : /(项目|应用|百合小窝|yuri_chat|架构|模型|Agent|云服务器)/i.test(payload)
       ? 'project'
       : /(角色|人设|世界观|CP|百合)/i.test(payload)
         ? 'world'

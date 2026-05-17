@@ -72,7 +72,7 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
 export function getApiBaseUrl(): string {
   const configuredUrl = import.meta.env.VITE_API_BASE_URL
   if (!configuredUrl && typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')) {
-    return 'https://biographies-pound-watershed-arena.trycloudflare.com'
+    return 'https://pharmacology-hockey-myspace-payroll.trycloudflare.com'
   }
   if (!configuredUrl) return ''
   return configuredUrl.replace(/\/+$/, '')

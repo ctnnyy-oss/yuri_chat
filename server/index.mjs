@@ -73,7 +73,7 @@ dotenv.config()
 const app = express()
 const port = Number(readEnv('YURI_CHAT_API_PORT') || 8787)
 const corsOrigin = getCorsOrigin()
-const appName = 'Yuri Chat'
+const appName = 'yuri_chat'
 
 app.set('trust proxy', 1)
 app.use(cors({ origin: corsOrigin }))

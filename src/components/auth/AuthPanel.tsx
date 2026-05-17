@@ -131,7 +131,7 @@ export function AuthPanel({
             <Heart size={22} />
           </span>
           <div>
-            <strong>Yuri Chat</strong>
+            <strong>yuri_chat</strong>
             <small>百合小窝账号</small>
           </div>
         </div>
