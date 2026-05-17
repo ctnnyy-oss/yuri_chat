@@ -255,7 +255,7 @@ export function ChatPhone({
             rows={1}
             value={draft}
           />
-          <button aria-label="发送" className="composer-send" disabled={!draft.trim() || isSending} type="submit">
+          <button aria-label="发送" className="composer-send" disabled={!draft.trim()} type="submit">
             <span>发送</span>
             <Send size={18} />
           </button>
@@ -277,7 +277,6 @@ export function ChatPhone({
             <button
               aria-label="让群里自己聊"
               className="composer-tool group-proactive-tool"
-              disabled={isSending}
               onClick={onGroupProactive}
               title="让群里自己聊"
               type="button"
@@ -289,7 +288,6 @@ export function ChatPhone({
             <button
               aria-label="让她主动说话"
               className="composer-tool direct-proactive-tool"
-              disabled={isSending}
               onClick={onDirectProactive}
               title="让她主动说话"
               type="button"
@@ -450,7 +448,7 @@ export function ChatPhone({
                     </button>
                   </>
                 ) : (
-                  <button className="primary" disabled={isSending} onClick={() => void beginVoiceRecording('call')} type="button">
+                  <button className="primary" onClick={() => void beginVoiceRecording('call')} type="button">
                     <Mic size={22} />
                     开始说话
                   </button>

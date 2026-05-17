@@ -45,7 +45,7 @@ interface UseChatDeps {
 
 export function useChat({ state, setState, setNotice, character, conversation, proactivePaused = false }: UseChatDeps) {
   const [draft, setDraft] = useState('')
-  const [isSending, setIsSending] = useState(false)
+  const [pendingReplyCount, setPendingReplyCount] = useState(0)
   const [chatAlertState, setChatAlertState] = useState<{ conversationId: string; message: string } | null>(null)
   const proactiveTimerRef = useRef<number | null>(null)
   const proactiveInFlightRef = useRef(false)
@@ -57,18 +57,26 @@ export function useChat({ state, setState, setNotice, character, conversation, p
   const directProactiveConversationIdRef = useRef('')
   const chatAlert = chatAlertState?.conversationId === conversation.id ? chatAlertState.message : ''
   const groupProactiveTurnLimit = clampGroupProactiveTurnLimit(state.settings.groupChatMaxProactiveTurns)
+  const isSending = pendingReplyCount > 0
+  const beginReplyActivity = useCallback(() => {
+    setPendingReplyCount((count) => count + 1)
+  }, [])
+  const endReplyActivity = useCallback(() => {
+    setPendingReplyCount((count) => Math.max(0, count - 1))
+  }, [])
 
   const runGroupProactiveTurn = useCallback(
     async ({ force = true }: { force?: boolean } = {}) => {
       if (proactivePaused) return
-      if (!isGroupCharacter(character) || isSending || proactiveInFlightRef.current) return
+      if (!isGroupCharacter(character) || proactiveInFlightRef.current) return
+      if (!force && isSending) return
       if (!force && (!state.settings.groupChatHumanMode || !state.settings.groupChatProactiveMode)) return
       if (!force && countGroupProactiveTurnsSinceLastUser(conversation.messages) >= groupProactiveTurnLimit) return
 
       const attemptKey = getConversationMessageKey(conversation.messages)
       proactiveInFlightRef.current = true
       setChatAlertState(null)
-      setIsSending(true)
+      beginReplyActivity()
       setNotice(force ? '群里有人在想要不要开口' : '群里安静了一会儿')
 
       try {
@@ -85,12 +93,9 @@ export function useChat({ state, setState, setNotice, character, conversation, p
           return
         }
 
-        const repliedConversation = updateConversationSummary({
-          ...conversation,
-          messages: [...conversation.messages, ...groupTurn.replies],
-          updatedAt: nowIso(),
-        })
-        setState((currentState) => upsertConversation(currentState, repliedConversation))
+        setState((currentState) =>
+          appendMessagesToCurrentConversation(currentState, conversation.id, conversation, groupTurn.replies),
+        )
         const firstSpeaker = groupTurn.replies[0]?.authorName ?? character.name
         const silentHint = groupTurn.silentCount > 0 ? `（${groupTurn.silentCount} 位看过但没插话）` : ''
         setNotice(`${firstSpeaker} 主动开口了${silentHint}`)
@@ -99,23 +104,24 @@ export function useChat({ state, setState, setNotice, character, conversation, p
         setNotice('模型代理未接通')
       } finally {
         proactiveInFlightRef.current = false
-        setIsSending(false)
+        endReplyActivity()
       }
     },
-    [character, conversation, groupProactiveTurnLimit, isSending, proactivePaused, setNotice, setState, state],
+    [beginReplyActivity, character, conversation, endReplyActivity, groupProactiveTurnLimit, isSending, proactivePaused, setNotice, setState, state],
   )
 
   const runDirectProactiveTurn = useCallback(
     async ({ force = true }: { force?: boolean } = {}) => {
       if (proactivePaused) return
-      if (isGroupCharacter(character) || isSending || directProactiveInFlightRef.current) return
+      if (isGroupCharacter(character) || directProactiveInFlightRef.current) return
+      if (!force && isSending) return
       if (!force && !state.settings.directChatProactiveMode) return
       if (!force && countDirectProactiveTurnsSinceLastUser(conversation.messages) >= 1) return
 
       const attemptKey = getConversationMessageKey(conversation.messages)
       directProactiveInFlightRef.current = true
       setChatAlertState(null)
-      setIsSending(true)
+      beginReplyActivity()
       setNotice(force ? `${character.name}正在想要不要主动开口` : `${character.name}安静了一会儿`)
 
       try {
@@ -135,22 +141,20 @@ export function useChat({ state, setState, setNotice, character, conversation, p
           return
         }
 
-        const repliedConversation = updateConversationSummary({
-          ...conversation,
-          messages: [...conversation.messages, turn.message],
-          updatedAt: nowIso(),
-        })
-        setState((currentState) => upsertConversation(currentState, repliedConversation))
+        const proactiveMessage = turn.message
+        setState((currentState) =>
+          appendMessagesToCurrentConversation(currentState, conversation.id, conversation, [proactiveMessage]),
+        )
         setNotice(`${character.name}主动发来了一条消息`)
       } catch (error) {
         setChatAlertState({ conversationId: conversation.id, message: formatChatFailure(error) })
         setNotice('模型代理没有接通')
       } finally {
         directProactiveInFlightRef.current = false
-        setIsSending(false)
+        endReplyActivity()
       }
     },
-    [character, conversation, isSending, proactivePaused, setNotice, setState, state],
+    [beginReplyActivity, character, conversation, endReplyActivity, isSending, proactivePaused, setNotice, setState, state],
   )
 
   useEffect(() => {
@@ -241,7 +245,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
 
   async function handleSend(options: SendMessageOptions = {}) {
     const content = (options.content ?? draft).trim()
-    if (!content || isSending) return
+    if (!content) return
     setChatAlertState(null)
 
     const userMessage = {
@@ -312,7 +316,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
 
     setState(nextStateWithUsage)
     if (!options.content) setDraft('')
-    setIsSending(true)
+    beginReplyActivity()
     setNotice(
       keptMemory
         ? (keptMemory.status === 'candidate' ? '发现一条待确认记忆' : '已捕捉并归档一条记忆')
@@ -331,28 +335,24 @@ export function useChat({ state, setState, setNotice, character, conversation, p
           requestReply: requestAssistantReply,
         })
         if (groupTurn.replies.length === 0) {
-          setState(nextStateWithUsage)
           setNotice(groupTurn.skippedReason ?? '群里暂时安静了一下')
           return
         }
 
         const firstReply = groupTurn.replies[0]
-        const repliedConversation = updateConversationSummary({
-          ...nextConversation,
-          messages: [...nextConversation.messages, ...groupTurn.replies],
-          updatedAt: nowIso(),
-        })
-        setState(
-          upsertConversation(
+        setState((currentState) =>
+          appendMessagesToCurrentConversation(
             {
-              ...nextStateWithUsage,
+              ...currentState,
               memoryUsageLogs: attachAssistantToMemoryUsageLog(
-                nextStateWithUsage.memoryUsageLogs,
+                currentState.memoryUsageLogs,
                 usageLog.id,
                 firstReply.id,
               ),
             },
-            repliedConversation,
+            nextConversation.id,
+            nextConversation,
+            groupTurn.replies,
           ),
         )
         const silentHint = groupTurn.silentCount > 0 ? `（${groupTurn.silentCount} 位看过但没插话）` : ''
@@ -372,7 +372,6 @@ export function useChat({ state, setState, setNotice, character, conversation, p
         })
         if (!directTurn.message) {
           lastDirectProactiveAttemptKeyRef.current = getConversationMessageKey(nextConversation.messages)
-          setState(nextStateWithUsage)
           setNotice(directTurn.skippedReason ?? `${character.name}暂时没有回复`)
           return
         }
@@ -392,36 +391,33 @@ export function useChat({ state, setState, setNotice, character, conversation, p
           agent: result.agent,
         }
       }
-      const repliedConversation = {
-        ...nextConversation,
-        messages: [...nextConversation.messages, assistantMessage],
-        updatedAt: nowIso(),
-      }
-      const repliedState = upsertConversation(
-        {
-          ...nextStateWithUsage,
-          memoryUsageLogs: attachAssistantToMemoryUsageLog(
-            nextStateWithUsage.memoryUsageLogs,
-            usageLog.id,
-            assistantMessage.id,
-          ),
-        },
-        repliedConversation,
-      )
-      const { state: stateWithAgentActions, appliedLabels } = applyAgentActionsToState(
-        repliedState,
-        assistantMessage.agent?.actions,
-        { character, conversation: nextConversation, userMessage },
-      )
-      setState(stateWithAgentActions)
-      setNotice(appliedLabels.length > 0 ? `已执行：${appliedLabels.slice(0, 2).join(' / ')}` : '回复完成')
+      setState((currentState) => {
+        const repliedState = appendMessagesToCurrentConversation(
+          {
+            ...currentState,
+            memoryUsageLogs: attachAssistantToMemoryUsageLog(
+              currentState.memoryUsageLogs,
+              usageLog.id,
+              assistantMessage.id,
+            ),
+          },
+          nextConversation.id,
+          nextConversation,
+          [assistantMessage],
+        )
+        return applyAgentActionsToState(
+          repliedState,
+          assistantMessage.agent?.actions,
+          { character, conversation: nextConversation, userMessage },
+        ).state
+      })
+      setNotice('回复完成')
       void enqueueAgentTaskActions(assistantMessage.agent?.actions)
     } catch (error) {
-      setState(nextStateWithUsage)
       setChatAlertState({ conversationId: conversation.id, message: formatChatFailure(error) })
       setNotice('模型代理未接通')
     } finally {
-      setIsSending(false)
+      endReplyActivity()
     }
   }
 
@@ -443,6 +439,28 @@ export function useChat({ state, setState, setNotice, character, conversation, p
       void runDirectProactiveTurn({ force: true })
     },
   }
+}
+
+function appendMessagesToCurrentConversation(
+  state: AppState,
+  conversationId: string,
+  fallbackConversation: ConversationState,
+  messages: ChatMessage[],
+): AppState {
+  const currentConversation =
+    state.conversations.find((item) => item.id === conversationId) ?? fallbackConversation
+  const existingMessageIds = new Set(currentConversation.messages.map((message) => message.id))
+  const newMessages = messages.filter((message) => !existingMessageIds.has(message.id))
+  if (newMessages.length === 0) return state
+
+  return upsertConversation(
+    state,
+    updateConversationSummary({
+      ...currentConversation,
+      messages: [...currentConversation.messages, ...newMessages],
+      updatedAt: nowIso(),
+    }),
+  )
 }
 
 async function prepareExternalEmbeddingContext(
