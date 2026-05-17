@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { readEnv } from './env.mjs'
-import { clampNumber, quoteSqlString } from './shared/utils.mjs'
+import { clampNumber } from './shared/utils.mjs'
 
 export const legacyUserId = 'legacy-user'
 
@@ -200,7 +200,8 @@ export function createCloudBackup(reason = 'manual') {
   const fileName = `yuri_chat-${safeReason}-${stamp}.sqlite`
   const backupPath = join(backupDir, fileName)
 
-  database.exec(`VACUUM INTO ${quoteSqlString(backupPath)}`)
+  database.exec('PRAGMA wal_checkpoint(FULL)')
+  copyFileSync(getCloudDatabasePath(), backupPath)
   pruneCloudBackups()
   return toCloudBackupSummary(backupPath)
 }
