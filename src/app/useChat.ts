@@ -55,15 +55,30 @@ export function useChat({ state, setState, setNotice, character, conversation, p
   const directProactiveInFlightRef = useRef(false)
   const lastDirectProactiveAttemptKeyRef = useRef('')
   const directProactiveConversationIdRef = useRef('')
+  const stateRef = useRef(state)
+  const conversationRef = useRef(conversation)
   const chatAlert = chatAlertState?.conversationId === conversation.id ? chatAlertState.message : ''
   const groupProactiveTurnLimit = clampGroupProactiveTurnLimit(state.settings.groupChatMaxProactiveTurns)
   const isSending = pendingReplyCount > 0
+  const rememberLatestState = useCallback((nextState: AppState, conversationId = conversationRef.current.id) => {
+    stateRef.current = nextState
+    const nextConversation = nextState.conversations.find((item) => item.id === conversationId)
+    if (nextConversation) conversationRef.current = nextConversation
+  }, [])
   const beginReplyActivity = useCallback(() => {
     setPendingReplyCount((count) => count + 1)
   }, [])
   const endReplyActivity = useCallback(() => {
     setPendingReplyCount((count) => Math.max(0, count - 1))
   }, [])
+
+  useEffect(() => {
+    stateRef.current = state
+  }, [state])
+
+  useEffect(() => {
+    conversationRef.current = conversation
+  }, [conversation])
 
   const runGroupProactiveTurn = useCallback(
     async ({ force = true }: { force?: boolean } = {}) => {
@@ -93,9 +108,11 @@ export function useChat({ state, setState, setNotice, character, conversation, p
           return
         }
 
-        setState((currentState) =>
-          appendMessagesToCurrentConversation(currentState, conversation.id, conversation, groupTurn.replies),
-        )
+        setState((currentState) => {
+          const nextState = appendMessagesToCurrentConversation(currentState, conversation.id, conversation, groupTurn.replies)
+          rememberLatestState(nextState, conversation.id)
+          return nextState
+        })
         const firstSpeaker = groupTurn.replies[0]?.authorName ?? character.name
         const silentHint = groupTurn.silentCount > 0 ? `（${groupTurn.silentCount} 位看过但没插话）` : ''
         setNotice(`${firstSpeaker} 主动开口了${silentHint}`)
@@ -107,7 +124,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
         endReplyActivity()
       }
     },
-    [beginReplyActivity, character, conversation, endReplyActivity, groupProactiveTurnLimit, isSending, proactivePaused, setNotice, setState, state],
+    [beginReplyActivity, character, conversation, endReplyActivity, groupProactiveTurnLimit, isSending, proactivePaused, rememberLatestState, setNotice, setState, state],
   )
 
   const runDirectProactiveTurn = useCallback(
@@ -142,9 +159,11 @@ export function useChat({ state, setState, setNotice, character, conversation, p
         }
 
         const proactiveMessage = turn.message
-        setState((currentState) =>
-          appendMessagesToCurrentConversation(currentState, conversation.id, conversation, [proactiveMessage]),
-        )
+        setState((currentState) => {
+          const nextState = appendMessagesToCurrentConversation(currentState, conversation.id, conversation, [proactiveMessage])
+          rememberLatestState(nextState, conversation.id)
+          return nextState
+        })
         setNotice(`${character.name}主动发来了一条消息`)
       } catch (error) {
         setChatAlertState({ conversationId: conversation.id, message: formatChatFailure(error) })
@@ -154,7 +173,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
         endReplyActivity()
       }
     },
-    [beginReplyActivity, character, conversation, endReplyActivity, isSending, proactivePaused, setNotice, setState, state],
+    [beginReplyActivity, character, conversation, endReplyActivity, isSending, proactivePaused, rememberLatestState, setNotice, setState, state],
   )
 
   useEffect(() => {
@@ -248,32 +267,35 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     if (!content) return
     setChatAlertState(null)
 
+    const currentState = stateRef.current
+    const currentConversation =
+      currentState.conversations.find((item) => item.id === conversationRef.current.id) ?? conversationRef.current
     const userMessage = {
       ...createMessage('user', content),
       inputMode: options.voice ? 'voice' : 'text',
       voice: options.voice,
     } satisfies ChatMessage
     const nextConversation = updateConversationSummary({
-      ...conversation,
-      messages: [...conversation.messages, userMessage],
+      ...currentConversation,
+      messages: [...currentConversation.messages, userMessage],
       updatedAt: nowIso(),
     })
     const recallMode = isExplicitMemoryQuery(content)
-    const touchedMemories = touchRelevantMemories(state.memories, content, {
+    const touchedMemories = touchRelevantMemories(currentState.memories, content, {
       characterId: character.id,
       conversationId: nextConversation.id,
-      memoryEmbeddings: state.memoryEmbeddings,
+      memoryEmbeddings: currentState.memoryEmbeddings,
       maxItems: recallMode ? 18 : 12,
       recallMode,
     })
-    const capturedMemory = state.settings.autoMemoryEnabled
+    const capturedMemory = currentState.settings.autoMemoryEnabled
       ? maybeCaptureMemory(userMessage, nextConversation, character)
       : null
     const capturedMemoryMeetsFloor = Boolean(
-      capturedMemory && capturedMemory.confidence >= state.settings.memoryConfidenceFloor,
+      capturedMemory && capturedMemory.confidence >= currentState.settings.memoryConfidenceFloor,
     )
     const memoryBlockedByTombstone = Boolean(
-      capturedMemory && capturedMemoryMeetsFloor && isMemoryBlockedByTombstones(capturedMemory, state.memoryTombstones),
+      capturedMemory && capturedMemoryMeetsFloor && isMemoryBlockedByTombstones(capturedMemory, currentState.memoryTombstones),
     )
     const keptMemory =
       capturedMemory &&
@@ -283,7 +305,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
         : null
 
     let nextState = {
-      ...upsertConversation(state, nextConversation),
+      ...upsertConversation(currentState, nextConversation),
       memories: keptMemory ? integrateMemoryCandidate(touchedMemories, keptMemory) : touchedMemories,
     }
     if (keptMemory) {
@@ -314,6 +336,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
       memoryUsageLogs: [usageLog, ...stateForPrompt.memoryUsageLogs].slice(0, getMemoryUsageLogLimit()),
     }
 
+    rememberLatestState(nextStateWithUsage, nextConversation.id)
     setState(nextStateWithUsage)
     if (!options.content) setDraft('')
     beginReplyActivity()
@@ -340,8 +363,8 @@ export function useChat({ state, setState, setNotice, character, conversation, p
         }
 
         const firstReply = groupTurn.replies[0]
-        setState((currentState) =>
-          appendMessagesToCurrentConversation(
+        setState((currentState) => {
+          const nextState = appendMessagesToCurrentConversation(
             {
               ...currentState,
               memoryUsageLogs: attachAssistantToMemoryUsageLog(
@@ -353,8 +376,10 @@ export function useChat({ state, setState, setNotice, character, conversation, p
             nextConversation.id,
             nextConversation,
             groupTurn.replies,
-          ),
-        )
+          )
+          rememberLatestState(nextState, nextConversation.id)
+          return nextState
+        })
         const silentHint = groupTurn.silentCount > 0 ? `（${groupTurn.silentCount} 位看过但没插话）` : ''
         setNotice(`群里 ${groupTurn.replies.length} 位成员接话${silentHint}`)
         return
@@ -405,16 +430,18 @@ export function useChat({ state, setState, setNotice, character, conversation, p
           nextConversation,
           [assistantMessage],
         )
-        return applyAgentActionsToState(
+        const nextState = applyAgentActionsToState(
           repliedState,
           assistantMessage.agent?.actions,
           { character, conversation: nextConversation, userMessage },
         ).state
+        rememberLatestState(nextState, nextConversation.id)
+        return nextState
       })
       setNotice('回复完成')
       void enqueueAgentTaskActions(assistantMessage.agent?.actions)
     } catch (error) {
-      setChatAlertState({ conversationId: conversation.id, message: formatChatFailure(error) })
+      setChatAlertState({ conversationId: nextConversation.id, message: formatChatFailure(error) })
       setNotice('模型代理未接通')
     } finally {
       endReplyActivity()
