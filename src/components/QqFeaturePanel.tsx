@@ -185,7 +185,7 @@ export function QqFeaturePanel({
     if (onDeleteCharacter(role.id)) {
       if (nextRole) selectRole(nextRole)
       if (selectedRoleId === role.id) setMobileEditorMode('closed')
-      onShellAction?.('角色和对应聊天记录已删除')
+      onShellAction?.('角色已移出列表，聊天记录已放进回收花园')
     }
     setPendingDeleteRole(null)
   }
@@ -452,8 +452,8 @@ export function QqFeaturePanel({
         <MobileConfirmDialog
           danger
           title="删除角色"
-          message={`会删除「${pendingDeleteRole.name}」这个角色，并一起清掉她的聊天记录。这个操作不能从聊天列表恢复。`}
-          confirmLabel="删除角色"
+          message={`会把「${pendingDeleteRole.name}」从角色和聊天列表移出，并把她的聊天记录放进回收花园。想反悔时，可以去记忆页的回收花园恢复或清理。`}
+          confirmLabel="移入回收花园"
           onCancel={() => setPendingDeleteRole(null)}
           onConfirm={confirmDeleteRole}
         />

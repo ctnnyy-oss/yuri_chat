@@ -175,7 +175,7 @@ export function useCharacterCommands({ state, setState, setNotice }: UseCharacte
         },
       }
     })
-    setNotice(`已删除：${target.name}（聊天记录已挪到回收站，30 天内可恢复）`)
+    setNotice(`已移出角色：${target.name}（聊天记录已放进回收花园，30 天内可恢复）`)
     return true
   }
 
