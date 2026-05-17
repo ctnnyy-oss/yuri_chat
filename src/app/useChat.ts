@@ -57,6 +57,9 @@ export function useChat({ state, setState, setNotice, character, conversation, p
   const directProactiveConversationIdRef = useRef('')
   const stateRef = useRef(state)
   const conversationRef = useRef(conversation)
+  const replySequenceRef = useRef(0)
+  const nextReplyDeliverySequenceRef = useRef(1)
+  const replyDeliveryQueueRef = useRef(new Map<number, () => void>())
   const chatAlert = chatAlertState?.conversationId === conversation.id ? chatAlertState.message : ''
   const groupProactiveTurnLimit = clampGroupProactiveTurnLimit(state.settings.groupChatMaxProactiveTurns)
   const isSending = pendingReplyCount > 0
@@ -66,11 +69,28 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     if (nextConversation) conversationRef.current = nextConversation
   }, [])
   const beginReplyActivity = useCallback(() => {
+    const sequence = replySequenceRef.current + 1
+    replySequenceRef.current = sequence
     setPendingReplyCount((count) => count + 1)
+    return sequence
   }, [])
   const endReplyActivity = useCallback(() => {
     setPendingReplyCount((count) => Math.max(0, count - 1))
   }, [])
+  const flushReplyDeliveryQueue = useCallback(() => {
+    while (replyDeliveryQueueRef.current.has(nextReplyDeliverySequenceRef.current)) {
+      const sequence = nextReplyDeliverySequenceRef.current
+      const deliver = replyDeliveryQueueRef.current.get(sequence)
+      replyDeliveryQueueRef.current.delete(sequence)
+      nextReplyDeliverySequenceRef.current = sequence + 1
+      deliver?.()
+      endReplyActivity()
+    }
+  }, [endReplyActivity])
+  const finishReplyActivity = useCallback((sequence: number, deliver: () => void = () => {}) => {
+    replyDeliveryQueueRef.current.set(sequence, deliver)
+    flushReplyDeliveryQueue()
+  }, [flushReplyDeliveryQueue])
 
   useEffect(() => {
     stateRef.current = state
@@ -91,7 +111,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
       const attemptKey = getConversationMessageKey(conversation.messages)
       proactiveInFlightRef.current = true
       setChatAlertState(null)
-      beginReplyActivity()
+      const replySequence = beginReplyActivity()
       setNotice(force ? '群里有人在想要不要开口' : '群里安静了一会儿')
 
       try {
@@ -103,28 +123,33 @@ export function useChat({ state, setState, setNotice, character, conversation, p
           force,
         })
         if (groupTurn.replies.length === 0) {
-          lastProactiveAttemptKeyRef.current = attemptKey
-          setNotice(groupTurn.skippedReason ?? '群里暂时没人主动开口')
+          finishReplyActivity(replySequence, () => {
+            lastProactiveAttemptKeyRef.current = attemptKey
+            setNotice(groupTurn.skippedReason ?? '群里暂时没人主动开口')
+          })
           return
         }
 
-        setState((currentState) => {
-          const nextState = appendMessagesToCurrentConversation(currentState, conversation.id, conversation, groupTurn.replies)
-          rememberLatestState(nextState, conversation.id)
-          return nextState
-        })
         const firstSpeaker = groupTurn.replies[0]?.authorName ?? character.name
         const silentHint = groupTurn.silentCount > 0 ? `（${groupTurn.silentCount} 位看过但没插话）` : ''
-        setNotice(`${firstSpeaker} 主动开口了${silentHint}`)
+        finishReplyActivity(replySequence, () => {
+          setState((currentState) => {
+            const nextState = appendMessagesToCurrentConversation(currentState, conversation.id, conversation, groupTurn.replies)
+            rememberLatestState(nextState, conversation.id)
+            return nextState
+          })
+          setNotice(`${firstSpeaker} 主动开口了${silentHint}`)
+        })
       } catch (error) {
-        setChatAlertState({ conversationId: conversation.id, message: formatChatFailure(error) })
-        setNotice('模型代理未接通')
+        finishReplyActivity(replySequence, () => {
+          setChatAlertState({ conversationId: conversation.id, message: formatChatFailure(error) })
+          setNotice('模型代理未接通')
+        })
       } finally {
         proactiveInFlightRef.current = false
-        endReplyActivity()
       }
     },
-    [beginReplyActivity, character, conversation, endReplyActivity, groupProactiveTurnLimit, isSending, proactivePaused, rememberLatestState, setNotice, setState, state],
+    [beginReplyActivity, character, conversation, finishReplyActivity, groupProactiveTurnLimit, isSending, proactivePaused, rememberLatestState, setNotice, setState, state],
   )
 
   const runDirectProactiveTurn = useCallback(
@@ -138,7 +163,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
       const attemptKey = getConversationMessageKey(conversation.messages)
       directProactiveInFlightRef.current = true
       setChatAlertState(null)
-      beginReplyActivity()
+      const replySequence = beginReplyActivity()
       setNotice(force ? `${character.name}正在想要不要主动开口` : `${character.name}安静了一会儿`)
 
       try {
@@ -153,27 +178,32 @@ export function useChat({ state, setState, setNotice, character, conversation, p
         })
 
         if (!turn.message) {
-          lastDirectProactiveAttemptKeyRef.current = attemptKey
-          setNotice(turn.skippedReason ?? `${character.name}暂时没有主动发消息`)
+          finishReplyActivity(replySequence, () => {
+            lastDirectProactiveAttemptKeyRef.current = attemptKey
+            setNotice(turn.skippedReason ?? `${character.name}暂时没有主动发消息`)
+          })
           return
         }
 
         const proactiveMessage = turn.message
-        setState((currentState) => {
-          const nextState = appendMessagesToCurrentConversation(currentState, conversation.id, conversation, [proactiveMessage])
-          rememberLatestState(nextState, conversation.id)
-          return nextState
+        finishReplyActivity(replySequence, () => {
+          setState((currentState) => {
+            const nextState = appendMessagesToCurrentConversation(currentState, conversation.id, conversation, [proactiveMessage])
+            rememberLatestState(nextState, conversation.id)
+            return nextState
+          })
+          setNotice(`${character.name}主动发来了一条消息`)
         })
-        setNotice(`${character.name}主动发来了一条消息`)
       } catch (error) {
-        setChatAlertState({ conversationId: conversation.id, message: formatChatFailure(error) })
-        setNotice('模型代理没有接通')
+        finishReplyActivity(replySequence, () => {
+          setChatAlertState({ conversationId: conversation.id, message: formatChatFailure(error) })
+          setNotice('模型代理没有接通')
+        })
       } finally {
         directProactiveInFlightRef.current = false
-        endReplyActivity()
       }
     },
-    [beginReplyActivity, character, conversation, endReplyActivity, isSending, proactivePaused, rememberLatestState, setNotice, setState, state],
+    [beginReplyActivity, character, conversation, finishReplyActivity, isSending, proactivePaused, rememberLatestState, setNotice, setState, state],
   )
 
   useEffect(() => {
@@ -339,7 +369,7 @@ export function useChat({ state, setState, setNotice, character, conversation, p
     rememberLatestState(nextStateWithUsage, nextConversation.id)
     setState(nextStateWithUsage)
     if (!options.content) setDraft('')
-    beginReplyActivity()
+    const replySequence = beginReplyActivity()
     setNotice(
       keptMemory
         ? (keptMemory.status === 'candidate' ? '发现一条待确认记忆' : '已捕捉并归档一条记忆')
@@ -358,30 +388,34 @@ export function useChat({ state, setState, setNotice, character, conversation, p
           requestReply: requestAssistantReply,
         })
         if (groupTurn.replies.length === 0) {
-          setNotice(groupTurn.skippedReason ?? '群里暂时安静了一下')
+          finishReplyActivity(replySequence, () => {
+            setNotice(groupTurn.skippedReason ?? '群里暂时安静了一下')
+          })
           return
         }
 
         const firstReply = groupTurn.replies[0]
-        setState((currentState) => {
-          const nextState = appendMessagesToCurrentConversation(
-            {
-              ...currentState,
-              memoryUsageLogs: attachAssistantToMemoryUsageLog(
-                currentState.memoryUsageLogs,
-                usageLog.id,
-                firstReply.id,
-              ),
-            },
-            nextConversation.id,
-            nextConversation,
-            groupTurn.replies,
-          )
-          rememberLatestState(nextState, nextConversation.id)
-          return nextState
-        })
         const silentHint = groupTurn.silentCount > 0 ? `（${groupTurn.silentCount} 位看过但没插话）` : ''
-        setNotice(`群里 ${groupTurn.replies.length} 位成员接话${silentHint}`)
+        finishReplyActivity(replySequence, () => {
+          setState((currentState) => {
+            const nextState = appendMessagesToCurrentConversation(
+              {
+                ...currentState,
+                memoryUsageLogs: attachAssistantToMemoryUsageLog(
+                  currentState.memoryUsageLogs,
+                  usageLog.id,
+                  firstReply.id,
+                ),
+              },
+              nextConversation.id,
+              nextConversation,
+              groupTurn.replies,
+            )
+            rememberLatestState(nextState, nextConversation.id)
+            return nextState
+          })
+          setNotice(`群里 ${groupTurn.replies.length} 位成员接话${silentHint}`)
+        })
         return
       }
 
@@ -396,8 +430,10 @@ export function useChat({ state, setState, setNotice, character, conversation, p
           requestReply: requestAssistantReply,
         })
         if (!directTurn.message) {
-          lastDirectProactiveAttemptKeyRef.current = getConversationMessageKey(nextConversation.messages)
-          setNotice(directTurn.skippedReason ?? `${character.name}暂时没有回复`)
+          finishReplyActivity(replySequence, () => {
+            lastDirectProactiveAttemptKeyRef.current = getConversationMessageKey(nextConversation.messages)
+            setNotice(directTurn.skippedReason ?? `${character.name}暂时没有回复`)
+          })
           return
         }
         assistantMessage = directTurn.message
@@ -416,35 +452,37 @@ export function useChat({ state, setState, setNotice, character, conversation, p
           agent: result.agent,
         }
       }
-      setState((currentState) => {
-        const repliedState = appendMessagesToCurrentConversation(
-          {
-            ...currentState,
-            memoryUsageLogs: attachAssistantToMemoryUsageLog(
-              currentState.memoryUsageLogs,
-              usageLog.id,
-              assistantMessage.id,
-            ),
-          },
-          nextConversation.id,
-          nextConversation,
-          [assistantMessage],
-        )
-        const nextState = applyAgentActionsToState(
-          repliedState,
-          assistantMessage.agent?.actions,
-          { character, conversation: nextConversation, userMessage },
-        ).state
-        rememberLatestState(nextState, nextConversation.id)
-        return nextState
+      finishReplyActivity(replySequence, () => {
+        setState((currentState) => {
+          const repliedState = appendMessagesToCurrentConversation(
+            {
+              ...currentState,
+              memoryUsageLogs: attachAssistantToMemoryUsageLog(
+                currentState.memoryUsageLogs,
+                usageLog.id,
+                assistantMessage.id,
+              ),
+            },
+            nextConversation.id,
+            nextConversation,
+            [assistantMessage],
+          )
+          const nextState = applyAgentActionsToState(
+            repliedState,
+            assistantMessage.agent?.actions,
+            { character, conversation: nextConversation, userMessage },
+          ).state
+          rememberLatestState(nextState, nextConversation.id)
+          return nextState
+        })
+        setNotice('回复完成')
+        void enqueueAgentTaskActions(assistantMessage.agent?.actions)
       })
-      setNotice('回复完成')
-      void enqueueAgentTaskActions(assistantMessage.agent?.actions)
     } catch (error) {
-      setChatAlertState({ conversationId: nextConversation.id, message: formatChatFailure(error) })
-      setNotice('模型代理未接通')
-    } finally {
-      endReplyActivity()
+      finishReplyActivity(replySequence, () => {
+        setChatAlertState({ conversationId: nextConversation.id, message: formatChatFailure(error) })
+        setNotice('模型代理未接通')
+      })
     }
   }
 
